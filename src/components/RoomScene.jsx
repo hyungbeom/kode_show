@@ -360,7 +360,7 @@ const RoomScene = memo(function RoomScene({ companyName, onBack }) {
             shadow-camera-right={20}
             shadow-camera-top={20}
             shadow-camera-bottom={-20}
-            shadow-bias={-0.0001}
+            shadow-bias={-0.0005}
           />
           
           {/* 보조 태양광 (반대편 사선에서) - 그림자 없이 채우기용 */}

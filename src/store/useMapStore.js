@@ -11,6 +11,12 @@ export const useMapStore = create((set) => ({
   // 카메라 타겟 위치 (구역 클릭 시 이동할 좌표)
   cameraTarget: null,
   
+  // world.glb 노드별 포커스 좌표 (바운딩 박스 중심) — Zone 리스트 클릭 시 카메라 타겟
+  glbFocusPositions: {},
+  setGlbFocusPositions: (positions) => {
+    set({ glbFocusPositions: positions })
+  },
+
   // 마커 표시 상태 (초기 진입 시 전체 맵이 보이므로 마커도 표시)
   markersVisible: true,
   

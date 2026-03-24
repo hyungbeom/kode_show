@@ -12,22 +12,21 @@ export const COMPANY_NAMES: Record<number, string> = {
   5: 'DataLab',
 }
 
-// Zone 정보
-export interface ZoneData {
+/** Zone 리스트 — world.glb 노드 중심으로 아이소메트릭 줌 (WorldModel이 좌표 채움) */
+export interface ZoneGlbFocus {
   id: string
   text: string
-  buildingPosition: [number, number, number]
+  /** glbFocusPositions / GLB 노드 이름 */
+  glbNode: string
 }
 
-export const ZONES: ZoneData[] = [
-  { id: 'zone-1', text: 'Zone 1', buildingPosition: [0, 8 + 2.5, 125] },
-  { id: 'zone-2', text: 'Zone 2', buildingPosition: [125, 8 + 2.5, 0] },
-  { id: 'zone-3', text: 'Zone 3', buildingPosition: [0, 8 + 2.5, -125] },
-  { id: 'zone-4', text: 'Zone 4', buildingPosition: [-125, 8 + 2.5, 0] },
-  { id: 'zone-5', text: 'Zone 5', buildingPosition: [150, 4 + 2.5, 150] },
-  { id: 'zone-6', text: 'Zone 6', buildingPosition: [-150, 4 + 2.5, -150] },
-  { id: 'zone-7', text: 'Zone 7', buildingPosition: [-60, 4 + 2.5, -60] },
-  { id: 'zone-8', text: 'Zone 8', buildingPosition: [150, 0 + 2.5, -150] },
+export const ZONE_GLB_FOCUS_LIST: ZoneGlbFocus[] = [
+  { id: 'zone-water', text: '수질관', glbNode: 'CH_Water' },
+  { id: 'zone-air', text: '대기관', glbNode: 'CH_Air' },
+  { id: 'zone-lab', text: '측정분석', glbNode: 'CH_Microscope' },
+  { id: 'zone-carbon', text: '탄소중립', glbNode: 'CH_Leaf_Body' },
+  { id: 'zone-earth', text: '외국관', glbNode: 'Earth' },
+  { id: 'zone-inst', text: '기관 및 홍보', glbNode: 'Institution_Builidng' },
 ]
 
 // 애니메이션 기본값

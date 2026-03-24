@@ -12,6 +12,10 @@ interface MapStore {
   // 카메라 타겟 위치 (구역 클릭 시 이동할 좌표)
   cameraTarget: [number, number, number] | null
   
+  // world.glb 노드별 포커스 좌표 (바운딩 박스 중심)
+  glbFocusPositions: Record<string, [number, number, number]>
+  setGlbFocusPositions: (positions: Record<string, [number, number, number]>) => void
+
   // 마커 표시 상태 (초기 진입 시 전체 맵이 보이므로 마커도 표시)
   markersVisible: boolean
   
@@ -87,6 +91,11 @@ export const useMapStore = create<MapStore>((set) => ({
   // 카메라 타겟 위치 (구역 클릭 시 이동할 좌표)
   cameraTarget: null,
   
+  glbFocusPositions: {},
+  setGlbFocusPositions: (positions: Record<string, [number, number, number]>) => {
+    set({ glbFocusPositions: positions })
+  },
+
   // 마커 표시 상태 (초기 진입 시 전체 맵이 보이므로 마커도 표시)
   markersVisible: true,
   

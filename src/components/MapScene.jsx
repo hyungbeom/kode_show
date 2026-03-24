@@ -1,23 +1,10 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, useMemo, memo, useState } from 'react'
-import { Sky as SkyImpl, KeyboardControls, Environment, Lightformer } from '@react-three/drei'
+import { Sky as SkyImpl, Environment, Lightformer } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 import { EcctrlJoystick } from 'ecctrl'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
-
-/**
- * 키보드 매핑 설정 (WASD 및 화살표 키)
- * Ecctrl이 내부적으로 사용하는 이름(forward, backward 등)과 실제 키를 연결합니다.
- */
-const keyboardMap = [
-  { name: 'forward', keys: ['ArrowUp', 'KeyW'] },
-  { name: 'backward', keys: ['ArrowDown', 'KeyS'] },
-  { name: 'leftward', keys: ['ArrowLeft', 'KeyA'] },
-  { name: 'rightward', keys: ['ArrowRight', 'KeyD'] },
-  { name: 'jump', keys: ['Space'] },
-  { name: 'run', keys: ['Shift'] },
-]
 
 /**
  * KODE Clubs 지도 씬 컴포넌트
@@ -105,7 +92,7 @@ const MapScene = memo(function MapScene() {
           shadow-camera-right={150}
           shadow-camera-top={150}
           shadow-camera-bottom={-150}
-          shadow-bias={-0.0001}
+          shadow-bias={-0.0005}
         />
         
         {/* 보조 태양광 (반대편 사선에서) - 그림자 없이 채우기용 */}
@@ -178,51 +165,48 @@ const MapScene = memo(function MapScene() {
         zIndex: 0,
         pointerEvents: 'none' // 클릭 이벤트는 Canvas로 전달
       }} />
-      <KeyboardControls map={keyboardMap}>
-        <Canvas 
-          shadows 
-          style={{ 
-            width: '100%', 
-            height: '100%', 
-            display: 'block', 
-            background: 'transparent', 
-            position: 'relative', 
-            zIndex: 1,
-            backgroundColor: 'transparent' // 추가 보장
-          }}
-          gl={{ 
-            antialias: true, 
-            alpha: true, 
-            premultipliedAlpha: false,
-            preserveDrawingBuffer: false
-          }}
-          dpr={[1, 2]}
-          onCreated={({ gl, scene }) => {
-            // 초기 설정 시 투명 배경 보장
-            gl.setClearColor(0x000000, 0) // 투명 배경
-            scene.background = null // Scene 배경도 투명하게
-            // 초기 clearColor 설정
-            gl.clearColor(0, 0, 0, 0)
-            // 렌더링 후에도 투명하게 유지
-            gl.domElement.style.backgroundColor = 'transparent'
-          }}
-        >
-          <Physics gravity={[0, -9.81, 0]} debug={false}>
-            <SceneContent />
-          </Physics>
-        </Canvas>
-        {/* 조이스틱 - 모바일 디바이스일 때만 상단에 배치 */}
-        {isMobile && (
-          <div style={{
+      <Canvas
+        shadows
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          background: 'transparent',
+          position: 'relative',
+          zIndex: 1,
+          backgroundColor: 'transparent',
+        }}
+        gl={{
+          antialias: true,
+          alpha: true,
+          premultipliedAlpha: false,
+          preserveDrawingBuffer: false,
+        }}
+        dpr={[1, 2]}
+        onCreated={({ gl, scene }) => {
+          gl.setClearColor(0x000000, 0)
+          scene.background = null
+          gl.clearColor(0, 0, 0, 0)
+          gl.domElement.style.backgroundColor = 'transparent'
+        }}
+      >
+        <Physics gravity={[0, -9.81, 0]} debug={false}>
+          <SceneContent />
+        </Physics>
+      </Canvas>
+      {/* 조이스틱 - 모바일 디바이스일 때만 상단에 배치 */}
+      {isMobile && (
+        <div
+          style={{
             position: 'absolute',
             top: '20px',
             right: '20px',
             zIndex: 1000,
-          }}>
-            <EcctrlJoystick />
-          </div>
-        )}
-      </KeyboardControls>
+          }}
+        >
+          <EcctrlJoystick />
+        </div>
+      )}
     </div>
   )
 })

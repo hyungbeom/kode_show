@@ -12,7 +12,6 @@ import * as THREE from 'three'
 const CameraSystem = memo(() => {
   const controlsRef = useRef()
   const followPhysicsBox = useMapStore((state) => state.followPhysicsBox)
-  const setIsFullMapRotating = useMapStore((state) => state.setIsFullMapRotating)
   const { camera } = useThree()
   const setCameraTransitionComplete = useMapStore((state) => state.setCameraTransitionComplete)
   const isFullMapRotating = useMapStore((state) => state.isFullMapRotating)
@@ -120,7 +119,7 @@ const CameraSystem = memo(() => {
         
         // OrthographicCamera인 경우 zoom 설정
         if (state.camera instanceof THREE.OrthographicCamera && !followPhysicsBox) {
-          state.camera.zoom = 2.5
+          state.camera.zoom = 5
           state.camera.updateProjectionMatrix()
         }
         
@@ -152,7 +151,7 @@ const CameraSystem = memo(() => {
         // OrthographicCamera인 경우 zoom도 보간
         if (state.camera instanceof THREE.OrthographicCamera && !followPhysicsBox) {
           const startZoom = 1
-          const targetZoom = 2.5
+          const targetZoom = 5
           const currentZoom = startZoom + (targetZoom - startZoom) * easedT
           state.camera.zoom = currentZoom
           state.camera.updateProjectionMatrix()
@@ -173,7 +172,7 @@ const CameraSystem = memo(() => {
       <OrthographicCamera
         makeDefault
         position={[200, 160, 200]}
-        zoom={2.5}
+        zoom={5}
         near={0.1}
         far={500000}
       />
@@ -184,15 +183,14 @@ const CameraSystem = memo(() => {
       {/* 오빗 컨트롤 - 마우스 드래그 회전, 휠 줌, 패닝 지원 */}
       <OrbitControls
         ref={controlsRef}
-        enablePan={true}
-        enableRotate={true}
-        enableZoom={true}
+        enablePan={!isFullMapRotating}
+        enableRotate={!isFullMapRotating}
+        enableZoom={!isFullMapRotating}
         minZoom={0.5}
         maxZoom={50}
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 2}
         target={[0, 0, 0]}
-        onStart={() => setIsFullMapRotating(false)}
       />
     </>
   )

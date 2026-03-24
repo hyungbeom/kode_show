@@ -4,6 +4,9 @@ import { useMapStore } from '../store/useMapStore'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 
+/** 전체 맵 뷰 Orthographic 줌 — 초기 진입·NAVIGATE 리셋 공통 */
+const FULL_MAP_ZOOM = 5
+
 /**
  * GSAP을 사용한 카메라 시점 전환 컨트롤러
  * Zustand 스토어의 상태 변경을 감지하여 부드럽게 카메라를 제어합니다.
@@ -12,7 +15,7 @@ import * as THREE from 'three'
  * - 초기 진입 시 맵 전체가 보이도록 줌아웃 상태로 시작합니다.
  */
 function CameraController({ controlsRef }) {
-  const { camera } = useThree()
+  const { camera, gl } = useThree()
   const cameraTarget = useMapStore((state) => state.cameraTarget)
   const clearCameraTarget = useMapStore((state) => state.clearCameraTarget)
   const resetToFullMap = useMapStore((state) => state.resetToFullMap)
@@ -30,19 +33,24 @@ function CameraController({ controlsRef }) {
   const animationRef = useRef(null)
   const resetAnimationRef = useRef(null)
   const initialEntryAnimationRef = useRef(null)
-  
+  /** GSAP 카메라 애니메이션 중에는 궤도 useFrame이 개입하지 않도록 (리셋 시 오른쪽 튐 방지) */
+  const orbitSuspendedRef = useRef(false)
+
   // 아이소메트릭 오프셋
   const offsetX = 200
   const offsetY = 160
   const offsetZ = 200
-  
+
   // 초기 진입 시 줌아웃 상태로 시작 (전체 맵이 보이는 상태)
   useEffect(() => {
     // 추적 모드일 때는 CameraController 비활성화 (Player에서 직접 제어)
     if (followPhysicsBox) return
     if (!initialEntry) return
     if (!controlsRef?.current) return
-    
+
+    orbitSuspendedRef.current = true
+    setIsFullMapRotating(false)
+
     console.log('CameraController: Initial entry - zooming out to show full map')
     
     // 기존 애니메이션 취소
@@ -80,13 +88,15 @@ function CameraController({ controlsRef }) {
     
     // 맵이 5배 확대되었으므로 줌도 5배에 맞게 조정 (더 작게 줌 아웃)
     const startZoom = camera.zoom || 1
-    const targetZoom = 2.5  // 맵 전체가 보이도록 (줌인 강화)
-    
+    const targetZoom = FULL_MAP_ZOOM
+
     // GSAP 애니메이션 생성 - 멀리서 시작해서 줌인하는 효과
     const timeline = gsap.timeline({
       onComplete: () => {
         console.log('CameraController: Initial entry animation complete - full map view, starting rotation')
         setInitialEntry(false)
+        orbitSuspendedRef.current = false
+        syncOrbitFromCamera()
         // 초기 진입 후에도 카메라 회전 시작
         setIsFullMapRotating(true)
         initialEntryAnimationRef.current = null
@@ -146,6 +156,7 @@ function CameraController({ controlsRef }) {
       if (initialEntryAnimationRef.current) {
         initialEntryAnimationRef.current.kill()
       }
+      orbitSuspendedRef.current = false
     }
   }, [initialEntry, camera, controlsRef, setInitialEntry, setIsFullMapRotating, followPhysicsBox])
   
@@ -161,10 +172,13 @@ function CameraController({ controlsRef }) {
       console.log('CameraController: controlsRef not available')
       return
     }
-    
+
+    orbitSuspendedRef.current = true
+    setIsFullMapRotating(false)
+
     // Zone이 선택된 상태에서는 줌아웃 애니메이션 실행 후 업체 리스트 표시
     // (selectedZone 체크 제거 - Zone 클릭 시 줌아웃 후 리스트 표시)
-    
+
     console.log('CameraController: Resetting to full map view (keeping camera position)')
     
     // 기존 애니메이션 취소
@@ -183,9 +197,8 @@ function CameraController({ controlsRef }) {
     
     const controls = controlsRef.current
     
-    // 맵이 5배 확대되었으므로 줌도 5배에 맞게 조정 (더 작게 줌 아웃)
-    const initialZoom = 2.5  // 맵 전체가 보이도록 (줌인 강화)
-    
+    const initialZoom = FULL_MAP_ZOOM
+
     // 초기 카메라 위치와 타겟 (맵 중앙)
     const initialPosition = {
       x: 200,
@@ -206,6 +219,8 @@ function CameraController({ controlsRef }) {
         setResetToFullMap(false)
         // NavigationUI 클릭인 경우 마커 표시
         setMarkersVisible(true)
+        orbitSuspendedRef.current = false
+        syncOrbitFromCamera()
         // 맵 전체 보기 모드에서 카메라 회전 시작
         setIsFullMapRotating(true)
         resetAnimationRef.current = null
@@ -251,6 +266,7 @@ function CameraController({ controlsRef }) {
       if (resetAnimationRef.current) {
         resetAnimationRef.current.kill()
       }
+      orbitSuspendedRef.current = false
     }
   }, [resetToFullMap, camera, controlsRef, setResetToFullMap, clearCameraTarget, setMarkersVisible, setIsFullMapRotating, followPhysicsBox])
   
@@ -363,19 +379,76 @@ function CameraController({ controlsRef }) {
   
   // 맵 전체 보기 모드에서 카메라 회전 애니메이션
   const rotationAngleRef = useRef(0)
+  /** XZ 평면 궤도 반지름·높이 (줌인 종료 위치와 맞춤 — 회전 시작 시 각도 0 가정으로 인한 튐 방지) */
+  const orbitRadiusRef = useRef(Math.sqrt(200 * 200 + 200 * 200))
+  const orbitHeightRef = useRef(160)
   const rotationSpeed = 0.1 // 회전 속도 (라디안/초) - 더 천천히 회전
-  const isRotatingRef = useRef(false)
-  
-  // 회전 상태 동기화
-  useEffect(() => {
-    isRotatingRef.current = isFullMapRotating
-    if (isFullMapRotating) {
-      console.log('CameraController: Rotation started')
-    } else {
-      console.log('CameraController: Rotation stopped')
+  /** 휠로 쌓였다가 서서히 줄어드는 추가 배속 (같은 원 궤도 위에서만) */
+  const speedBoostRef = useRef(0)
+  const dragLastXRef = useRef(null)
+  const isOrbitDragRef = useRef(false)
+
+  /** 현재 카메라 위치에 맞춰 궤도 각·반지름·높이 동기화 */
+  const syncOrbitFromCamera = () => {
+    const x = camera.position.x
+    const z = camera.position.z
+    const r = Math.hypot(x, z)
+    if (r > 1e-4) {
+      orbitRadiusRef.current = r
+      rotationAngleRef.current = Math.atan2(z, x)
     }
-  }, [isFullMapRotating])
-  
+    orbitHeightRef.current = camera.position.y
+  }
+
+  // 자동 궤도 중: 휠·가로 드래그는 같은 원 위에서만 각속도/각도 조절 (OrbitControls는 CameraSystem에서 꺼짐)
+  useEffect(() => {
+    if (followPhysicsBox || !isFullMapRotating) return
+    const el = gl.domElement
+    const MAX_BOOST = 4
+    const BOOST_STEP = 0.28
+
+    const onWheel = (e) => {
+      if (!useMapStore.getState().isFullMapRotating) return
+      e.preventDefault()
+      speedBoostRef.current = THREE.MathUtils.clamp(
+        speedBoostRef.current - Math.sign(e.deltaY) * BOOST_STEP,
+        0,
+        MAX_BOOST
+      )
+    }
+    const onPointerDown = (e) => {
+      if (!useMapStore.getState().isFullMapRotating || e.button !== 0) return
+      isOrbitDragRef.current = true
+      dragLastXRef.current = e.clientX
+    }
+    const onPointerMove = (e) => {
+      if (!isOrbitDragRef.current || dragLastXRef.current == null) return
+      if (!useMapStore.getState().isFullMapRotating) return
+      const dx = e.clientX - dragLastXRef.current
+      dragLastXRef.current = e.clientX
+      rotationAngleRef.current += dx * 0.004
+    }
+    const endDrag = () => {
+      isOrbitDragRef.current = false
+      dragLastXRef.current = null
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('pointerdown', onPointerDown)
+    el.addEventListener('pointermove', onPointerMove)
+    el.addEventListener('pointerup', endDrag)
+    el.addEventListener('pointercancel', endDrag)
+    el.addEventListener('pointerleave', endDrag)
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('pointerdown', onPointerDown)
+      el.removeEventListener('pointermove', onPointerMove)
+      el.removeEventListener('pointerup', endDrag)
+      el.removeEventListener('pointercancel', endDrag)
+      el.removeEventListener('pointerleave', endDrag)
+    }
+  }, [followPhysicsBox, isFullMapRotating, gl])
+
   // 마커 클릭이나 Zone 선택 시 회전 중지
   useEffect(() => {
     if (cameraTarget || selectedZone) {
@@ -391,9 +464,12 @@ function CameraController({ controlsRef }) {
     if (followPhysicsBox) return
     
     if (!controlsRef?.current) return
-    
-    // 맵 전체 보기 모드가 아니거나 회전이 비활성화된 경우
-    if (!isRotatingRef.current) {
+
+    // GSAP로 카메라 이동 중에는 궤도 보간 비활성 (리셋·초기 진입과 충돌 방지)
+    if (orbitSuspendedRef.current) return
+
+    // useEffect 동기화(ref) 대신 매 프레임 스토어를 읽음 — 드래그/휠 직후에도 궤도가 한 박자 더 먹지 않음
+    if (!useMapStore.getState().isFullMapRotating) {
       return
     }
     
@@ -403,20 +479,20 @@ function CameraController({ controlsRef }) {
     }
     
     const controls = controlsRef.current
-    
-    // 회전 각도 업데이트
-    rotationAngleRef.current += rotationSpeed * delta
-    
-    // 맵 중심을 기준으로 원형 궤도 계산
-    // 현재 카메라 위치: [200, 160, 200] (아이소메트릭 뷰)
-    // 반지름 계산: sqrt(200^2 + 200^2) = 약 282.84
-    const radius = Math.sqrt(200 * 200 + 200 * 200)
-    const height = 160 // 고정 높이
-    
-    // 원형 궤도상의 위치 계산
+
+    const BOOST_DECAY = 1.8
+    speedBoostRef.current *= Math.exp(-BOOST_DECAY * delta)
+
+    // 회전 각도 업데이트 (휠로 쌓인 배속은 같은 원 궤도에서만 적용)
+    rotationAngleRef.current += rotationSpeed * (1 + speedBoostRef.current) * delta
+
+    const radius = orbitRadiusRef.current
+    const height = orbitHeightRef.current
+
+    // 원형 궤도상의 위치 계산 (XZ 평면, 맵 중심 origin 기준)
     const newX = radius * Math.cos(rotationAngleRef.current)
     const newZ = radius * Math.sin(rotationAngleRef.current)
-    
+
     // 카메라 위치 업데이트 (더 부드럽게 보간 - 흔들림 방지)
     const currentPos = state.camera.position
     const targetPos = new THREE.Vector3(newX, height, newZ)
