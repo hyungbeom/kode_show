@@ -1,0 +1,125 @@
+.object-detail-button {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  z-index: 1001;
+  pointer-events: auto;
+}
+
+.object-detail-card {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 320px;
+  overflow: hidden;
+}
+
+.object-detail-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.object-detail-category {
+  font-size: 11px;
+  font-weight: bold;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.object-detail-close {
+  background: transparent;
+  border: none;
+  color: #999;
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.object-detail-close:hover {
+  color: #333;
+  transform: scale(1.1);
+}
+
+.object-detail-content {
+  padding: 20px;
+}
+
+.object-detail-title {
+  margin-bottom: 12px;
+}
+
+.detail-title-gradient {
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #ff6b9d 0%, #ff8c42 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.detail-title-subtitle {
+  display: block;
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff6b9d;
+  line-height: 1.2;
+}
+
+.object-detail-preview {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #666;
+  margin-bottom: 16px;
+  min-height: 42px;
+}
+
+.object-detail-open-btn {
+  width: 100%;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ff8c42 0%, #ff6b9d 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
+}
+
+.object-detail-open-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 157, 0.4);
+}
+
+.object-detail-open-btn:active {
+  transform: translateY(0);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .object-detail-button {
+    right: 10px;
+  }
+  
+  .object-detail-card {
+    width: 280px;
+  }
+}

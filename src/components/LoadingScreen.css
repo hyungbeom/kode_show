@@ -1,0 +1,96 @@
+.loading-screen {
+  opacity: 0; /* 업체 클릭 후 로딩: 초기에는 숨김, 애니메이션으로 표시 */
+  width: 100vw;
+  height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.loading-screen.initial-loading {
+  opacity: 1; /* 초기 로딩: 바로 표시 */
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.loading-logo {
+  font-size: 72px;
+  font-weight: 700;
+  color: #1a1a2e;
+  letter-spacing: 4px;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.loading-subtitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ff1493;
+  letter-spacing: 2px;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.loading-circle {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-top: 40px;
+}
+
+.loading-circle-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.loading-circle-bg {
+  opacity: 0.2;
+}
+
+.loading-circle-progress {
+  transition: stroke-dashoffset 0.1s ease;
+}
+
+.loading-percentage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: 700;
+  color: #ff1493;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.loading-cookie {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+  max-width: 600px;
+  padding: 0 20px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.cookie-link {
+  color: #ff1493;
+  text-decoration: none;
+}
+
+.cookie-link:hover {
+  text-decoration: underline;
+}

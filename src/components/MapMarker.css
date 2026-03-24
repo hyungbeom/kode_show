@@ -1,0 +1,37 @@
+.map-marker {
+  background: #1a1a2e;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  user-select: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.map-marker:hover {
+  transform: scale(1.05);
+  background: #2a2a3e;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.marker-exclamation {
+  font-size: 14px;
+  color: #ff4444;
+  font-weight: bold;
+}
+
+.marker-text {
+  font-size: 12px;
+  font-weight: 700;
+}

@@ -1,0 +1,28 @@
+.sound-control {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  z-index: 1000;
+  color: #ffffff;
+}
+
+.sound-control:hover {
+  transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.sound-control svg {
+  width: 24px;
+  height: 24px;
+}
