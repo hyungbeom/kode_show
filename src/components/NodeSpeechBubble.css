@@ -1,0 +1,77 @@
+.node-speech-bubble {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+
+.node-speech-bubble__body {
+  position: relative;
+  background: #ffffff;
+  border-radius: 9999px;
+  padding: 11px 30px 11px 28px;
+  box-shadow: 0 4px 14px rgba(26, 39, 68, 0.12);
+}
+
+.node-speech-bubble__text {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: #1a2744;
+  white-space: pre-line;
+  text-align: center;
+  line-height: 1.25;
+  -webkit-text-stroke: 0.55px #1a2744;
+  paint-order: stroke fill;
+}
+
+.node-speech-bubble__badge {
+  position: absolute;
+  top: -10px;
+  right: -12px;
+  width: 28px;
+  height: 28px;
+  background: #ff4d8d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 17px;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.node-speech-bubble__tail {
+  width: 0;
+  height: 0;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-top: 13px solid #ffffff;
+  margin-top: -2px;
+  filter: drop-shadow(0 3px 4px rgba(26, 39, 68, 0.08));
+}
+
+/* 호버/강조 — 네이비 말풍선 + 흰 글씨 + 빨간 배지 */
+.node-speech-bubble--dark .node-speech-bubble__body {
+  background: #1a2744;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.node-speech-bubble--dark .node-speech-bubble__text {
+  color: #ffffff;
+  -webkit-text-stroke: 0;
+}
+
+.node-speech-bubble--dark .node-speech-bubble__tail {
+  border-top-color: #1a2744;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+.node-speech-bubble--dark .node-speech-bubble__badge {
+  background: #e53935;
+}
