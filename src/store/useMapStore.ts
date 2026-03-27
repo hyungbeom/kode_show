@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import * as THREE from 'three'
 
 /**
  * KODE Clubs 지도 상태 관리 스토어
@@ -105,12 +104,14 @@ export const useMapStore = create<MapStore>((set) => ({
     set({ initialEntry: value })
   },
   
-  // 구역 선택 함수
+  // 구역 선택 함수 (줌 완료 후 openPendingZone으로 패널 열림 — setSelectedZone과 동일하게 pendingZone 설정)
   selectArea: (areaId: string, position: [number, number, number]) => {
     set({
       selectedArea: areaId,
       cameraTarget: position,
-      markersVisible: false,  // 마커 클릭 시 마커 숨김
+      markersVisible: false,
+      pendingZone: areaId,
+      pendingZonePosition: position,
     })
   },
   

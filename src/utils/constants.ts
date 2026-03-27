@@ -20,13 +20,121 @@ export interface ZoneGlbFocus {
   glbNode: string
 }
 
+/** Zone id — 카메라 구도·스토어·LandHover에서 사용 */
+export const ZONE_ID_WATER = 'zone-water' as const
+export const ZONE_ID_AIR = 'zone-air' as const
+export const ZONE_ID_LAB = 'zone-lab' as const
+export const ZONE_ID_CARBON = 'zone-carbon' as const
+export const ZONE_ID_EARTH = 'zone-earth' as const
+export const ZONE_ID_INST = 'zone-inst' as const
+
+/** 구역 포커스 카메라 구도 (Orthographic: 오프셋 + 줌) */
+export interface ZoneCameraFraming {
+  offsetX: number
+  offsetY: number
+  offsetZ: number
+  targetZoom: number
+  duration: number
+  /**
+   * 카메라 위치와 look-at 타깃을 **같은 값만큼** 평행 이동 (시선 벡터 유지 → 회전 없이 화면만 팬).
+   * 수질관을 화면 왼쪽에 두려면 월드에서 리그를 오른쪽으로 옮기는 느낌으로 +X / +Z 등 조절.
+   */
+  cameraShiftX?: number
+  cameraShiftY?: number
+  cameraShiftZ?: number
+}
+
+/** 알 수 없는 zone id·폴백용 */
+export const ZONE_DEFAULT_CAMERA_FRAMING: ZoneCameraFraming = {
+  offsetX: 200,
+  offsetY: 160,
+  offsetZ: 200,
+  targetZoom: 10,
+  duration: 1.5,
+}
+
+/** 수질관 — offset: 아이소 거리 / cameraShift: 카메라+타깃 동시 팬(회전 없음) */
+export const ZONE_WATER_CAMERA_FRAMING: ZoneCameraFraming = {
+  offsetX: 0,
+  offsetY: 80,
+  offsetZ: 200,
+  targetZoom: 10,
+  duration: 1.5,
+  cameraShiftX: 48,
+  cameraShiftZ: 0,
+}
+
+/** 대기관 (기본값은 수질과 동일 출발 — 맵에 맞게 아래만 수정) */
+export const ZONE_AIR_CAMERA_FRAMING: ZoneCameraFraming = {
+  offsetX: 450,
+  offsetY: 80,
+  offsetZ: 200,
+  targetZoom: 10,
+  duration: 1.5,
+  cameraShiftX: -58,
+  cameraShiftZ: 30,
+}
+
+/** 측정분석 */
+export const ZONE_LAB_CAMERA_FRAMING: ZoneCameraFraming = {
+  offsetX: -150,
+  offsetY: 160,
+  offsetZ: 200,
+  targetZoom: 10,
+  duration: 1.5,
+  cameraShiftX: 30,
+  cameraShiftZ: 30,
+}
+
+/** 탄소중립 */
+export const ZONE_CARBON_CAMERA_FRAMING: ZoneCameraFraming = {
+  offsetX: 200,
+  offsetY: 160,
+  offsetZ: 200,
+  targetZoom: 10,
+  duration: 1.5,
+}
+
+/** 외국관 */
+export const ZONE_EARTH_CAMERA_FRAMING: ZoneCameraFraming = {
+  offsetX: 200,
+  offsetY: 160,
+  offsetZ: 200,
+  targetZoom: 10,
+  duration: 1.5,
+}
+
+/** 기관 및 홍보 */
+export const ZONE_INST_CAMERA_FRAMING: ZoneCameraFraming = {
+  offsetX: 200,
+  offsetY: 160,
+  offsetZ: 200,
+  targetZoom: 10,
+  duration: 1.5,
+}
+
+/** CameraController: zone id → 구도 (각 관은 여기서만 골라 씀) */
+export const ZONE_CAMERA_FRAMING_BY_ID: Record<string, ZoneCameraFraming> = {
+  [ZONE_ID_WATER]: ZONE_WATER_CAMERA_FRAMING,
+  [ZONE_ID_AIR]: ZONE_AIR_CAMERA_FRAMING,
+  [ZONE_ID_LAB]: ZONE_LAB_CAMERA_FRAMING,
+  [ZONE_ID_CARBON]: ZONE_CARBON_CAMERA_FRAMING,
+  [ZONE_ID_EARTH]: ZONE_EARTH_CAMERA_FRAMING,
+  [ZONE_ID_INST]: ZONE_INST_CAMERA_FRAMING,
+}
+
+export function getZoneCameraFraming(zoneId: string | null | undefined): ZoneCameraFraming {
+  if (!zoneId) return ZONE_DEFAULT_CAMERA_FRAMING
+  return ZONE_CAMERA_FRAMING_BY_ID[zoneId] ?? ZONE_DEFAULT_CAMERA_FRAMING
+}
+
 export const ZONE_GLB_FOCUS_LIST: ZoneGlbFocus[] = [
-  { id: 'zone-water', text: '수질관', glbNode: 'CH_Water' },
-  { id: 'zone-air', text: '대기관', glbNode: 'CH_Air' },
-  { id: 'zone-lab', text: '측정분석', glbNode: 'CH_Microscope' },
-  { id: 'zone-carbon', text: '탄소중립', glbNode: 'CH_Leaf_Body' },
-  { id: 'zone-earth', text: '외국관', glbNode: 'Earth' },
-  { id: 'zone-inst', text: '기관 및 홍보', glbNode: 'Institution_Builidng' },
+  { id: ZONE_ID_WATER, text: '수질관', glbNode: 'CH_Water' },
+  { id: ZONE_ID_AIR, text: '대기관', glbNode: 'CH_Air' },
+  { id: ZONE_ID_LAB, text: '측정분석', glbNode: 'CH_Microscope' },
+  { id: ZONE_ID_CARBON, text: '탄소중립', glbNode: 'CH_Leaf_Body' },
+  { id: ZONE_ID_EARTH, text: '외국관', glbNode: 'Earth' },
+  { id: ZONE_ID_INST, text: '기관 및 홍보', glbNode: 'Institution_Builidng' },
 ]
 
 // 애니메이션 기본값

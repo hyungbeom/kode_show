@@ -5,9 +5,11 @@
   overflow: hidden;
   /* Sky 배경 - 위로 갈수록 #CCFFCC, 아래로 갈수록 파란색 */
   background: linear-gradient(to bottom, #CCFFCC 0%, #B8E6CC 20%, #87CEEB 45%, #5F9EA0 70%, #4682B4 100%);
-  opacity: 0; /* 초기에는 숨김, 애니메이션으로 표시 */
+  /* 기본은 표시. /map 직접 진입·홈 DOM 미스 등 GSAP 미실행 경로에서 맵이 전부 안 보이는 문제 방지 */
+  opacity: 1;
 }
 
+/* 홈→맵 등 전환 중에만 숨김 — 이후 GSAP가 opacity를 0→1로 덮어씀 */
 .app-container.transitioning {
   opacity: 0;
 }

@@ -1,12 +1,13 @@
 /*
 world.glb 맵 모델
 - 씬 전체를 primitive로 로드해 Blender 원점/위치/변환 유지
-- Gear_A ~ Gear_G — rotateY / Air_Fan_A·B_propeller — rotateY 2배속 / Wing, Wing001, Wing002 — rotateZ
+- Gear_A ~ Gear_G, Mill_Wing — rotateY / Air_Fan_A·B_propeller — rotateY 2배속 / Wing, Wing001, Wing002 — rotateZ / Earth — rotateY (지구본)
 - Air_tower, Air_tower001 연기 파티클 (타워 AABB에 비례한 크기)
 - Air_Fan_A/B_propeller — SakuraWind (캡슐 바람결 + 원형 꽃잎)
 - Airplane — 맵 상공 궤도 애니메이션 (AirplaneFlight, 키 입력 없음)
 - 구역별 LandHover: *_Land 합 히트, 말풍선은 CH_* / Earth / Institution_Builidng 등 마커 노드 위
 - Carbon_Land+CH_Leaf_Body — 말풍선은 CH_Leaf_Body·CARBON NATURAL
+- NeonScreen — world.glb의 cube001 앵커 + screen.glb 지오 + /neon.png (WorldModel에서 마운트 필요)
 */
 
 import React, { useMemo, memo, useLayoutEffect, useRef, useEffect } from 'react'
@@ -17,12 +18,25 @@ import { useMapStore } from '../store/useMapStore'
 import { SakuraWind } from './SakuraWind'
 import { AirplaneFlight } from './AirplaneFlight'
 import { LandHover } from './LandHover'
+import { NeonScreen } from './NeonScreen'
+import { resolveSceneNode } from '../utils/gltfNodeUtils'
+import {
+  ZONE_ID_AIR,
+  ZONE_ID_CARBON,
+  ZONE_ID_EARTH,
+  ZONE_ID_INST,
+  ZONE_ID_LAB,
+  ZONE_ID_WATER,
+} from '../utils/constants'
 
-const SPIN_Y_GEARS = ['Gear_A', 'Gear_B', 'Gear_C', 'Gear_D', 'Gear_E', 'Gear_F', 'Gear_G']
+/** Mill_Wing는 GLB 키가 \\u0008Mill_Wing 일 수 있으므로 루프에서 resolveSceneNode 사용 */
+const SPIN_Y_GEARS = ['Gear_A', 'Gear_B', 'Gear_C', 'Gear_D', 'Gear_E', 'Gear_F', 'Gear_G', 'Mill_Wing']
 const SPIN_Y_FANS = ['Air_Fan_A_propeller', 'Air_Fan_B_propeller']
 const WING_SPIN_Z_NODES = ['Wing', 'Wing001', 'Wing002']
 const ROTATION_SPEED = 2 // rad/s
 const FAN_ROTATION_MULTIPLIER = 2 // 프로펠러는 톱니 대비 이 배속
+/** 외국관 Earth 지구본 Y축 회전 */
+const EARTH_ROTATION_SPEED = 1.1 // rad/s
 
 /** SakuraWind: 자동 추정 축에 대한 월드 Yaw / 수평 Pitch 보정 (맵·팬 배치에 맞춤) */
 const SAKURA_WIND_DIR_YAW_DEG = 44.5
@@ -188,7 +202,7 @@ export const WorldModel = memo(function WorldModel(props) {
     const angleGear = delta * ROTATION_SPEED
     const angleFan = angleGear * FAN_ROTATION_MULTIPLIER
     SPIN_Y_GEARS.forEach((name) => {
-      const node = nodes[name]
+      const node = resolveSceneNode(nodes, name)
       if (node) node.rotateY(angleGear)
     })
     SPIN_Y_FANS.forEach((name) => {
@@ -196,13 +210,16 @@ export const WorldModel = memo(function WorldModel(props) {
       if (node) node.rotateY(angleFan)
     })
     WING_SPIN_Z_NODES.forEach((name) => {
-      const node = nodes[name]
+      const node = resolveSceneNode(nodes, name)
       if (node) node.rotateZ(angleGear)
     })
+    const earth = resolveSceneNode(nodes, 'Earth')
+    if (earth) earth.rotateY(delta * EARTH_ROTATION_SPEED)
   })
   return (
     <>
       <primitive object={clonedScene} {...props} />
+      <NeonScreen nodes={nodes} />
       <SakuraWind
         fan={nodes.Air_Fan_A_propeller}
         clonedScene={clonedScene}
@@ -227,6 +244,8 @@ export const WorldModel = memo(function WorldModel(props) {
           speechAnchor={nodes.CH_Water || nodes.Water_Quality_Land}
           clonedScene={clonedScene}
           label="WATER"
+          zoneId={ZONE_ID_WATER}
+          glbNode="CH_Water"
         />
       ) : null}
       {nodes.Carbon_Land || nodes.CH_Leaf_Body ? (
@@ -235,6 +254,8 @@ export const WorldModel = memo(function WorldModel(props) {
           speechAnchor={nodes.CH_Leaf_Body || nodes.Carbon_Land}
           clonedScene={clonedScene}
           label="CARBON NATURAL"
+          zoneId={ZONE_ID_CARBON}
+          glbNode="CH_Leaf_Body"
         />
       ) : null}
       {nodes.Measurement_Land || nodes.CH_Microscope ? (
@@ -243,6 +264,8 @@ export const WorldModel = memo(function WorldModel(props) {
           speechAnchor={nodes.CH_Microscope || nodes.Measurement_Land}
           clonedScene={clonedScene}
           label={'Measurement &\nAnalysis'}
+          zoneId={ZONE_ID_LAB}
+          glbNode="CH_Microscope"
         />
       ) : null}
       {nodes.Foreign_Land || nodes.Earth ? (
@@ -251,6 +274,8 @@ export const WorldModel = memo(function WorldModel(props) {
           speechAnchor={nodes.Earth || nodes.Foreign_Land}
           clonedScene={clonedScene}
           label="OVERSEAS"
+          zoneId={ZONE_ID_EARTH}
+          glbNode="Earth"
         />
       ) : null}
       {nodes.Air_Land || nodes.CH_Air ? (
@@ -259,6 +284,8 @@ export const WorldModel = memo(function WorldModel(props) {
           speechAnchor={nodes.CH_Air || nodes.Air_Land}
           clonedScene={clonedScene}
           label="AIR"
+          zoneId={ZONE_ID_AIR}
+          glbNode="CH_Air"
         />
       ) : null}
       {nodes.Institution_Land || nodes.Institution_Builidng || nodes.Institution_Building ? (
@@ -272,6 +299,8 @@ export const WorldModel = memo(function WorldModel(props) {
           }
           clonedScene={clonedScene}
           label={'Associations &\nOrganizations'}
+          zoneId={ZONE_ID_INST}
+          glbNode="Institution_Builidng"
         />
       ) : null}
     </>

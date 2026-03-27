@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react'
 import { gsap } from 'gsap'
 import LoadingScreen from './components/LoadingScreen'
 import HomePage from './components/HomePage'
@@ -7,6 +7,8 @@ import SoundControl from './components/SoundControl'
 import NavigationUI from './components/NavigationUI'
 import ZoneList from './components/ZoneList'
 import { useAppMapStore } from './hooks/useMapStore'
+import { useMapStore } from './store/useMapStore'
+import { COMPANY_NAMES } from './utils/constants'
 import './App.css'
 
 // Lazy loading for heavy components
@@ -27,6 +29,7 @@ function App() {
   const [currentView, setCurrentView] = useState<View>('loading')
   const [showLoading, setShowLoading] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const mapContainerRef = useRef<HTMLDivElement>(null)
   
   // 최적화된 Zustand 셀렉터 사용 (한 번에 여러 값 선택)
   const {
@@ -39,22 +42,14 @@ function App() {
     clearSelectedZone,
   } = useAppMapStore()
   
-  // 업체 이름 매핑 - useMemo로 메모이제이션
-  const companyNames = useMemo<Record<number, string>>(() => ({
-    1: 'GreenFi',
-    2: 'Aven',
-    3: 'TechCorp',
-    4: 'DesignStudio',
-    5: 'DataLab',
-  }), [])
-  
   // URL 체크 함수 - useCallback으로 메모이제이션
   const checkUrl = useCallback(() => {
     const path = window.location.pathname
-    if (path.startsWith('/room/')) {
-      const companyId = parseInt(path.split('/room/')[1])
-      if (companyId && companyNames[companyId]) {
-        setSelectedCompany(companyId, companyNames[companyId])
+    const roomMatch = path.match(/^\/room\/(\d+)/)
+    if (roomMatch) {
+      const companyId = parseInt(roomMatch[1], 10)
+      if (companyId && COMPANY_NAMES[companyId]) {
+        setSelectedCompany(companyId, COMPANY_NAMES[companyId])
         setCurrentView('loading')
         setShowLoading(true)
         
@@ -77,7 +72,7 @@ function App() {
     } else if (path === '/map') {
       setCurrentView('map')
     }
-  }, [companyNames, setSelectedCompany])
+  }, [setSelectedCompany])
   
   // URL에서 초기 상태 읽기 (새로고침 시 방 유지)
   useEffect(() => {
@@ -87,6 +82,14 @@ function App() {
     window.addEventListener('popstate', checkUrl)
     return () => window.removeEventListener('popstate', checkUrl)
   }, [checkUrl])
+
+  // 전환 플래그가 꺼진 뒤에도 GSAP이 남긴 opacity:0이 있으면 맵·UI 전체가 안 보임 → 인라인만 제거해 CSS(또는 정상 값)로 복구
+  useEffect(() => {
+    if (currentView !== 'map' || isTransitioning) return
+    const el = mapContainerRef.current
+    if (!el) return
+    el.style.removeProperty('opacity')
+  }, [currentView, isTransitioning])
   
   // 업체 선택 시 로딩 화면 표시 (페이드 애니메이션 포함)
   useEffect(() => {
@@ -128,11 +131,26 @@ function App() {
     }
   }, [selectedCompanyId, currentView])
   
-  // 로딩 완료 핸들러 - useCallback으로 메모이제이션
+  // 로딩 완료 핸들러 — 클로저의 selectedCompanyId 대신 URL + getState()로 동기화(새로고침 /room/:id 안정화)
   const handleLoadingComplete = useCallback(() => {
-    if (showLoading && selectedCompanyId) {
+    const path = typeof window !== 'undefined' ? window.location.pathname : ''
+    const roomMatch = path.match(/^\/room\/(\d+)/)
+    if (roomMatch) {
+      const id = parseInt(roomMatch[1], 10)
+      if (id && COMPANY_NAMES[id]) {
+        useMapStore.getState().setSelectedCompany(id, COMPANY_NAMES[id])
+      }
+    }
+
+    const companyId = useMapStore.getState().selectedCompanyId
+    const isValidRoom =
+      path.startsWith('/room/') &&
+      companyId != null &&
+      COMPANY_NAMES[companyId] !== undefined
+
+    if (isValidRoom && showLoading) {
       setIsTransitioning(true)
-      
+
       const loadingElement = document.querySelector('.loading-screen')
       if (loadingElement) {
         gsap.to(loadingElement, {
@@ -142,7 +160,7 @@ function App() {
           onComplete: () => {
             setCurrentView('room')
             setShowLoading(false)
-            
+
             setTimeout(() => {
               const roomElement = document.querySelector('[data-room-scene]')
               if (roomElement) {
@@ -169,10 +187,14 @@ function App() {
         setShowLoading(false)
         setIsTransitioning(false)
       }
+    } else if (isValidRoom && !showLoading) {
+      setCurrentView('room')
+      setShowLoading(false)
+      setIsTransitioning(false)
     } else {
       setCurrentView('home')
     }
-  }, [showLoading, selectedCompanyId])
+  }, [showLoading])
   
   // Enter 핸들러 - useCallback으로 메모이제이션
   const handleEnter = useCallback(() => {
@@ -294,7 +316,10 @@ function App() {
   
   // 지도 화면
   return (
-    <div className={`app-container ${isTransitioning ? 'transitioning' : ''}`}>
+    <div
+      ref={mapContainerRef}
+      className={`app-container ${isTransitioning ? 'transitioning' : ''}`}
+    >
       <Suspense fallback={<div>Loading map...</div>}>
         {/* 3D 지도 씬 */}
         <MapScene />

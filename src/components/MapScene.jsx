@@ -204,7 +204,6 @@ const MapScene = memo(function MapScene() {
             zIndex: 1000,
           }}
         >
-          <EcctrlJoystick />
         </div>
       )}
     </div>

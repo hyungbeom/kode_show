@@ -1,5 +1,10 @@
 import { Canvas, useFrame } from '@react-three/fiber'
 import { PerspectiveCamera, OrbitControls, Environment, Sky as SkyImpl, Outlines, useGLTF, Lightformer, Grid } from '@react-three/drei'
+import {
+  A11yAnnouncer,
+  A11yUserPreferences,
+  useUserPreferences,
+} from '@react-three/a11y'
 import { Suspense, useRef, useEffect, useState, memo, createContext, useContext, useCallback, useMemo } from 'react'
 import { Box } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
@@ -8,15 +13,38 @@ import * as THREE from 'three'
 import ObjectInfoPanel from './ObjectInfoPanel'
 import ObjectViewer from './ObjectViewer'
 import ObjectDetailButton from './ObjectDetailButton'
+import ProductCarousel from './ProductCarousel'
+import ProductDetailPanel from './ProductDetailPanel'
+
+/** `false`면 show_room2 부스 + 박스 전시물 비표시 — 제품 캐러셀만 사용 */
+const SHOW_LEGACY_BOOTH_AND_EXHIBITS = false
 
 /**
  * 방 씬 컴포넌트
  * 업체 클릭 시 표시되는 3D 방
+ *
+ * @react-three/a11y: A11yUserPreferences + A11yAnnouncer + 선호도 HUD.
+ * 주의: 라이브러리의 <A11y>/<A11ySection> 은 내부 Html(createRoot)가 React 18/19 Strict Mode에서
+ * 언마운트 후 render를 호출해 크래시가 납니다. 전시 오브젝트는 HoverableObject만 쓰고,
+ * 구역 안내는 Canvas 밖 스크린리더 전용 div로 제공합니다.
  */
-const RoomScene = memo(function RoomScene({ companyName, onBack }) {
+const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
   const resetCameraRef = useRef(null)
   const [selectedObject, setSelectedObject] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  /** 제품 GLB 클릭 시 오른쪽 패널 + 캐러셀 상세 동기화 */
+  const [productDetail, setProductDetail] = useState(null)
+  const { a11yPrefersState } = useUserPreferences()
+  const prefersDark = a11yPrefersState.prefersDarkScheme
+  const prefersReducedMotion = a11yPrefersState.prefersReducedMotion
+
+  const sceneBackgroundGradient = useMemo(
+    () =>
+      prefersDark
+        ? 'linear-gradient(to bottom, #0d1117 0%, #161b22 35%, #21262d 70%, #30363d 100%)'
+        : 'linear-gradient(to bottom, #CCFFCC 0%, #B8E6CC 20%, #87CEEB 45%, #5F9EA0 70%, #4682B4 100%)',
+    [prefersDark]
+  )
   
   // 객체 정보 데이터 (예시) - useMemo로 메모이제이션하여 불필요한 재생성 방지
   const objectInfoMap = useMemo(() => ({
@@ -225,9 +253,40 @@ const RoomScene = memo(function RoomScene({ companyName, onBack }) {
       ]
     },
   }), []) // 빈 의존성 배열로 한 번만 생성
-  
+
+  /** 조건부 JSX 안에서 훅을 쓰면 productDetail 등으로 분기 시 훅 개수가 달라져 크래시 남 */
+  const objectInfoForPanel = useMemo(
+    () => (selectedObject ? { ...objectInfoMap[selectedObject], id: selectedObject } : null),
+    [selectedObject, objectInfoMap]
+  )
+  const handleRoomObjectClick = useCallback((objectId) => {
+    setSelectedObject(objectId)
+  }, [])
+  const handleCloseObjectInfo = useCallback(() => setSelectedObject(null), [])
+  const handleOpenObjectModal = useCallback(() => setShowModal(true), [])
+  const handleCloseObjectModal = useCallback(() => {
+    setShowModal(false)
+  }, [])
+
+  /** 전체보기: 제품 확대/정보창·레거시 객체 패널·모달 해제 후 카메라 초기화 → 캐러셀 전체 뷰 */
+  const handleViewAll = useCallback(() => {
+    setProductDetail(null)
+    setSelectedObject(null)
+    setShowModal(false)
+    resetCameraRef.current?.()
+  }, [])
+
   return (
-    <div data-room-scene style={{ width: '100%', height: '100vh', position: 'relative', opacity: 0, background: 'linear-gradient(to bottom, #CCFFCC 0%, #B8E6CC 20%, #87CEEB 45%, #5F9EA0 70%, #4682B4 100%)' }}>
+    <div
+      data-room-scene
+      style={{
+        width: '100%',
+        height: '100vh',
+        position: 'relative',
+        opacity: 0,
+        background: sceneBackgroundGradient,
+      }}
+    >
       {/* 뒤로가기 버튼 */}
       <button
         onClick={onBack}
@@ -268,9 +327,11 @@ const RoomScene = memo(function RoomScene({ companyName, onBack }) {
         {companyName}
       </div>
       
-      {/* 전체보기 버튼 */}
+      {/* 전체보기 버튼 — 캐러셀·그리드 전체가 보이는 초기 시점으로 */}
       <button
-        onClick={() => resetCameraRef.current?.()}
+        type="button"
+        onClick={handleViewAll}
+        aria-label="전체 보기 — 제품 상세를 닫고 캐러셀 뷰로"
         style={{
           position: 'absolute',
           bottom: '30px',
@@ -285,7 +346,7 @@ const RoomScene = memo(function RoomScene({ companyName, onBack }) {
           cursor: 'pointer',
           fontSize: '16px',
           fontWeight: 'bold',
-          transition: 'all 0.2s',
+          transition: prefersReducedMotion ? 'none' : 'all 0.2s',
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)'
@@ -296,31 +357,50 @@ const RoomScene = memo(function RoomScene({ companyName, onBack }) {
       >
         전체보기
       </button>
-      
+
+      <RoomA11yPlaygroundHud />
+
+      <div
+        role="region"
+        aria-label="전시 부스 3D 뷰"
+        style={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
+        3D 전시 공간입니다. 마우스로 전시 물체를 클릭하면 카메라가 이동하고 정보를 볼 수 있습니다. 왼쪽
+        아래 패널에서 다크 모드·모션 감소 선호를 바꿀 수 있습니다.
+      </div>
+
+      {/* 캔버스는 항상 전체 화면 — 제품 정보창은 fixed 오버레이 */}
       <Canvas
         shadows
         style={{ width: '100%', height: '100%', display: 'block', position: 'absolute', top: 0, left: 0 }}
         gl={{ antialias: true, alpha: true, premultipliedAlpha: false }}
         dpr={[1, 2]}
         onCreated={({ gl, scene }) => {
-          // 배경을 완전히 투명하게 설정하여 div의 그라데이션이 보이도록
           gl.setClearColor(0x000000, 0)
           scene.background = null
-          // 매 프레임마다 배경을 투명하게 유지
           gl.clearColor(0, 0, 0, 0)
         }}
       >
-        <CameraControlProvider resetCameraRef={resetCameraRef}>
-          <Suspense fallback={null}>
-            {/* 배경을 투명하게 설정하여 div의 그라데이션이 보이도록 */}
-            <BackgroundKeeper />
+          <CameraControlProvider resetCameraRef={resetCameraRef}>
+            <Suspense fallback={null}>
+                {/* 배경을 투명하게 설정하여 div의 그라데이션이 보이도록 */}
+                <BackgroundKeeper />
             
             {/* 카메라 설정 - PerspectiveCamera로 원근감 있는 아이소메트릭 뷰 */}
             <CameraSetup />
             
-            {/* 조명 - 그림자가 잘 보이도록 강화 */}
-          {/* 환경맵 - 리얼한 반사와 조명 */}
-          <Environment preset="sunset">
+            {/* 조명 - 그림자가 잘 보이도록 강화 (선호 다크 모드 시 환경·환경광 적응) */}
+          <AdaptiveEnvironment>
             <Lightformer
               form="rect"
               intensity={1}
@@ -328,25 +408,24 @@ const RoomScene = memo(function RoomScene({ companyName, onBack }) {
               scale={[10, 5]}
               target={[0, 0, 0]}
             />
-          </Environment>
+          </AdaptiveEnvironment>
           
-          {/* 바닥 그리드 */}
+          {/* 바닥 그리드 — 촘촘한 셀 + 굵은 선은 sectionSize 간격 */}
           <Grid
             renderOrder={-1}
             position={[0, 0, 0]}
             infiniteGrid
-            cellSize={1}
-            cellThickness={0.5}
-            cellColor="#888888"
-            sectionSize={5}
-            sectionThickness={1}
-            sectionColor="#666666"
-            fadeDistance={30}
-            fadeStrength={1}
+            cellSize={0.45}
+            cellThickness={0.65}
+            cellColor="#c8ccd8"
+            sectionSize={2.25}
+            sectionThickness={1.25}
+            sectionColor="#9ca8bc"
+            fadeDistance={48}
+            fadeStrength={0.85}
           />
           
-          {/* 기본 환경 조명 - 그림자가 잘 보이도록 낮게 설정 */}
-          <ambientLight intensity={0.3} />
+          <AdaptiveAmbient />
           
           {/* 메인 태양광 (사선으로 비추는 빛) - 그림자 생성 */}
           <directionalLight
@@ -411,47 +490,154 @@ const RoomScene = memo(function RoomScene({ companyName, onBack }) {
             decay={1.5}
           />
           
-          {/* 방 구조 */}
-          <RoomContent 
-            onObjectClick={useCallback((objectId) => {
-              setSelectedObject(objectId)
-              // 클릭 시 정보 패널만 표시 (모달은 제품 상세보기 버튼 클릭 시 표시)
-            }, [])} 
-            skipCameraAnimation={false} 
-          />
-          
-          {/* 오빗 컨트롤 */}
-          <OrbitControlsWrapper />
-          </Suspense>
-        </CameraControlProvider>
+                {/* 방 구조 (부스·전시 박스) — SHOW_LEGACY_BOOTH_AND_EXHIBITS 가 true 일 때만 */}
+                <RoomContent
+                  onObjectClick={handleRoomObjectClick}
+                  skipCameraAnimation={false}
+                />
+
+                {/* 제품 GLB 캐러셀 (public/product/product1~5.glb) — 좌우 다이아몬드로 회전 */}
+                <Suspense fallback={null}>
+                  <ProductCarousel
+                    position={[0, 4, 0]}
+                    showLightToggle={false}
+                    openDetailIndex={productDetail?.index ?? null}
+                    onProductSelect={setProductDetail}
+                  />
+                </Suspense>
+
+                {/* 오빗 컨트롤 */}
+                <OrbitControlsWrapper />
+            </Suspense>
+          </CameraControlProvider>
       </Canvas>
-      
-      {/* 객체 정보 패널 (오른쪽) - 객체 클릭 시 바로 표시, 모달 열리면 숨김 */}
-      {!showModal && (
+
+      <A11yAnnouncer />
+
+      {/* 제품 상세 정보창 — 캔버스 위 오른쪽 고정 (전체 화면 GLB + UI 동시 노출) */}
+      <ProductDetailPanel product={productDetail} onClose={() => setProductDetail(null)} />
+
+      {/* 객체 정보 패널 (오른쪽) - 객체 클릭 시 바로 표시, 모달·제품 상세 열리면 숨김 */}
+      {!showModal && !productDetail && (
         <ObjectInfoPanel
-          objectInfo={useMemo(() => selectedObject ? { ...objectInfoMap[selectedObject], id: selectedObject } : null, [selectedObject, objectInfoMap])}
-          onClose={useCallback(() => setSelectedObject(null), [])}
-          onOpenModal={useCallback(() => setShowModal(true), [])}
+          objectInfo={objectInfoForPanel}
+          onClose={handleCloseObjectInfo}
+          onOpenModal={handleOpenObjectModal}
         />
       )}
-      
+
       {/* 객체 뷰어 (중앙) - 제품 상세보기 버튼 클릭 시 표시 */}
       {showModal && (
-        <ObjectViewer
-          objectInfo={useMemo(() => selectedObject ? { ...objectInfoMap[selectedObject], id: selectedObject } : null, [selectedObject, objectInfoMap])}
-          onClose={useCallback(() => {
-            setShowModal(false)
-            // 모달 닫으면 정보 패널도 다시 표시
-          }, [])}
-        />
+        <ObjectViewer objectInfo={objectInfoForPanel} onClose={handleCloseObjectModal} />
       )}
     </div>
   )
 })
 
-RoomScene.displayName = 'RoomScene'
+RoomSceneInner.displayName = 'RoomScene'
+
+/** 공식 데모와 같이 Provider 를 Canvas 상위에 둠 → Announcer·선호도 HUD·씬이 동일 컨텍스트 */
+function RoomScene(props) {
+  return (
+    <A11yUserPreferences>
+      <RoomSceneInner {...props} />
+    </A11yUserPreferences>
+  )
+}
 
 export default RoomScene
+
+/** prefers-color-scheme / 수동 토글에 맞춰 Environment 프리셋 전환 */
+function AdaptiveEnvironment({ children }) {
+  const { a11yPrefersState } = useUserPreferences()
+  const dark = a11yPrefersState.prefersDarkScheme
+  return (
+    <Environment preset={dark ? 'night' : 'sunset'} key={dark ? 'env-night' : 'env-sunset'}>
+      {children}
+    </Environment>
+  )
+}
+
+function AdaptiveAmbient() {
+  const { a11yPrefersState } = useUserPreferences()
+  const dark = a11yPrefersState.prefersDarkScheme
+  return <ambientLight intensity={dark ? 0.12 : 0.3} />
+}
+
+/**
+ * 공식 A11yDebuger 와 같은 역할의 안정적인 HUD (체크박스로 선호도 시뮬레이션)
+ * @see https://n4rzi.csb.app
+ */
+function RoomA11yPlaygroundHud() {
+  const { a11yPrefersState, setA11yPrefersState } = useUserPreferences()
+  const [dark, setDark] = useState(a11yPrefersState.prefersDarkScheme)
+  const [reducedMotion, setReducedMotion] = useState(a11yPrefersState.prefersReducedMotion)
+
+  useEffect(() => {
+    setDark(a11yPrefersState.prefersDarkScheme)
+    setReducedMotion(a11yPrefersState.prefersReducedMotion)
+  }, [a11yPrefersState.prefersDarkScheme, a11yPrefersState.prefersReducedMotion])
+
+  return (
+    <div
+      className="room-a11y-hud"
+      style={{
+        position: 'absolute',
+        bottom: '16px',
+        left: '16px',
+        zIndex: 1002,
+        maxWidth: 'min(92vw, 320px)',
+        padding: '12px 14px',
+        borderRadius: '12px',
+        background: 'rgba(15, 23, 42, 0.88)',
+        color: '#e2e8f0',
+        fontSize: '13px',
+        lineHeight: 1.45,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+        fontFamily: 'system-ui, sans-serif',
+      }}
+      aria-label="접근성 선호 설정 (React Three A11y 데모와 동일 패턴)"
+    >
+      <div style={{ fontWeight: 700, marginBottom: '8px', color: '#fff' }}>A11y 선호 (데모)</div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '6px' }}>
+        <input
+          type="checkbox"
+          checked={dark}
+          onChange={(e) => {
+            const v = e.target.checked
+            setDark(v)
+            setA11yPrefersState({
+              prefersDarkScheme: v,
+              prefersReducedMotion: reducedMotion,
+            })
+          }}
+        />
+        Prefer dark mode
+      </label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '10px' }}>
+        <input
+          type="checkbox"
+          checked={reducedMotion}
+          onChange={(e) => {
+            const v = e.target.checked
+            setReducedMotion(v)
+            setA11yPrefersState({
+              prefersDarkScheme: dark,
+              prefersReducedMotion: v,
+            })
+          }}
+        />
+        Prefer reduced motion
+      </label>
+      <p style={{ margin: 0, opacity: 0.85, fontSize: '12px' }}>
+        Tab으로 3D 객체 포커스 · Enter로 활성화. 공식 Playground:{' '}
+        <a href="https://n4rzi.csb.app" target="_blank" rel="noopener noreferrer" style={{ color: '#93c5fd' }}>
+          n4rzi.csb.app
+        </a>
+      </p>
+    </div>
+  )
+}
 
 /**
  * 배경을 투명하게 유지하는 컴포넌트
@@ -488,11 +674,8 @@ function BackgroundKeeper() {
 
 /**
  * 카메라 설정 컴포넌트
- * 이미지 참고: 낮은 위치에서 방의 코너를 바라보는 각도
- * - 카메라가 바닥에서 약간 위에 위치
- * - 방의 코너를 바라봄 (왼쪽 벽은 정면, 오른쪽 벽은 옆으로)
- * - 바닥면이 적당히 보이지만 많이 보이지는 않음
- * - 원근이 심하지 않음
+ * 캐러셀 룸: X=0 정면(+Z)에서 타겟을 보면 링·그리드가 화면 기준 좌우 대칭에 가깝다.
+ * (대각선 (x,z)=(d,d) 배치는 시야가 돌아간 듯 보이고 그리드 소실점이 한쪽으로 쏠린다.)
  */
 /**
  * 카메라 설정 컴포넌트 (메모이제이션됨)
@@ -507,9 +690,9 @@ const CameraSetup = memo(function CameraSetup() {
   const calculateCameraSettings = (currentSize) => {
     const targetSize = currentSize || size
     if (!targetSize || targetSize.width === 0 || targetSize.height === 0) {
-      // 초기값 (기본 해상도 기준) - 더 멀리 줌아웃
+      // 정면 뷰(X=0): 캐러셀·그리드 좌우 대칭 (대각선 (d,h,d)는 화면이 한쪽으로 돌아간 느낌)
       return {
-        position: [11, 4.0, 11],  // 카메라 높이 증가 (2.0 -> 4.0)
+        position: [0, 4.0, 15.5],
         lookAt: [0, 3, 0],
         fov: 32
       }
@@ -518,16 +701,16 @@ const CameraSetup = memo(function CameraSetup() {
     // 방의 크기: 10x10x6 (width x depth x height)
     const roomSize = 10
     const roomHeight = 6
+    const lookAtY = roomHeight * 0.5
     
     // 부스 전체를 보기 위한 최소 거리 계산
     const diagonal = Math.sqrt(roomSize * roomSize + roomSize * roomSize)
     const minDistance = diagonal * 1.3 + roomHeight * 0.7
     
-    // 아이소메트릭 각도: 바닥에서 조금 더 위에서 촬영하는 각도
+    // 정면(+Z) 배치: 이전 (d,d) 대각선과 비슷한 시점 거리를 유지하려면 Z ≈ 0.7 * minDistance * √2
     const cameraDistance = minDistance
-    const cameraHeight = 4.0  // 바닥에서 더 위로 (2.0 -> 4.0)
-    const cameraX = cameraDistance * 0.7
-    const cameraZ = cameraDistance * 0.7
+    const cameraHeight = 4.0
+    const cameraZ = cameraDistance * 0.7 * Math.SQRT2
     
     // FOV 계산
     const baseFOV = 32
@@ -537,8 +720,8 @@ const CameraSetup = memo(function CameraSetup() {
     const fov = baseFOV * fovMultiplier
     
     return {
-      position: [cameraX, cameraHeight, cameraZ],
-      lookAt: [0, roomHeight * 0.5, 0],
+      position: [0, cameraHeight, cameraZ],
+      lookAt: [0, lookAtY, 0],
       fov: Math.min(Math.max(fov, 30), 42)
     }
   }
@@ -598,20 +781,22 @@ const CameraControlContext = createContext(null)
 // 마우스로 직접 카메라 조작 비활성화 (객체 클릭 시에만 카메라 이동)
 const OrbitControlsWrapper = memo(function OrbitControlsWrapper() {
   const { controlsRef } = useContext(CameraControlContext) || {}
-  
+  const { a11yPrefersState } = useUserPreferences()
+  const reduceMotion = a11yPrefersState.prefersReducedMotion
+
   return (
     <OrbitControls
       ref={controlsRef}
       enablePan={false}
       enableRotate={false}
       enableZoom={false}
-      target={[0, 3.5, 0]}
+      target={[0, 3, 0]}
       minDistance={5}
       maxDistance={50}
       minPolarAngle={0}
       maxPolarAngle={Math.PI}
-      enableDamping={true}
-      dampingFactor={0.05}
+      enableDamping={!reduceMotion}
+      dampingFactor={reduceMotion ? 1 : 0.05}
     />
   )
 })
@@ -637,7 +822,7 @@ function CameraControlProvider({ children, resetCameraRef }) {
     const calculateInitialSettings = () => {
       if (!size || size.width === 0 || size.height === 0) {
         return {
-          position: [11, 4.0, 11],  // 카메라 높이 증가 (2.0 -> 4.0)
+          position: [0, 4.0, 15.5],
           lookAt: [0, 3, 0],
           fov: 32
         }
@@ -645,12 +830,12 @@ function CameraControlProvider({ children, resetCameraRef }) {
       
       const roomSize = 10
       const roomHeight = 6
+      const lookAtY = roomHeight * 0.5
       const diagonal = Math.sqrt(roomSize * roomSize + roomSize * roomSize)
       const minDistance = diagonal * 1.3 + roomHeight * 0.7
       const cameraDistance = minDistance
-      const cameraHeight = 4.0  // 바닥에서 더 위로 (2.0 -> 4.0)
-      const cameraX = cameraDistance * 0.7
-      const cameraZ = cameraDistance * 0.7
+      const cameraHeight = 4.0
+      const cameraZ = cameraDistance * 0.7 * Math.SQRT2
       
       const baseFOV = 32
       const screenArea = size.width * size.height
@@ -659,8 +844,8 @@ function CameraControlProvider({ children, resetCameraRef }) {
       const fov = baseFOV * fovMultiplier
       
       return {
-        position: [cameraX, cameraHeight, cameraZ],
-        lookAt: [0, roomHeight * 0.5, 0],
+        position: [0, cameraHeight, cameraZ],
+        lookAt: [0, lookAtY, 0],
         fov: Math.min(Math.max(fov, 30), 42)
       }
     }
@@ -722,35 +907,26 @@ function CameraControlProvider({ children, resetCameraRef }) {
     
     const controls = controlsRef.current
     
-    // MapScene과 동일한 방식: 아이소메트릭 각도 유지
-    // 현재 카메라의 아이소메트릭 오프셋 비율 계산
+    // 정면 뷰: 타겟 대비 카메라 오프셋(X≈0)을 유지해 제품 줌인 시에도 좌우 대칭 유지
     const currentPosition = new THREE.Vector3(
       camera.position.x,
       camera.position.y,
       camera.position.z
     )
     
-    // 현재 카메라가 바라보는 중심점 (OrbitControls target 또는 lookAt 지점)
     const currentTarget = new THREE.Vector3(
       controls.target.x,
       controls.target.y,
       controls.target.z
     )
     
-    // 현재 카메라 위치에서 타겟까지의 벡터 (아이소메트릭 오프셋)
     const currentOffset = new THREE.Vector3().subVectors(currentPosition, currentTarget)
     
-    // currentOffset이 0이거나 너무 작으면 기본 아이소메트릭 오프셋 사용
     let offsetToUse = currentOffset
     if (currentOffset.length() < 0.1) {
-      // 기본 아이소메트릭 오프셋 계산 (카메라가 초기화되지 않은 경우)
       const defaultDistance = 15
       const defaultHeight = 0.5
-      offsetToUse = new THREE.Vector3(
-        defaultDistance * 0.7,
-        defaultHeight,
-        defaultDistance * 0.7
-      )
+      offsetToUse = new THREE.Vector3(0, defaultHeight, defaultDistance * 0.7 * Math.SQRT2)
     }
     
     // 아이소메트릭 각도 비율 유지하면서 거리만 조정 (줌인)
@@ -939,21 +1115,21 @@ const MeshWithOutline = memo(function MeshWithOutline({ mesh, isHovered, onPoint
 /**
  * 호버 가능한 3D 객체 컴포넌트 (outline 효과 포함)
  */
-const HoverableObject = memo(function HoverableObject({ 
-  objectId, 
-  position, 
-  rotation, 
-  scale, 
+const HoverableObject = memo(function HoverableObject({
+  position,
+  rotation,
+  scale,
   renderFunction,
-  isHovered, 
-  onPointerEnter, 
-  onPointerLeave, 
-  onClick 
+  isHovered,
+  onPointerEnter,
+  onPointerLeave,
+  onClick,
 }) {
   const groupRef = useRef()
-  
+  const highlight = isHovered
+
   return (
-    <group 
+    <group
       ref={groupRef}
       position={position}
       rotation={rotation}
@@ -962,7 +1138,7 @@ const HoverableObject = memo(function HoverableObject({
       onPointerLeave={onPointerLeave}
       onClick={onClick}
     >
-      {renderFunction(isHovered)}
+      {renderFunction(highlight)}
     </group>
   )
 })
@@ -1272,6 +1448,12 @@ const renderShelf = (isHovered = false) => (
   </group>
 )
 
+/** Html(createRoot) 없이 호버·클릭만 처리 (라이브러리 A11y 래퍼는 Strict Mode에서 크래시 유발) */
+const AccessibleExhibitObject = memo(function AccessibleExhibitObject({ objectId: _id, ...rest }) {
+  return <HoverableObject {...rest} />
+})
+AccessibleExhibitObject.displayName = 'AccessibleExhibitObject'
+
 /**
  * GLB 모델 로더 컴포넌트
  * hover 시 아웃라인, 클릭 시 줌인 및 모달 표시
@@ -1457,7 +1639,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
         
         {/* 기존 3D 객체들을 부스 안에 배치 - 높이를 더 위로 올림 */}
         {/* 책상 - 중앙 앞쪽 */}
-        <HoverableObject
+        <AccessibleExhibitObject
           objectId="desk"
           position={[0, 2.5, -2]}
           rotation={[0, 0, 0]}
@@ -1470,7 +1652,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
         />
         
         {/* 모니터 - 책상 위 */}
-        <HoverableObject
+        <AccessibleExhibitObject
           objectId="monitor"
           position={[0, 3.3, -2]}
           rotation={[0, 0, 0]}
@@ -1483,7 +1665,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
         />
         
         {/* 아케이드 기계 - 오른쪽 */}
-        <HoverableObject
+        <AccessibleExhibitObject
           objectId="arcade"
           position={[3, 2.5, 0]}
           rotation={[0, -Math.PI / 4, 0]}
@@ -1496,7 +1678,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
         />
         
         {/* 의자 - 책상 앞 */}
-        <HoverableObject
+        <AccessibleExhibitObject
           objectId="chair"
           position={[0, 2.5, -4]}
           rotation={[0, 0, 0]}
@@ -1509,7 +1691,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
         />
         
         {/* 책장 - 왼쪽 벽 */}
-        <HoverableObject
+        <AccessibleExhibitObject
           objectId="bookshelf"
           position={[-3.5, 2.5, 0]}
           rotation={[0, Math.PI / 2, 0]}
@@ -1522,7 +1704,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
         />
         
         {/* 램프 - 책상 옆 */}
-        <HoverableObject
+        <AccessibleExhibitObject
           objectId="lamp"
           position={[1.5, 2.5, -2]}
           rotation={[0, 0, 0]}
@@ -1535,7 +1717,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
         />
         
         {/* 테이블 - 왼쪽 */}
-        <HoverableObject
+        <AccessibleExhibitObject
           objectId="table"
           position={[-2, 2.5, 2]}
           rotation={[0, Math.PI / 4, 0]}
@@ -1548,7 +1730,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
         />
         
         {/* 선반 - 뒤쪽 벽 */}
-        <HoverableObject
+        <AccessibleExhibitObject
           objectId="shelf"
           position={[0, 3.5, 3]}
           rotation={[0, 0, 0]}
@@ -1565,18 +1747,18 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
 
 ShowRoomModel.displayName = 'ShowRoomModel'
 
-// 모델 프리로드 (성능 최적화)
-// useGLTF는 자동으로 Draco 압축 해제 및 캐싱 처리
-useGLTF.preload('/models/show_room2.glb')
+if (SHOW_LEGACY_BOOTH_AND_EXHIBITS) {
+  useGLTF.preload('/models/show_room2.glb')
+}
 
 /**
  * 방 내부 컨텐츠 (메모이제이션됨)
  * show_room2.glb 모델 로드 (group 해제, car.glb 제거)
  */
 const RoomContent = memo(function RoomContent({ onObjectClick, skipCameraAnimation }) {
+  if (!SHOW_LEGACY_BOOTH_AND_EXHIBITS) return null
   return (
     <Suspense fallback={null}>
-      {/* GLB 모델 로드 - group 없이 직접 렌더링 */}
       <ShowRoomModel onObjectClick={onObjectClick} />
     </Suspense>
   )

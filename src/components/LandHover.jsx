@@ -1,7 +1,8 @@
-import { useRef, useState, useLayoutEffect, useEffect, useMemo } from 'react'
+import { useRef, useState, useLayoutEffect, useEffect, useMemo, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useCursor } from '@react-three/drei'
 import * as THREE from 'three'
+import { useMapStore } from '../store/useMapStore'
 import { NodeSpeechBubble } from './NodeSpeechBubble'
 
 /**
@@ -9,10 +10,22 @@ import { NodeSpeechBubble } from './NodeSpeechBubble'
  * - land: 단일 히트·말풍선 앵커
  * - lands + speechAnchor: 합 AABB 히트, 말풍선은 speechAnchor (예: CH_Leaf_Body)
  */
-export function LandHover({ land, lands, speechAnchor, clonedScene, label }) {
+export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneId, glbNode }) {
   const [hovered, setHovered] = useState(false)
   const [footprint, setFootprint] = useState(null)
   const hitRef = useRef(null)
+  const selectArea = useMapStore((s) => s.selectArea)
+  const glbFocusPositions = useMapStore((s) => s.glbFocusPositions)
+
+  const handleZoneClick = useCallback(
+    (e) => {
+      if (!zoneId || !glbNode) return
+      e.stopPropagation()
+      const pos = glbFocusPositions[glbNode]
+      if (pos) selectArea(zoneId, pos)
+    },
+    [zoneId, glbNode, glbFocusPositions, selectArea]
+  )
 
   const targets = useMemo(() => {
     if (lands?.length) return lands.filter(Boolean)
@@ -86,6 +99,7 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label }) {
     <>
       <mesh
         ref={hitRef}
+        onClick={handleZoneClick}
         onPointerOver={(e) => {
           e.stopPropagation()
           setHovered(true)

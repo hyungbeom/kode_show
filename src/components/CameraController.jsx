@@ -1,6 +1,7 @@
 import { useRef, useEffect, memo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
+import { getZoneCameraFraming } from '../utils/constants'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 
@@ -29,17 +30,14 @@ function CameraController({ controlsRef }) {
   const followPhysicsBox = useMapStore((state) => state.followPhysicsBox)
   const isFullMapRotating = useMapStore((state) => state.isFullMapRotating)
   const setIsFullMapRotating = useMapStore((state) => state.setIsFullMapRotating)
-  
+  const selectedArea = useMapStore((state) => state.selectedArea)
+  const pendingZone = useMapStore((state) => state.pendingZone)
+
   const animationRef = useRef(null)
   const resetAnimationRef = useRef(null)
   const initialEntryAnimationRef = useRef(null)
   /** GSAP 카메라 애니메이션 중에는 궤도 useFrame이 개입하지 않도록 (리셋 시 오른쪽 튐 방지) */
   const orbitSuspendedRef = useRef(false)
-
-  // 아이소메트릭 오프셋
-  const offsetX = 200
-  const offsetY = 160
-  const offsetZ = 200
 
   // 초기 진입 시 줌아웃 상태로 시작 (전체 맵이 보이는 상태)
   useEffect(() => {
@@ -297,32 +295,29 @@ function CameraController({ controlsRef }) {
       z: controls.target.z,
     }
     
-    // 아이소메트릭 각도 유지하면서 건물을 센터로
-    // 맵이 5배 확대되었으므로 오프셋도 5배에 맞게 조정
-    // 현재 카메라 각도: position [200, 160, 200] → 대각선 위에서 내려다보는 각도
-    // 건물 위치를 중심으로 같은 각도 유지
-    const offsetX = 200  // 아이소메트릭 오프셋
-    const offsetY = 160  // 높이
-    const offsetZ = 200  // 아이소메트릭 오프셋
-    
+    const zoneKey = pendingZone ?? selectedArea
+    const framing = getZoneCameraFraming(zoneKey)
+    const sx = framing.cameraShiftX ?? 0
+    const sy = framing.cameraShiftY ?? 0
+    const sz = framing.cameraShiftZ ?? 0
+
+    // offset: 카메라만 타깃에서 벌어지는 아이소 거리 / cameraShift: 카메라·타깃 동일 평행이동(시선 유지·회전 없음)
     const targetPosition = {
-      x: cameraTarget[0] + offsetX,
-      y: cameraTarget[1] + offsetY,
-      z: cameraTarget[2] + offsetZ,
+      x: cameraTarget[0] + framing.offsetX + sx,
+      y: cameraTarget[1] + framing.offsetY + sy,
+      z: cameraTarget[2] + framing.offsetZ + sz,
     }
-    
-    // OrbitControls의 target을 건물 위치로 설정 (센터로 오게)
+
     const targetControlsTarget = {
-      x: cameraTarget[0],
-      y: cameraTarget[1],
-      z: cameraTarget[2],
+      x: cameraTarget[0] + sx,
+      y: cameraTarget[1] + sy,
+      z: cameraTarget[2] + sz,
     }
     
-    // Orthographic Camera의 zoom 증가 (줌인 효과)
-    // 맵이 5배 확대되었으므로 줌인 값도 조정
     const startZoom = camera.zoom || 2.5
-    const targetZoom = 10  // 맵 전체 보기(2.5)에서 4배 줌인 (2.5 * 4 = 10) - 적당한 거리로 조정
-    
+    const targetZoom = framing.targetZoom
+    const zoomDuration = framing.duration
+
     // GSAP 애니메이션 생성
     const timeline = gsap.timeline({
       onComplete: () => {
@@ -339,7 +334,7 @@ function CameraController({ controlsRef }) {
         x: targetPosition.x,
         y: targetPosition.y,
         z: targetPosition.z,
-        duration: 1.5,
+        duration: zoomDuration,
         ease: 'power2.inOut',
       })
       .to(
@@ -348,7 +343,7 @@ function CameraController({ controlsRef }) {
           x: targetControlsTarget.x,
           y: targetControlsTarget.y,
           z: targetControlsTarget.z,
-          duration: 1.5,
+          duration: zoomDuration,
           ease: 'power2.inOut',
           onUpdate: () => {
             controls.update()
@@ -359,8 +354,8 @@ function CameraController({ controlsRef }) {
       .to(
         camera,
         {
-          zoom: targetZoom,  // 줌인 효과
-          duration: 1.5,
+          zoom: targetZoom,
+          duration: zoomDuration,
           ease: 'power2.inOut',
           onUpdate: () => {
             camera.updateProjectionMatrix()
@@ -375,32 +370,56 @@ function CameraController({ controlsRef }) {
         animationRef.current.kill()
       }
     }
-  }, [cameraTarget, camera, controlsRef, clearCameraTarget, openPendingZone, followPhysicsBox])
+  }, [
+    cameraTarget,
+    camera,
+    controlsRef,
+    clearCameraTarget,
+    openPendingZone,
+    followPhysicsBox,
+    selectedArea,
+    pendingZone,
+  ])
   
-  // 맵 전체 보기 모드에서 카메라 회전 애니메이션
-  const rotationAngleRef = useRef(0)
-  /** XZ 평면 궤도 반지름·높이 (줌인 종료 위치와 맞춤 — 회전 시작 시 각도 0 가정으로 인한 튐 방지) */
+  // 맵 전체 보기: 정면 기준 좌우 왕복 + 반주기 높이/반경 변조 (메비우스 띠 느낌, 360° 원형 아님)
+  /** 위상 t — 시간에 따라 증가, sin(t)로 좌우, sin(t/2)로 높이·반경에 한 번 꼬이는 느낌 */
+  const phaseRef = useRef(0)
+  /** 현재 정면 방향의 방위각(라디안) — 초기 (200,160,200) 기준 */
+  const baseAzimuthRef = useRef(Math.atan2(200, 200))
   const orbitRadiusRef = useRef(Math.sqrt(200 * 200 + 200 * 200))
   const orbitHeightRef = useRef(160)
-  const rotationSpeed = 0.1 // 회전 속도 (라디안/초) - 더 천천히 회전
-  /** 휠로 쌓였다가 서서히 줄어드는 추가 배속 (같은 원 궤도 위에서만) */
+  /**
+   * 방위각 흔들림. sin(u) 부호와 "화면 왼쪽"은 씬 좌표계와 안 맞을 수 있음.
+   * 이전엔 sin<0에만 큰 값을 줬는데, 체감상 왼쪽이 sin>0 구간이면 효과가 안 보였음.
+   * → 큰 스윙을 sin≥0 쪽에 두고, 전체를 한쪽으로 밀어 bias 추가.
+   */
+  const AZIMUTH_SWING_NARROW = 0.82
+  const AZIMUTH_SWING_WIDE = 1.85
+  /** 전체 궤도를 방위각 감소 방향으로 밀어 체감 "왼쪽" 이동 확대 (라디안) */
+  const AZIMUTH_BIAS_LEFT = 0.45
+  /** sin(phase/2)에 묶인 수직·반경 변조 (한 주기에 메비우스처럼 한 번 비틀림) */
+  const Y_BOB = 22
+  const RADIAL_PULSE = 0.085
+  const pathSpeed = 0.14 // 위상 증가 속도 (rad/s) — 왕복이 느리게 반복
+  /** 휠로 쌓였다가 서서히 줄어드는 추가 배속 */
   const speedBoostRef = useRef(0)
   const dragLastXRef = useRef(null)
   const isOrbitDragRef = useRef(false)
 
-  /** 현재 카메라 위치에 맞춰 궤도 각·반지름·높이 동기화 */
+  /** 현재 카메라 위치에 맞춰 기준 방위각·반지름·높이 동기화 (phase=0이면 sin(0)=0으로 현재 각 유지) */
   const syncOrbitFromCamera = () => {
     const x = camera.position.x
     const z = camera.position.z
     const r = Math.hypot(x, z)
     if (r > 1e-4) {
       orbitRadiusRef.current = r
-      rotationAngleRef.current = Math.atan2(z, x)
+      baseAzimuthRef.current = Math.atan2(z, x)
     }
     orbitHeightRef.current = camera.position.y
+    phaseRef.current = 0
   }
 
-  // 자동 궤도 중: 휠·가로 드래그는 같은 원 위에서만 각속도/각도 조절 (OrbitControls는 CameraSystem에서 꺼짐)
+  // 자동 궤도 중: 휠·가로 드래그로 위상/속도 조절
   useEffect(() => {
     if (followPhysicsBox || !isFullMapRotating) return
     const el = gl.domElement
@@ -426,7 +445,7 @@ function CameraController({ controlsRef }) {
       if (!useMapStore.getState().isFullMapRotating) return
       const dx = e.clientX - dragLastXRef.current
       dragLastXRef.current = e.clientX
-      rotationAngleRef.current += dx * 0.004
+      phaseRef.current += dx * 0.006
     }
     const endDrag = () => {
       isOrbitDragRef.current = false
@@ -483,23 +502,25 @@ function CameraController({ controlsRef }) {
     const BOOST_DECAY = 1.8
     speedBoostRef.current *= Math.exp(-BOOST_DECAY * delta)
 
-    // 회전 각도 업데이트 (휠로 쌓인 배속은 같은 원 궤도에서만 적용)
-    rotationAngleRef.current += rotationSpeed * (1 + speedBoostRef.current) * delta
+    phaseRef.current += pathSpeed * (1 + speedBoostRef.current) * delta
 
-    const radius = orbitRadiusRef.current
-    const height = orbitHeightRef.current
+    const u = phaseRef.current
+    const baseA = baseAzimuthRef.current
+    const s = Math.sin(u)
+    const swing = s >= 0 ? AZIMUTH_SWING_WIDE : AZIMUTH_SWING_NARROW
+    const theta = baseA + swing * s - AZIMUTH_BIAS_LEFT
+    const r =
+      orbitRadiusRef.current * (1 + RADIAL_PULSE * Math.sin(u * 0.5))
+    const y =
+      orbitHeightRef.current + Y_BOB * Math.sin(u * 0.5)
 
-    // 원형 궤도상의 위치 계산 (XZ 평면, 맵 중심 origin 기준)
-    const newX = radius * Math.cos(rotationAngleRef.current)
-    const newZ = radius * Math.sin(rotationAngleRef.current)
+    const newX = r * Math.cos(theta)
+    const newZ = r * Math.sin(theta)
 
-    // 카메라 위치 업데이트 (더 부드럽게 보간 - 흔들림 방지)
     const currentPos = state.camera.position
-    const targetPos = new THREE.Vector3(newX, height, newZ)
-    // 더 부드러운 보간으로 흔들림 방지
+    const targetPos = new THREE.Vector3(newX, y, newZ)
     currentPos.lerp(targetPos, 1 - Math.exp(-3 * delta))
-    
-    // 카메라가 맵 중심을 바라보도록 설정
+
     controls.target.set(0, 0, 0)
     controls.update()
   })
