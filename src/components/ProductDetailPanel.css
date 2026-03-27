@@ -1,0 +1,108 @@
+.product-detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  /* 기존 min(520px, 50vw) 대비 가로 약 2배 느낌 */
+  width: min(1040px, 78vw);
+  height: 100vh;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(24px, 4vw, 56px);
+  box-sizing: border-box;
+  pointer-events: auto;
+  animation: product-panel-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes product-panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.product-detail-panel__inner {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 22px;
+  padding: clamp(28px, 3.5vw, 44px);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #e8eef8;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.product-detail-panel__close {
+  position: absolute;
+  top: clamp(16px, 2vw, 24px);
+  right: clamp(16px, 2vw, 24px);
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.product-detail-panel__close:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.product-detail-panel__subtitle {
+  font-size: clamp(0.8rem, 1.1vw, 0.95rem);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #93c5fd;
+  margin: 0 0 10px;
+}
+
+.product-detail-panel__title {
+  margin: 0 0 18px;
+  font-size: clamp(1.55rem, 2.8vw, 2.15rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.product-detail-panel__desc {
+  margin: 0 0 22px;
+  font-size: clamp(1rem, 1.35vw, 1.12rem);
+  line-height: 1.75;
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.product-detail-panel__specs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.product-detail-panel__specs li {
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  color: #c7d2fe;
+}
+
+.product-detail-panel__hint {
+  margin: 24px 0 0;
+  font-size: clamp(0.82rem, 1vw, 0.92rem);
+  color: rgba(148, 163, 184, 0.9);
+}

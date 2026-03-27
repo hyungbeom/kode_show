@@ -1,0 +1,64 @@
+/* 루트 스타일은 JSX inline(포털)과 함께 사용 — z-index는 JS에서 10050 */
+
+.product-annotation-2d-svg {
+  overflow: visible;
+  pointer-events: none;
+}
+
+.product-annotation-callout {
+  width: min(300px, 42vw);
+  padding: 0.35rem 0.5rem;
+  transform: translate(-100%, -50%);
+  text-align: left;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.35;
+}
+
+.product-annotation-callout--2d {
+  position: fixed;
+  z-index: 21;
+  pointer-events: none;
+}
+
+.product-annotation-callout--2d .product-annotation-callout__inner {
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.12);
+}
+
+.product-annotation-callout--2d .product-annotation-callout__title {
+  font-size: clamp(0.7rem, 1.2vw, 0.85rem);
+}
+
+.product-annotation-callout--2d .product-annotation-callout__list {
+  font-size: clamp(0.65rem, 1.05vw, 0.78rem);
+}
+
+.product-annotation-callout__title {
+  margin: 0 0 0.45rem;
+  font-size: clamp(0.65rem, 1.1vw, 0.78rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0b2a5a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.product-annotation-callout__list {
+  margin: 0;
+  padding: 0 0 0 1rem;
+  list-style: disc;
+  color: #0d4a8c;
+  font-size: clamp(0.6rem, 1vw, 0.72rem);
+  font-weight: 500;
+  text-align: left;
+}
+
+.product-annotation-callout__list li {
+  margin-bottom: 0.2rem;
+}
+
+.product-annotation-callout__list li:last-child {
+  margin-bottom: 0;
+}
