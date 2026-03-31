@@ -1,9 +1,13 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, memo } from 'react'
-import { Environment, Lightformer } from '@react-three/drei'
+import { Cloud, Clouds, Environment, Lightformer } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
+import {
+  maintainTransparentSceneBackground,
+  syncTransparentWebGLCanvas,
+} from '../utils/syncTransparentWebGLCanvas'
 
 /** div 그라데이션과 동일 톤 — Canvas 뒤 레이어 */
 const MAP_BACKDROP_GRADIENT =
@@ -16,20 +20,12 @@ const BackgroundTransparency = memo(function BackgroundTransparency() {
   const { gl, scene } = useThree()
 
   useEffect(() => {
-    gl.setClearColor(0x000000, 0)
-    // Three.js 런타임: 투명 캔버스 (R3F 관례)
-    // eslint-disable-next-line react-hooks/immutability -- three Scene
-    scene.background = null
-    // eslint-disable-next-line react-hooks/immutability -- WebGLRenderer.domElement
-    gl.domElement.style.backgroundColor = 'transparent'
+    syncTransparentWebGLCanvas(gl, scene)
   }, [gl, scene])
 
+  // Environment 등이 background 를 덮을 수 있음 — clearColor() 는 쓰지 않음(전체 버퍼 클리어와 혼동)
   useFrame(() => {
-    gl.setClearColor(0x000000, 0)
-    if (scene.background !== null) {
-      // eslint-disable-next-line react-hooks/immutability -- three Scene
-      scene.background = null
-    }
+    maintainTransparentSceneBackground(gl, scene)
   })
 
   return null
@@ -42,7 +38,6 @@ function MapPhysicsSceneContent() {
   return (
     <>
       <BackgroundTransparency />
-      <color attach="background" args={['transparent']} />
       <CameraSystem />
 
       <Environment preset="sunset">
@@ -55,8 +50,8 @@ function MapPhysicsSceneContent() {
         position={[80, 60, 80]}
         intensity={2.5}
         castShadow
-        shadow-mapSize-width={4096}
-        shadow-mapSize-height={4096}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
         shadow-camera-far={500}
         shadow-camera-left={-150}
         shadow-camera-right={150}
@@ -146,10 +141,7 @@ const MapScene = memo(function MapScene() {
         }}
         dpr={[1, 2]}
         onCreated={({ gl, scene }) => {
-          gl.setClearColor(0x000000, 0)
-          scene.background = null
-          gl.clearColor(0, 0, 0, 0)
-          gl.domElement.style.backgroundColor = 'transparent'
+          syncTransparentWebGLCanvas(gl, scene)
         }}
       >
         <Physics gravity={[0, -9.81, 0]} debug={false}>

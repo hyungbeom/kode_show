@@ -2,7 +2,9 @@ import { memo, useRef, useEffect } from 'react'
 import { OrthographicCamera, OrbitControls } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import CameraController from './CameraController'
+import OrthographicZoomCompensation from './OrthographicZoomCompensation'
 import { useMapStore } from '../store/useMapStore'
+import { MAP_ORTHO_DEFAULT_LOGICAL_ZOOM } from '../utils/constants'
 import * as THREE from 'three'
 
 /**
@@ -119,7 +121,7 @@ const CameraSystem = memo(() => {
         
         // OrthographicCamera인 경우 zoom 설정
         if (state.camera instanceof THREE.OrthographicCamera && !followPhysicsBox) {
-          state.camera.zoom = 5
+          state.camera.zoom = MAP_ORTHO_DEFAULT_LOGICAL_ZOOM
           state.camera.updateProjectionMatrix()
         }
         
@@ -151,7 +153,7 @@ const CameraSystem = memo(() => {
         // OrthographicCamera인 경우 zoom도 보간
         if (state.camera instanceof THREE.OrthographicCamera && !followPhysicsBox) {
           const startZoom = 1
-          const targetZoom = 5
+          const targetZoom = MAP_ORTHO_DEFAULT_LOGICAL_ZOOM
           const currentZoom = startZoom + (targetZoom - startZoom) * easedT
           state.camera.zoom = currentZoom
           state.camera.updateProjectionMatrix()
@@ -172,15 +174,16 @@ const CameraSystem = memo(() => {
       <OrthographicCamera
         makeDefault
         position={[200, 160, 200]}
-        zoom={5}
+        zoom={MAP_ORTHO_DEFAULT_LOGICAL_ZOOM}
         near={0.1}
         far={500000}
       />
-      
+
+      <OrthographicZoomCompensation />
+
       {/* 카메라 컨트롤러 (GSAP 애니메이션) */}
       <CameraController controlsRef={controlsRef} />
       
-      {/* 오빗 컨트롤 - 마우스 드래그 회전, 휠 줌, 패닝 지원 */}
       <OrbitControls
         ref={controlsRef}
         enablePan={!isFullMapRotating}
@@ -190,7 +193,7 @@ const CameraSystem = memo(() => {
         maxZoom={50}
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 2}
-        target={[0, 0, 0]}
+        target={[-150, 0, 0]}
       />
     </>
   )

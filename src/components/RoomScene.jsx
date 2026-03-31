@@ -10,6 +10,10 @@ import { Box } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
+import {
+  maintainTransparentSceneBackground,
+  syncTransparentWebGLCanvas,
+} from '../utils/syncTransparentWebGLCanvas'
 import ObjectInfoPanel from './ObjectInfoPanel'
 import ObjectViewer from './ObjectViewer'
 import ObjectDetailButton from './ObjectDetailButton'
@@ -473,9 +477,7 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, on
         gl={{ antialias: true, alpha: true, premultipliedAlpha: false }}
         dpr={[1, 2]}
         onCreated={({ gl, scene }) => {
-          gl.setClearColor(0x000000, 0)
-          scene.background = null
-          gl.clearColor(0, 0, 0, 0)
+          syncTransparentWebGLCanvas(gl, scene)
         }}
       >
           <CameraControlProvider resetCameraRef={resetCameraRef}>
@@ -775,31 +777,15 @@ function RoomA11yPlaygroundHud() {
  */
 function BackgroundKeeper() {
   const { scene, gl } = useThree()
-  
-  useFrame(() => {
-    // 매 프레임마다 배경을 투명하게 유지
-    scene.background = null
-    gl.setClearColor(0x000000, 0)
-    // clearColor를 직접 설정
-    gl.clearColor(0, 0, 0, 0)
-  })
-  
+
   useEffect(() => {
-    // 초기 설정
-    scene.background = null
-    gl.setClearColor(0x000000, 0)
-    gl.clearColor(0, 0, 0, 0)
-    
-    // 렌더링 후에도 배경이 투명하게 유지되도록
-    const interval = setInterval(() => {
-      scene.background = null
-      gl.setClearColor(0x000000, 0)
-      gl.clearColor(0, 0, 0, 0)
-    }, 100)
-    
-    return () => clearInterval(interval)
+    syncTransparentWebGLCanvas(gl, scene)
   }, [scene, gl])
-  
+
+  useFrame(() => {
+    maintainTransparentSceneBackground(gl, scene)
+  })
+
   return null
 }
 

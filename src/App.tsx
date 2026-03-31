@@ -244,12 +244,6 @@ function App() {
     window.history.pushState({}, '', '/')
   }, [])
   
-  // 클럽으로 돌아가기 핸들러
-  const handleBackToClub = useCallback(() => {
-    setCurrentView('home')
-    window.history.pushState({}, '', '/')
-  }, [])
-  
   // 방에서 뒤로가기 핸들러
   const handleBackFromRoom = useCallback(() => {
     setIsTransitioning(true)
@@ -329,9 +323,28 @@ function App() {
         {/* 3D 지도 씬 */}
         <MapScene />
       </Suspense>
+
+      <section className="map-hero-copy" lang="en" aria-label="Welcome to Kode Sports Club">
+        <p className="map-hero-copy__logo">KODE</p>
+        <h1 className="map-hero-copy__headline">
+          <span className="map-hero-copy__headline-line">INTERNATIONAL EXHIBITION</span>
+          <span className="map-hero-copy__headline-line">ON ENVIRONMENTAL TECHNOLOGY &</span>
+          <span className="map-hero-copy__headline-line">GREEN ENERGY</span>
+        </h1>
+        <p className="map-hero-copy__body">
+          Kode is a multi-disciplinary sports club,
+          <br />
+          making its debut at Swan Lake Residences,
+          <br />
+          <span className="map-hero-copy__underline">Youssef El Sebai, First New Cairo</span>
+        </p>
+        <button type="button" className="map-hero-copy__cta">
+          See brand film
+        </button>
+      </section>
       
       {/* 상단 헤더 */}
-      <MapHeader onClose={handleCloseMap} onBackToClub={handleBackToClub} />
+      <MapHeader onClose={handleCloseMap} />
       
       {/* 하단 왼쪽 사운드 컨트롤 */}
       <SoundControl />

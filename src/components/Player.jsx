@@ -1,4 +1,4 @@
-import { useRef, memo, Suspense } from 'react'
+import { useRef, memo, Suspense, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import Ecctrl from 'ecctrl'
@@ -9,23 +9,21 @@ import { useMapStore } from '../store/useMapStore'
  */
 function AmongUsModel() {
   const { scene } = useGLTF('/models/amongus.glb')
-  
-  // 모델을 복제하고 모든 메시에 그림자 속성 추가
-  const clonedScene = scene.clone()
-  clonedScene.traverse((child) => {
-    if (child.isMesh) {
-      child.castShadow = true
-      child.receiveShadow = true
-    }
-  })
-  
-  // 모델 스케일 및 위치 조정
+
+  // 렌더마다 clone 하면 메모리·WebGL 리소스가 폭증해 컨텍스트 손실까지 갈 수 있음
+  const clonedScene = useMemo(() => {
+    const clone = scene.clone(true)
+    clone.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+      }
+    })
+    return clone
+  }, [scene])
+
   return (
-    <primitive 
-      object={clonedScene} 
-      scale={[1, 1, 1]}
-      position={[0, 0, 0]}
-    />
+    <primitive object={clonedScene} scale={[1, 1, 1]} position={[0, 0, 0]} />
   )
 }
 

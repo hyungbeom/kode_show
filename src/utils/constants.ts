@@ -3,6 +3,9 @@
  * 재사용 가능한 상수들을 한 곳에 모아 관리
  */
 
+/** 맵 직교 카메라 기본 줌(논리값). 브라우저 UI 확대/축소 시 이 값 기준으로 화면 크기 보정 */
+export const MAP_ORTHO_DEFAULT_LOGICAL_ZOOM = 3.5
+
 // 업체 정보
 export const COMPANY_NAMES: Record<number, string> = {
   1: '프로지스트',

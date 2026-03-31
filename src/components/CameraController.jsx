@@ -1,12 +1,12 @@
 import { useRef, useEffect, memo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
-import { getZoneCameraFraming } from '../utils/constants'
+import { getZoneCameraFraming, MAP_ORTHO_DEFAULT_LOGICAL_ZOOM } from '../utils/constants'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 
-/** 전체 맵 뷰 Orthographic 줌 — 초기 진입·NAVIGATE 리셋 공통 */
-const FULL_MAP_ZOOM = 5
+/** 전체 맵 뷰 Orthographic 줌(논리값) — OrthographicZoomCompensation이 브라우저 줌에 맞게 나눔 */
+const FULL_MAP_ZOOM = MAP_ORTHO_DEFAULT_LOGICAL_ZOOM
 
 /**
  * GSAP을 사용한 카메라 시점 전환 컨트롤러
@@ -39,21 +39,15 @@ function CameraController({ controlsRef }) {
   /** GSAP 카메라 애니메이션 중에는 궤도 useFrame이 개입하지 않도록 (리셋 시 오른쪽 튐 방지) */
   const orbitSuspendedRef = useRef(false)
 
-  // 초기 진입 시 줌아웃 상태로 시작 (전체 맵이 보이는 상태)
+  /** initialEntry: 동기화만 하고 자동 궤도는 끔 → OrbitControls로 직접 조작 */
   useEffect(() => {
-    // 추적 모드일 때는 CameraController 비활성화 (Player에서 직접 제어)
     if (followPhysicsBox) return
     if (!initialEntry) return
     if (!controlsRef?.current) return
 
-    orbitSuspendedRef.current = true
-    setIsFullMapRotating(false)
-
-    console.log('CameraController: Initial entry - zooming out to show full map')
-    
-    // 기존 애니메이션 취소
     if (initialEntryAnimationRef.current) {
       initialEntryAnimationRef.current.kill()
+      initialEntryAnimationRef.current = null
     }
     if (animationRef.current) {
       animationRef.current.kill()
@@ -61,101 +55,18 @@ function CameraController({ controlsRef }) {
     if (resetAnimationRef.current) {
       resetAnimationRef.current.kill()
     }
-    
-    const controls = controlsRef.current
-    
-    // 초기 카메라 위치 (더 멀리서 시작하여 줌인 효과)
-    const startPosition = {
-      x: camera.position.x,
-      y: camera.position.y,
-      z: camera.position.z,
-    }
-    
-    // 최종 카메라 위치와 타겟 (맵 전체가 보이는 상태) - 5배 스케일에 맞게 조정
-    const targetPosition = {
-      x: 200,
-      y: 160,
-      z: 200,
-    }
-    
-    const targetTarget = {
-      x: 0,
-      y: 0,
-      z: 0,
-    }
-    
-    // 맵이 5배 확대되었으므로 줌도 5배에 맞게 조정 (더 작게 줌 아웃)
-    const startZoom = camera.zoom || 1
-    const targetZoom = FULL_MAP_ZOOM
 
-    // GSAP 애니메이션 생성 - 멀리서 시작해서 줌인하는 효과
-    const timeline = gsap.timeline({
-      onComplete: () => {
-        console.log('CameraController: Initial entry animation complete - full map view, starting rotation')
-        setInitialEntry(false)
-        orbitSuspendedRef.current = false
-        syncOrbitFromCamera()
-        // 초기 진입 후에도 카메라 회전 시작
-        setIsFullMapRotating(true)
-        initialEntryAnimationRef.current = null
-      },
-    })
-    
-    // 카메라를 먼저 멀리서 시작 (줌 아웃 상태)
-    initialEntryAnimationRef.current = timeline
-      .set(camera.position, {
-        x: targetPosition.x * 1.5,
-        y: targetPosition.y * 1.5,
-        z: targetPosition.z * 1.5,
-      })
-      .set(controls.target, {
-        x: targetTarget.x,
-        y: targetTarget.y,
-        z: targetTarget.z,
-      })
-      .set(camera, {
-        zoom: startZoom * 0.8, // 더 멀리서 시작
-      })
-      .to(camera.position, {
-        x: targetPosition.x,
-        y: targetPosition.y,
-        z: targetPosition.z,
-        duration: 2,
-        ease: 'power2.out',
-      })
-      .to(
-        controls.target,
-        {
-          x: targetTarget.x,
-          y: targetTarget.y,
-          z: targetTarget.z,
-          duration: 2,
-          ease: 'power2.out',
-          onUpdate: () => {
-            controls.update()
-          },
-        },
-        0 // 동시에 시작
-      )
-      .to(
-        camera,
-        {
-          zoom: targetZoom,
-          duration: 2,
-          ease: 'power2.out',
-          onUpdate: () => {
-            camera.updateProjectionMatrix()
-          },
-        },
-        0 // 동시에 시작
-      )
-    
-    return () => {
-      if (initialEntryAnimationRef.current) {
-        initialEntryAnimationRef.current.kill()
-      }
-      orbitSuspendedRef.current = false
-    }
+    const controls = controlsRef.current
+    controls.target.set(0, 0, 0)
+    camera.position.set(200, 160, 200)
+    camera.zoom = FULL_MAP_ZOOM
+    camera.updateProjectionMatrix()
+    controls.update()
+
+    syncOrbitFromCamera()
+    setInitialEntry(false)
+    orbitSuspendedRef.current = false
+    setIsFullMapRotating(false)
   }, [initialEntry, camera, controlsRef, setInitialEntry, setIsFullMapRotating, followPhysicsBox])
   
   // Zone 클릭 시 줌아웃 애니메이션 트리거 (setSelectedZone에서 resetToFullMap: true 설정됨)
