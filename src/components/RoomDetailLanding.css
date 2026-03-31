@@ -1,0 +1,403 @@
+.room-detail-landing {
+  position: relative;
+  z-index: 2;
+  padding: clamp(40px, 6vw, 80px) clamp(20px, 5vw, 64px) clamp(80px, 12vw, 140px);
+  box-sizing: border-box;
+  color: #e2e8f0;
+  background: #000000;
+  overflow: hidden;
+}
+
+.room-detail-landing__bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 35%,
+    rgba(59, 130, 246, 0.08) 0%,
+    transparent 55%
+  );
+  opacity: 1;
+}
+
+.room-detail-landing__hero-header {
+  position: relative;
+  text-align: center;
+  margin-bottom: clamp(40px, 6vw, 64px);
+}
+
+.room-detail-landing__product-tag {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.room-detail-landing__brand {
+  margin: 0 0 8px;
+  font-size: clamp(1.85rem, 4vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #f8fafc;
+}
+
+.room-detail-landing__tagline-en {
+  margin: 0;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  font-weight: 400;
+  color: #94a3b8;
+}
+
+/* —— 히어로 2컬럼 —— */
+.room-detail-landing__hero-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(28px, 5vw, 56px);
+  align-items: center;
+  max-width: 1120px;
+  margin: 0 auto 72px;
+}
+
+.room-detail-landing__hero-visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 280px;
+}
+
+/* 디바이스 목업 */
+.room-detail-landing__device-stack {
+  position: relative;
+  width: 220px;
+  height: 260px;
+}
+
+.room-detail-landing__device {
+  display: block;
+  width: 52px;
+  height: 210px;
+  border-radius: 14px 14px 28px 28px;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 45%, #e2e8f0 100%);
+  box-shadow:
+    0 16px 40px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  position: relative;
+}
+
+.room-detail-landing__device::after {
+  content: '';
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #67e8f9, #0ea5e9 55%, #0369a1);
+  box-shadow: 0 0 24px rgba(14, 165, 233, 0.55);
+}
+
+.room-detail-landing__device--a {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-85%, -50%) rotate(-8deg);
+  z-index: 1;
+}
+
+.room-detail-landing__device--b {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -52%) rotate(0deg);
+  z-index: 3;
+}
+
+.room-detail-landing__device--c {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-15%, -48%) rotate(8deg);
+  z-index: 2;
+}
+
+.room-detail-landing__device--b::after {
+  background: radial-gradient(circle at 35% 30%, #a5f3fc, #22d3ee 50%, #0284c7);
+  box-shadow: 0 0 28px rgba(34, 211, 238, 0.65);
+}
+
+.room-detail-landing__device-v {
+  position: relative;
+  width: 200px;
+  height: 220px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.room-detail-landing__device--leg {
+  width: 44px;
+  height: 200px;
+  transform-origin: bottom center;
+}
+
+.room-detail-landing__device--leg-l {
+  transform: rotate(-18deg);
+}
+
+.room-detail-landing__device--leg-r {
+  transform: rotate(18deg);
+}
+
+.room-detail-landing__device-cross {
+  position: relative;
+  width: 220px;
+  height: 240px;
+}
+
+.room-detail-landing__device--x1 {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-60%, -55%) rotate(-35deg);
+  z-index: 2;
+}
+
+.room-detail-landing__device--x2 {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-40%, -45%) rotate(35deg);
+  z-index: 1;
+}
+
+.room-detail-landing__device--x2::after {
+  box-shadow: 0 0 26px rgba(14, 165, 233, 0.6);
+}
+
+.room-detail-landing__zigzag-visual--dual {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 20px;
+}
+
+.room-detail-landing__device--offset {
+  transform: translateY(-12px) rotate(6deg);
+}
+
+/* 정보 카드 */
+.room-detail-landing__info-card {
+  position: relative;
+  background: #0a0a0a;
+  border-radius: 16px;
+  padding: clamp(24px, 4vw, 36px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+  border-left: 4px solid #3b82f6;
+}
+
+.room-detail-landing__info-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.room-detail-landing__drop-icon {
+  flex-shrink: 0;
+  display: flex;
+}
+
+.room-detail-landing__info-card-title {
+  margin: 0;
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.room-detail-landing__info-card-lead {
+  margin: 0 0 22px;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #cbd5e1;
+}
+
+.room-detail-landing__feature-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.room-detail-landing__feature-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.room-detail-landing__feature-list strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #93c5fd;
+}
+
+.room-detail-landing__feature-list span {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+/* SPEC */
+.room-detail-landing__spec-block {
+  position: relative;
+  max-width: 960px;
+  margin: 0 auto 80px;
+}
+
+.room-detail-landing__spec-title {
+  margin: 0 0 12px;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #60a5fa;
+  letter-spacing: 0.04em;
+  padding-bottom: 10px;
+  border-bottom: 3px solid #3b82f6;
+}
+
+.room-detail-landing__table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.room-detail-landing__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  background: #0a0a0a;
+}
+
+.room-detail-landing__table thead th {
+  text-align: left;
+  padding: 12px 16px;
+  background: #1e3a8a;
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+.room-detail-landing__table tbody th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #e2e8f0;
+  width: 32%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: top;
+}
+
+.room-detail-landing__table tbody td {
+  padding: 12px 16px;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  line-height: 1.55;
+  vertical-align: top;
+}
+
+.room-detail-landing__table tbody tr:last-child th,
+.room-detail-landing__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* PRODUCT DETAILS */
+.room-detail-landing__details,
+.room-detail-landing__alt-rows {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.room-detail-landing__details {
+  margin-bottom: 64px;
+}
+
+.room-detail-landing__section-kicker {
+  margin: 0 0 40px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #60a5fa;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.room-detail-landing__zigzag {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 5vw, 48px);
+  align-items: center;
+  margin-bottom: clamp(48px, 8vw, 72px);
+}
+
+.room-detail-landing__zigzag:last-child {
+  margin-bottom: 0;
+}
+
+.room-detail-landing__zigzag--img-right .room-detail-landing__zigzag-visual {
+  order: 2;
+}
+
+.room-detail-landing__zigzag--img-right .room-detail-landing__zigzag-text {
+  order: 1;
+}
+
+.room-detail-landing__zigzag-visual {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.room-detail-landing__zigzag-h {
+  margin: 0 0 14px;
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+  font-weight: 700;
+  color: #93c5fd;
+  line-height: 1.35;
+}
+
+.room-detail-landing__zigzag-ko {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #cbd5e1;
+}
+
+.room-detail-landing__zigzag-en {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: #94a3b8;
+}
+
+@media (max-width: 900px) {
+  .room-detail-landing__hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .room-detail-landing__zigzag,
+  .room-detail-landing__zigzag--img-right {
+    grid-template-columns: 1fr;
+  }
+
+  .room-detail-landing__zigzag--img-right .room-detail-landing__zigzag-visual,
+  .room-detail-landing__zigzag--img-right .room-detail-landing__zigzag-text {
+    order: unset;
+  }
+}
