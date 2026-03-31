@@ -152,7 +152,14 @@ const DETAIL_PANEL_VW = 0.78
 const _worldCenter = new THREE.Vector3()
 
 /** 상세 뷰: 확대 등장 + 드래그 회전 + 점선 콜아웃 */
-function ProductDetailStage({ url, progressRef, prefersDark, productIndex }) {
+function ProductDetailStage({
+  url,
+  progressRef,
+  prefersDark,
+  productIndex,
+  scrollDarken = 0,
+  annotationPortalHostRef,
+}) {
   const { scene } = useGLTF(url)
   const { camera, gl } = useThree()
   const root = useRef(null)
@@ -263,6 +270,8 @@ function ProductDetailStage({ url, progressRef, prefersDark, productIndex }) {
         annotations={annotations}
         progressRef={progressRef}
         modelRootRef={root}
+        scrollDarken={scrollDarken}
+        portalHostRef={annotationPortalHostRef}
       />
       <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 0]} receiveShadow>
         <planeGeometry args={[40, 40]} />
@@ -291,12 +300,16 @@ function ProductDetailStage({ url, progressRef, prefersDark, productIndex }) {
  * @param {[number,number,number]} [position]
  * @param {(payload: { index: number; copy: import('../data/productDetailCopy').ProductDetailCopy }) => void} [onProductSelect]
  * @param {number | null} openDetailIndex — 부모가 제어: null 이면 상세 닫힘
+ * @param {number} [scrollDarken] — 제품 상세 스크롤 시 캔버스와 동일 0~1 (콜아웃 포털 어두움)
+ * @param {React.RefObject<HTMLElement | null>} [annotationPortalHostRef] — 콜아웃 ReactDOM 루트 (없으면 document.body)
  */
 export default function ProductCarousel({
   position = [0, 0, 0],
   showLightToggle = true,
   onProductSelect,
   openDetailIndex,
+  scrollDarken = 0,
+  annotationPortalHostRef,
 }) {
   const [active, setActive] = useState(0)
   const [rotation, setRotation] = useState(0)
@@ -409,6 +422,8 @@ export default function ProductCarousel({
             productIndex={displayIdx}
             progressRef={detailProgress}
             prefersDark={prefersDark}
+            scrollDarken={scrollDarken}
+            annotationPortalHostRef={annotationPortalHostRef}
           />
         </Suspense>
       )}

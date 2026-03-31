@@ -1,15 +1,19 @@
 import './ProductDetailPanel.css'
 
 /**
- * 제품 상세 — 캔버스 오른쪽 고정 패널
+ * 제품 상세 — 캔버스 오른쪽 패널
+ * @param embedded true면 뷰포트 fixed 대신 히어로 영역에 붙어 스크롤 시 함께 이동
  * @param {{ copy: import('../data/productDetailCopy').ProductDetailCopy; index: number } | null} product
  */
-export default function ProductDetailPanel({ product, onClose }) {
+export default function ProductDetailPanel({ product, onClose, embedded = false }) {
   if (!product) return null
   const { copy, index } = product
 
   return (
-    <aside className="product-detail-panel" aria-label="제품 설명">
+    <aside
+      className={`product-detail-panel${embedded ? ' product-detail-panel--embedded' : ''}`}
+      aria-label="제품 설명"
+    >
       <div className="product-detail-panel__inner" style={{ position: 'relative' }}>
         <button type="button" className="product-detail-panel__close" onClick={onClose} aria-label="닫기">
           ×

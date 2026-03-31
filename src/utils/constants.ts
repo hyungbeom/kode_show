@@ -5,7 +5,7 @@
 
 // 업체 정보
 export const COMPANY_NAMES: Record<number, string> = {
-  1: 'GreenFi',
+  1: '프로지스트',
   2: 'Aven',
   3: 'TechCorp',
   4: 'DesignStudio',

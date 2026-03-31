@@ -23,6 +23,7 @@ function AnnotationOverlayInner({
   ringTextRefs,
   textWrapRefs,
   containerRef,
+  darkenOverlayRef,
 }) {
   return (
     <div
@@ -94,17 +95,39 @@ function AnnotationOverlayInner({
           </div>
         </div>
       ))}
+      <div
+        ref={darkenOverlayRef}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          /* callout--2d 가 z-index:21 이라 그보다 위에 두어 카드·선까지 같은 비율로 어둡게 */
+          zIndex: 100,
+          pointerEvents: 'none',
+          background: '#000',
+          opacity: 0,
+        }}
+      />
     </div>
   )
 }
 
-export default function ProductAnnotationCallouts({ annotations, progressRef, modelRootRef }) {
+export default function ProductAnnotationCallouts({
+  annotations,
+  progressRef,
+  modelRootRef,
+  scrollDarken = 0,
+  portalHostRef,
+}) {
   const { camera, gl } = useThree()
   const lineRefs = useRef([])
   const ringHotRefs = useRef([])
   const ringTextRefs = useRef([])
   const textWrapRefs = useRef([])
   const containerRef = useRef(null)
+  const darkenOverlayRef = useRef(null)
+  const scrollDarkenRef = useRef(0)
+  scrollDarkenRef.current = scrollDarken
   const [mounted, setMounted] = useState(false)
   const domRootRef = useRef(null)
   const hostElRef = useRef(null)
@@ -129,6 +152,29 @@ export default function ProductAnnotationCallouts({ annotations, progressRef, mo
       return
     }
 
+    const mountNode = portalHostRef?.current
+    if (mountNode) {
+      const root = createRoot(mountNode)
+      domRootRef.current = root
+      hostElRef.current = null
+      root.render(
+        <AnnotationOverlayInner
+          annotations={annotations}
+          lineRefs={lineRefs}
+          ringHotRefs={ringHotRefs}
+          ringTextRefs={ringTextRefs}
+          textWrapRefs={textWrapRefs}
+          containerRef={containerRef}
+          darkenOverlayRef={darkenOverlayRef}
+        />
+      )
+      return () => {
+        root.unmount()
+        domRootRef.current = null
+        containerRef.current = null
+      }
+    }
+
     const el = document.createElement('div')
     el.setAttribute('data-product-annotation-overlay', 'true')
     document.body.appendChild(el)
@@ -144,6 +190,7 @@ export default function ProductAnnotationCallouts({ annotations, progressRef, mo
         ringTextRefs={ringTextRefs}
         textWrapRefs={textWrapRefs}
         containerRef={containerRef}
+        darkenOverlayRef={darkenOverlayRef}
       />
     )
 
@@ -154,9 +201,11 @@ export default function ProductAnnotationCallouts({ annotations, progressRef, mo
       hostElRef.current = null
       containerRef.current = null
     }
-  }, [mounted, annotations])
+  }, [mounted, annotations, portalHostRef])
 
   useFrame(() => {
+    const d = darkenOverlayRef.current
+    if (d) d.style.opacity = String(scrollDarkenRef.current ?? 0)
     const t = progressRef?.current?.value ?? 0
     const root = modelRootRef?.current
     const container = containerRef.current

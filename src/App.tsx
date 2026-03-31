@@ -309,7 +309,12 @@ function App() {
   if (currentView === 'room') {
     return (
       <Suspense fallback={<div>Loading room...</div>}>
-        <RoomScene companyName={selectedCompanyName || 'Company'} onBack={handleBackFromRoom} />
+        <RoomScene
+          key={selectedCompanyId ?? 0}
+          companyId={selectedCompanyId ?? undefined}
+          companyName={selectedCompanyName || 'Company'}
+          onBack={handleBackFromRoom}
+        />
       </Suspense>
     )
   }

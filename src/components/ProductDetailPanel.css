@@ -15,6 +15,13 @@
   animation: product-panel-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* 제품 상세 + 페이지 스크롤: 히어로 블록 안에 붙어 3D와 함께 위로 스크롤아웃 */
+.product-detail-panel--embedded {
+  position: absolute;
+  height: 100%;
+  min-height: 100%;
+}
+
 @keyframes product-panel-in {
   from {
     opacity: 0;

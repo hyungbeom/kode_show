@@ -15,6 +15,8 @@ import ObjectViewer from './ObjectViewer'
 import ObjectDetailButton from './ObjectDetailButton'
 import ProductCarousel from './ProductCarousel'
 import ProductDetailPanel from './ProductDetailPanel'
+import RoomDetailLanding from './RoomDetailLanding'
+import RoomCarouselIntro from './RoomCarouselIntro'
 
 /** `false`면 show_room2 부스 + 박스 전시물 비표시 — 제품 캐러셀만 사용 */
 const SHOW_LEGACY_BOOTH_AND_EXHIBITS = false
@@ -28,12 +30,18 @@ const SHOW_LEGACY_BOOTH_AND_EXHIBITS = false
  * 언마운트 후 render를 호출해 크래시가 납니다. 전시 오브젝트는 HoverableObject만 쓰고,
  * 구역 안내는 Canvas 밖 스크린리더 전용 div로 제공합니다.
  */
-const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
+const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, onBack }) {
+  const scrollRootRef = useRef(null)
+  const fixedLayerRef = useRef(null)
+  /** 제품 콜아웃 DOM — body가 아니라 고정 레이어에 두어 스크롤 랜딩(z-index 1)보다 아래에 쌓임 */
+  const annotationPortalHostRef = useRef(null)
   const resetCameraRef = useRef(null)
   const [selectedObject, setSelectedObject] = useState(null)
   const [showModal, setShowModal] = useState(false)
   /** 제품 GLB 클릭 시 오른쪽 패널 + 캐러셀 상세 동기화 */
   const [productDetail, setProductDetail] = useState(null)
+  /** /room/1 캐러셀 인트로 — EXPLORER 클릭 시 닫음 */
+  const [carouselIntroDismissed, setCarouselIntroDismissed] = useState(false)
   const { a11yPrefersState } = useUserPreferences()
   const prefersDark = a11yPrefersState.prefersDarkScheme
   const prefersReducedMotion = a11yPrefersState.prefersReducedMotion
@@ -276,6 +284,47 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
     resetCameraRef.current?.()
   }, [])
 
+  /** 제품 GLB 확대 시: 3D는 화면에 고정, 그 위 스크롤 레이어에서 랜딩만 올라옴 */
+  const detailPageScroll = !!productDetail
+
+  const showCarouselIntro =
+    companyId === 1 && !productDetail && !carouselIntroDismissed
+
+  /** 제품 상세 스크롤 시: 첫 뷰포트 구간에서 캔버스 → 검은색으로 어둡게 */
+  const [canvasDarken, setCanvasDarken] = useState(0)
+  const updateCanvasDarkenFromScroll = useCallback(() => {
+    const root = scrollRootRef.current
+    if (!root) return
+    const range = Math.max(1, typeof window !== 'undefined' ? window.innerHeight : 800)
+    setCanvasDarken(Math.min(1, root.scrollTop / range))
+  }, [])
+
+  useEffect(() => {
+    if (!detailPageScroll) {
+      setCanvasDarken(0)
+      return
+    }
+    const root = scrollRootRef.current
+    updateCanvasDarkenFromScroll()
+    root?.addEventListener('scroll', updateCanvasDarkenFromScroll, { passive: true })
+    return () => root?.removeEventListener('scroll', updateCanvasDarkenFromScroll)
+  }, [detailPageScroll, updateCanvasDarkenFromScroll])
+
+  /** 제품 상세: 휠은 캔버스뿐 아니라 패널·HUD 등 고정 레이어 전체에서 스크롤 루트로 전달 */
+  useEffect(() => {
+    if (!detailPageScroll) return
+    const el = fixedLayerRef.current
+    if (!el) return
+    const onWheel = (e) => {
+      const root = scrollRootRef.current
+      if (!root) return
+      root.scrollTop += e.deltaY
+      e.preventDefault()
+    }
+    el.addEventListener('wheel', onWheel, { passive: false, capture: true })
+    return () => el.removeEventListener('wheel', onWheel, { capture: true })
+  }, [detailPageScroll])
+
   return (
     <div
       data-room-scene
@@ -284,9 +333,22 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
         height: '100vh',
         position: 'relative',
         opacity: 0,
-        background: sceneBackgroundGradient,
+        overflow: 'hidden',
       }}
     >
+      {/* 3D·UI는 뷰포트에 고정 — 제품 상세 스크롤 시에도 화면에서 움직이지 않음 */}
+      <div
+        ref={fixedLayerRef}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0,
+          background: sceneBackgroundGradient,
+        }}
+      >
       {/* 뒤로가기 버튼 */}
       <button
         onClick={onBack}
@@ -307,6 +369,10 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
       >
         ← 뒤로가기
       </button>
+
+      {showCarouselIntro ? (
+        <RoomCarouselIntro onExplore={() => setCarouselIntroDismissed(true)} />
+      ) : null}
       
       {/* 회사명 표시 */}
       <div
@@ -360,6 +426,18 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
 
       <RoomA11yPlaygroundHud />
 
+      {/* 캔버스보다 먼저 두어 ref가 ProductAnnotationCallouts 마운트 시 채워지게 */}
+      <div
+        ref={annotationPortalHostRef}
+        aria-hidden
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 100,
+        }}
+      />
+
       <div
         role="region"
         aria-label="전시 부스 3D 뷰"
@@ -379,7 +457,16 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
         아래 패널에서 다크 모드·모션 감소 선호를 바꿀 수 있습니다.
       </div>
 
-      {/* 캔버스는 항상 전체 화면 — 제품 정보창은 fixed 오버레이 */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 2,
+        }}
+      >
       <Canvas
         shadows
         style={{ width: '100%', height: '100%', display: 'block', position: 'absolute', top: 0, left: 0 }}
@@ -503,6 +590,8 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
                     showLightToggle={false}
                     openDetailIndex={productDetail?.index ?? null}
                     onProductSelect={setProductDetail}
+                    scrollDarken={canvasDarken}
+                    annotationPortalHostRef={annotationPortalHostRef}
                   />
                 </Suspense>
 
@@ -514,8 +603,13 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
 
       <A11yAnnouncer />
 
-      {/* 제품 상세 정보창 — 캔버스 위 오른쪽 고정 (전체 화면 GLB + UI 동시 노출) */}
-      <ProductDetailPanel product={productDetail} onClose={() => setProductDetail(null)} />
+      {/* 제품 상세 정보창 — 확대 모드: 고정 레이어 오른쪽 (embedded) */}
+      <ProductDetailPanel
+        product={productDetail}
+        onClose={() => setProductDetail(null)}
+        embedded={detailPageScroll}
+      />
+      </div>
 
       {/* 객체 정보 패널 (오른쪽) - 객체 클릭 시 바로 표시, 모달·제품 상세 열리면 숨김 */}
       {!showModal && !productDetail && (
@@ -530,6 +624,43 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, onBack }) {
       {showModal && (
         <ObjectViewer objectInfo={objectInfoForPanel} onClose={handleCloseObjectModal} />
       )}
+
+      {/* 제품 상세 스크롤 시: 고정 레이어 전체(캔버스·HUD·버튼·패널 등) 동일 비율로 어둡게 — pointer-events 없음 */}
+      {detailPageScroll ? (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 10040,
+            pointerEvents: 'none',
+            background: '#000',
+            opacity: canvasDarken,
+          }}
+        />
+      ) : null}
+      </div>
+
+      {detailPageScroll ? (
+        <div
+          ref={scrollRootRef}
+          data-room-scroll
+          style={{
+            position: 'relative',
+            zIndex: 1,
+            height: '100vh',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            overscrollBehavior: 'contain',
+            pointerEvents: 'none',
+          }}
+        >
+          <div style={{ minHeight: '100vh', width: '100%' }} aria-hidden />
+          <div style={{ pointerEvents: 'auto', position: 'relative' }}>
+            <RoomDetailLanding product={productDetail} />
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 })

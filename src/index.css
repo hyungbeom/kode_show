@@ -33,3 +33,13 @@ body {
   height: 100%;
   background-color: transparent;
 }
+
+/** 룸 제품 상세 랜딩 스크롤 — 스크롤은 유지, 스크롤바만 숨김 (Chrome / Firefox / Edge) */
+[data-room-scroll] {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+[data-room-scroll]::-webkit-scrollbar {
+  display: none;
+}
