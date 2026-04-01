@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense, useRef, type MutableRefObject } from 'react'
 import { gsap } from 'gsap'
 import LoadingScreen from './components/LoadingScreen'
 import HomePage from './components/HomePage'
@@ -30,6 +30,8 @@ function App() {
   const [showLoading, setShowLoading] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement>(null)
+  const showLoadingRef: MutableRefObject<boolean> = useRef(showLoading)
+  showLoadingRef.current = showLoading
   
   // 최적화된 Zustand 셀렉터 사용 (한 번에 여러 값 선택)
   const {
@@ -131,26 +133,39 @@ function App() {
     }
   }, [selectedCompanyId, currentView])
   
-  // 로딩 완료 핸들러 — 클로저의 selectedCompanyId 대신 URL + getState()로 동기화(새로고침 /room/:id 안정화)
+  // 로딩 완료 핸들러 — URL·getState() 기준 (showLoading 은 ref 로 최신값, /room/:id 직접 진입 안정화)
   const handleLoadingComplete = useCallback(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : ''
     const roomMatch = path.match(/^\/room\/(\d+)/)
+    let companyId: number | null = useMapStore.getState().selectedCompanyId
+
     if (roomMatch) {
       const id = parseInt(roomMatch[1], 10)
       if (id && COMPANY_NAMES[id]) {
         useMapStore.getState().setSelectedCompany(id, COMPANY_NAMES[id])
+        companyId = id
       }
     }
 
-    const companyId = useMapStore.getState().selectedCompanyId
     const isValidRoom =
       path.startsWith('/room/') &&
       companyId != null &&
-      COMPANY_NAMES[companyId] !== undefined
+      COMPANY_NAMES[companyId as number] !== undefined
 
-    if (isValidRoom && showLoading) {
+    const fromRoomFlow = showLoadingRef.current
+
+    if (!isValidRoom) {
+      setCurrentView('home')
+      return
+    }
+
+    const goRoom = () => {
+      setCurrentView('room')
+      setShowLoading(false)
+    }
+
+    if (fromRoomFlow) {
       setIsTransitioning(true)
-
       const loadingElement = document.querySelector('.loading-screen')
       if (loadingElement) {
         gsap.to(loadingElement, {
@@ -158,43 +173,20 @@ function App() {
           duration: 0.5,
           ease: 'power2.in',
           onComplete: () => {
-            setCurrentView('room')
-            setShowLoading(false)
-
-            setTimeout(() => {
-              const roomElement = document.querySelector('[data-room-scene]')
-              if (roomElement) {
-                gsap.fromTo(
-                  roomElement,
-                  { opacity: 0 },
-                  {
-                    opacity: 1,
-                    duration: 0.8,
-                    ease: 'power2.out',
-                    onComplete: () => {
-                      setIsTransitioning(false)
-                    },
-                  }
-                )
-              } else {
-                setIsTransitioning(false)
-              }
-            }, 50)
+            goRoom()
+            /* Room 씬 페이드인은 RoomSceneInner useLayoutEffect 에서 처리 (lazy 로드 시 querySelector 타이밍 버그 방지) */
+            setIsTransitioning(false)
           },
         })
       } else {
-        setCurrentView('room')
-        setShowLoading(false)
+        goRoom()
         setIsTransitioning(false)
       }
-    } else if (isValidRoom && !showLoading) {
-      setCurrentView('room')
-      setShowLoading(false)
-      setIsTransitioning(false)
     } else {
-      setCurrentView('home')
+      goRoom()
+      setIsTransitioning(false)
     }
-  }, [showLoading])
+  }, [])
   
   // Enter 핸들러 - useCallback으로 메모이제이션
   const handleEnter = useCallback(() => {

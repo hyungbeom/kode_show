@@ -1,7 +1,12 @@
 import { useRef, useEffect, memo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
-import { getZoneCameraFraming, MAP_ORTHO_DEFAULT_LOGICAL_ZOOM } from '../utils/constants'
+import {
+  getZoneCameraFraming,
+  MAP_DEFAULT_ORBIT_TARGET,
+  MAP_DEFAULT_ORTHO_POSITION,
+  MAP_ORTHO_DEFAULT_LOGICAL_ZOOM,
+} from '../utils/constants'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 
@@ -57,8 +62,16 @@ function CameraController({ controlsRef }) {
     }
 
     const controls = controlsRef.current
-    controls.target.set(0, 0, 0)
-    camera.position.set(200, 160, 200)
+    controls.target.set(
+      MAP_DEFAULT_ORBIT_TARGET[0],
+      MAP_DEFAULT_ORBIT_TARGET[1],
+      MAP_DEFAULT_ORBIT_TARGET[2],
+    )
+    camera.position.set(
+      MAP_DEFAULT_ORTHO_POSITION[0],
+      MAP_DEFAULT_ORTHO_POSITION[1],
+      MAP_DEFAULT_ORTHO_POSITION[2],
+    )
     camera.zoom = FULL_MAP_ZOOM
     camera.updateProjectionMatrix()
     controls.update()
@@ -77,10 +90,7 @@ function CameraController({ controlsRef }) {
     // 추적 모드일 때는 CameraController 비활성화 (Player에서 직접 제어)
     if (followPhysicsBox) return
     if (!resetToFullMap) return
-    if (!controlsRef?.current) {
-      console.log('CameraController: controlsRef not available')
-      return
-    }
+    if (!controlsRef?.current) return
 
     orbitSuspendedRef.current = true
     setIsFullMapRotating(false)
@@ -88,7 +98,6 @@ function CameraController({ controlsRef }) {
     // Zone이 선택된 상태에서는 줌아웃 애니메이션 실행 후 업체 리스트 표시
     // (selectedZone 체크 제거 - Zone 클릭 시 줌아웃 후 리스트 표시)
 
-    console.log('CameraController: Resetting to full map view (keeping camera position)')
     
     // 기존 애니메이션 취소
     if (resetAnimationRef.current) {
@@ -108,30 +117,27 @@ function CameraController({ controlsRef }) {
     
     const initialZoom = FULL_MAP_ZOOM
 
-    // 초기 카메라 위치와 타겟 (맵 중앙)
     const initialPosition = {
-      x: 200,
-      y: 160,
-      z: 200,
+      x: MAP_DEFAULT_ORTHO_POSITION[0],
+      y: MAP_DEFAULT_ORTHO_POSITION[1],
+      z: MAP_DEFAULT_ORTHO_POSITION[2],
     }
-    
+
     const initialTarget = {
-      x: 0,
-      y: 0,
-      z: 0,
+      x: MAP_DEFAULT_ORBIT_TARGET[0],
+      y: MAP_DEFAULT_ORBIT_TARGET[1],
+      z: MAP_DEFAULT_ORBIT_TARGET[2],
     }
     
     // GSAP 애니메이션 - NavigationUI 클릭 시 맵 중앙으로 이동하고 줌 아웃
     const timeline = gsap.timeline({
       onComplete: () => {
-        console.log('CameraController: Reset animation complete - starting rotation')
         setResetToFullMap(false)
-        // NavigationUI 클릭인 경우 마커 표시
         setMarkersVisible(true)
         orbitSuspendedRef.current = false
         syncOrbitFromCamera()
-        // 맵 전체 보기 모드에서 카메라 회전 시작
-        setIsFullMapRotating(true)
+        // 최초 맵 진입(initialEntry)과 동일: 자동 궤도 회전 없음 — 사용자가 오빗 조작
+        setIsFullMapRotating(false)
         resetAnimationRef.current = null
       },
     })

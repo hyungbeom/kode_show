@@ -1,30 +1,34 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './LoadingScreen.css'
 
 /**
  * 로딩 화면 컴포넌트
  * KODE Clubs 실제 사이트의 로딩 화면을 재현합니다.
+ *
+ * onComplete 참조가 바뀔 때마다 interval 을 다시 돌리면 (/room/:id 등에서 showLoading 토글 시)
+ * 진행률이 리셋되거나 완료 콜백이 꼬일 수 있어 ref 로만 호출한다.
  */
 export default function LoadingScreen({ onComplete, isInitial = false }) {
   const [progress, setProgress] = useState(0)
-  
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
+
   useEffect(() => {
-    // 로딩 애니메이션
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval)
           setTimeout(() => {
-            onComplete()
+            onCompleteRef.current()
           }, 500)
           return 100
         }
         return prev + 2
       })
     }, 30)
-    
+
     return () => clearInterval(interval)
-  }, [onComplete])
+  }, [])
   
   return (
     <div className={`loading-screen ${isInitial ? 'initial-loading' : ''}`}>

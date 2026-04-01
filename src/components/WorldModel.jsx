@@ -55,35 +55,47 @@ const SMOKE_DRIFT_FACTOR = 0.14 // bbox 최대 변 × 초당 (흔들림)
 const SMOKE_RADIUS_FACTOR = 0.08 // 연기 구 반지름 ≈ bbox 최대변 × 이 값
 const SMOKE_TOP_PAD_FACTOR = 0.06 // 스폰: bbox.max.y + 최대변×이 값
 const SMOKE_TOWER_NODES = ['Air_tower', 'Air_tower001']
-const SMOKE_MAX_PARTICLES = 120
+const SMOKE_MAX_PARTICLES = 72
+/** 프레임당 타워당 최대 스폰 — 누적 시 버스트로 재질·메시 폭증 방지 */
+const SMOKE_MAX_SPAWN_PER_FRAME_PER_TOWER = 2
 
 /**
  * Air_tower 계열 굴뚝 위 연기 (월드 AABB 기준 크기·위치)
+ * 재질은 전 파티클이 1개만 공유 — 이전처럼 매 스폰마다 MeshBasicMaterial 생성 시 WebGL 컨텍스트 손실 유발
  */
-function AirTowerSmoke({ nodes, clonedScene }) {
+function AirTowerSmoke({ nodes }) {
   const { scene } = useThree()
   const particlesRef = useRef([])
+  const meshPoolRef = useRef([])
   const spawnAccByTower = useRef({})
   const box = useRef(new THREE.Box3())
   const size = useRef(new THREE.Vector3())
   const spawnPos = useRef(new THREE.Vector3())
-  /** 반지름 1 구 — mesh.scale로 월드 크기 지정 */
-  const sharedGeo = useMemo(() => new THREE.SphereGeometry(1, 10, 10), [])
+  const sharedGeo = useMemo(() => new THREE.SphereGeometry(1, 8, 8), [])
+  const smokeMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: 0xe8eaed,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    [],
+  )
 
   useEffect(() => {
     return () => {
-      particlesRef.current.forEach((mesh) => {
-        scene.remove(mesh)
-        mesh.material.dispose()
-      })
+      particlesRef.current.forEach((mesh) => scene.remove(mesh))
+      meshPoolRef.current.forEach((mesh) => scene.remove(mesh))
       particlesRef.current = []
+      meshPoolRef.current = []
       sharedGeo.dispose()
+      smokeMat.dispose()
     }
-  }, [scene, sharedGeo])
+  }, [scene, sharedGeo, smokeMat])
 
   useFrame((_, delta) => {
-    if (clonedScene) clonedScene.updateMatrixWorld(true)
-
     for (const towerName of SMOKE_TOWER_NODES) {
       const tower = nodes[towerName]
       if (!tower) continue
@@ -108,20 +120,24 @@ function AirTowerSmoke({ nodes, clonedScene }) {
       const baseRadius = s * SMOKE_RADIUS_FACTOR
       const acc = spawnAccByTower.current
       acc[towerName] = (acc[towerName] ?? 0) + delta
-      while (acc[towerName] >= SMOKE_SPAWN_INTERVAL && particlesRef.current.length < SMOKE_MAX_PARTICLES) {
+      let towerSpawns = 0
+      while (
+        acc[towerName] >= SMOKE_SPAWN_INTERVAL &&
+        particlesRef.current.length < SMOKE_MAX_PARTICLES &&
+        towerSpawns < SMOKE_MAX_SPAWN_PER_FRAME_PER_TOWER
+      ) {
         acc[towerName] -= SMOKE_SPAWN_INTERVAL
-        const material = new THREE.MeshBasicMaterial({
-          color: 0xe8eaed,
-          transparent: true,
-          opacity: 0.85,
-          depthWrite: false,
-          toneMapped: false,
-        })
-        const mesh = new THREE.Mesh(sharedGeo, material)
+        towerSpawns++
+
+        const mesh = meshPoolRef.current.pop() ?? new THREE.Mesh(sharedGeo, smokeMat)
         mesh.renderOrder = 10
         mesh.position.copy(spawnPos.current)
-        mesh.scale.setScalar(baseRadius)
         mesh.userData.smokeS = s
+        mesh.userData.life = 1
+        mesh.userData.sx = baseRadius
+        mesh.userData.sy = baseRadius
+        mesh.userData.sz = baseRadius
+        mesh.scale.set(baseRadius, baseRadius, baseRadius)
         scene.add(mesh)
         particlesRef.current.push(mesh)
       }
@@ -136,14 +152,16 @@ function AirTowerSmoke({ nodes, clonedScene }) {
       p.position.y += rise
       p.position.x += (Math.random() - 0.5) * drift
       p.position.z += (Math.random() - 0.5) * drift
-      p.scale.x += grow
-      p.scale.y += grow
-      p.scale.z += grow
-      p.material.opacity -= SMOKE_FADE_SPEED * delta
-      if (p.material.opacity <= 0) {
+      p.userData.sx += grow
+      p.userData.sy += grow
+      p.userData.sz += grow
+      p.userData.life -= SMOKE_FADE_SPEED * delta
+      const life = Math.max(0, p.userData.life)
+      p.scale.set(p.userData.sx * life, p.userData.sy * life, p.userData.sz * life)
+      if (p.userData.life <= 0) {
         scene.remove(p)
-        p.material.dispose()
         particlesRef.current.splice(i, 1)
+        meshPoolRef.current.push(p)
       }
     }
   })
@@ -236,7 +254,7 @@ export const WorldModel = memo(function WorldModel(props) {
         dirYawDeg={SAKURA_WIND_DIR_YAW_DEG}
         dirPitchDeg={SAKURA_WIND_DIR_PITCH_DEG}
       />
-      <AirTowerSmoke nodes={nodes} clonedScene={clonedScene} />
+      <AirTowerSmoke nodes={nodes} />
       {nodes.Airplane ? <AirplaneFlight airplane={nodes.Airplane} /> : null}
       {nodes.Water_Quality_Land || nodes.CH_Water ? (
         <LandHover

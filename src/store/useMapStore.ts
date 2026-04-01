@@ -81,6 +81,9 @@ interface MapStore {
   // 카메라 전환 완료 상태 (Player의 카메라 팔로우 시작 시점 제어)
   cameraTransitionComplete: boolean
   setCameraTransitionComplete: (complete: boolean) => void
+
+  /** NAVIGATE 등: 최초 맵 진입과 동일한 스토어 상태로 맞춤(카메라는 setResetToFullMap 으로 별도) */
+  resetMapToInitialInteractionState: () => void
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -251,5 +254,26 @@ export const useMapStore = create<MapStore>((set) => ({
   cameraTransitionComplete: true,
   setCameraTransitionComplete: (complete: boolean) => {
     set({ cameraTransitionComplete: complete })
+  },
+
+  resetMapToInitialInteractionState: () => {
+    set({
+      selectedArea: null,
+      cameraTarget: null,
+      pendingZone: null,
+      pendingZonePosition: null,
+      selectedZone: null,
+      selectedZonePosition: null,
+      isMarkerClick: false,
+      isFullscreenCanvas: false,
+      markersVisible: true,
+      isFullMapRotating: false,
+      followPhysicsBox: false,
+      selectedCompanyId: null,
+      selectedCompanyName: null,
+      physicsBoxTargetPosition: null,
+      physicsBoxPath: [],
+      cameraTransitionComplete: true,
+    })
   },
 }))

@@ -6,6 +6,12 @@
 /** 맵 직교 카메라 기본 줌(논리값). 브라우저 UI 확대/축소 시 이 값 기준으로 화면 크기 보정 */
 export const MAP_ORTHO_DEFAULT_LOGICAL_ZOOM = 3.5
 
+/** 맵 전체 뷰 — CameraSystem OrthographicCamera 위치와 동일 */
+export const MAP_DEFAULT_ORTHO_POSITION: [number, number, number] = [200, 160, 200]
+
+/** 맵 전체 뷰 — CameraSystem OrbitControls target 과 동일 */
+export const MAP_DEFAULT_ORBIT_TARGET: [number, number, number] = [-150, 0, 0]
+
 // 업체 정보
 export const COMPANY_NAMES: Record<number, string> = {
   1: '프로지스트',

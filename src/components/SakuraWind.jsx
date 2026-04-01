@@ -108,7 +108,6 @@ function SakuraWindInner({ fan, clonedScene, windCount, petalCount, dirYawDeg = 
 
     const time = state.clock.getElapsedTime()
 
-    if (clonedScene) clonedScene.updateMatrixWorld(true)
     fan.updateWorldMatrix(true, true)
 
     if (!basisReady.current) {

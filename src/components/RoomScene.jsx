@@ -5,7 +5,18 @@ import {
   A11yUserPreferences,
   useUserPreferences,
 } from '@react-three/a11y'
-import { Suspense, useRef, useEffect, useState, memo, createContext, useContext, useCallback, useMemo } from 'react'
+import {
+  Suspense,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  memo,
+  createContext,
+  useContext,
+  useCallback,
+  useMemo,
+} from 'react'
 import { Box } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { gsap } from 'gsap'
@@ -35,6 +46,7 @@ const SHOW_LEGACY_BOOTH_AND_EXHIBITS = false
  * 구역 안내는 Canvas 밖 스크린리더 전용 div로 제공합니다.
  */
 const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, onBack }) {
+  const roomSceneRootRef = useRef(null)
   const scrollRootRef = useRef(null)
   const fixedLayerRef = useRef(null)
   /** 제품 콜아웃 DOM — body가 아니라 고정 레이어에 두어 스크롤 랜딩(z-index 1)보다 아래에 쌓임 */
@@ -49,6 +61,17 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, on
   const { a11yPrefersState } = useUserPreferences()
   const prefersDark = a11yPrefersState.prefersDarkScheme
   const prefersReducedMotion = a11yPrefersState.prefersReducedMotion
+
+  /** App 이 lazy Room 을 50ms 만에 querySelector 하면 노드가 없어 opacity:0 에 고착됨 → 마운트 시 여기서 페이드인 */
+  useLayoutEffect(() => {
+    const el = roomSceneRootRef.current
+    if (!el) return
+    if (prefersReducedMotion) {
+      el.style.opacity = '1'
+      return
+    }
+    gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.65, ease: 'power2.out' })
+  }, [prefersReducedMotion])
 
   const sceneBackgroundGradient = useMemo(
     () =>
@@ -331,6 +354,7 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, on
 
   return (
     <div
+      ref={roomSceneRootRef}
       data-room-scene
       style={{
         width: '100%',

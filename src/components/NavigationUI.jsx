@@ -8,21 +8,13 @@ import './NavigationUI.css'
  */
 export default function NavigationUI() {
   const setResetToFullMap = useMapStore((state) => state.setResetToFullMap)
-  const clearSelectedZone = useMapStore((state) => state.clearSelectedZone)
-  const clearSelectedCompany = useMapStore((state) => state.clearSelectedCompany)
-  const closeFullscreenCanvas = useMapStore((state) => state.closeFullscreenCanvas)
-  const clearCameraTarget = useMapStore((state) => state.clearCameraTarget)
-  
+  const resetMapToInitialInteractionState = useMapStore(
+    (state) => state.resetMapToInitialInteractionState,
+  )
+
   const handleClick = () => {
-    console.log('NavigationUI clicked - resetting to full map')
-    
-    // 열려있는 모든 모달 닫기
-    clearSelectedZone() // ZoneInfoPanel 닫기
-    clearSelectedCompany() // 업체 선택 해제
-    closeFullscreenCanvas() // 전체 화면 모드 닫기
-    clearCameraTarget() // 카메라 타겟 초기화
-    
-    // 맵 전체 보기 모드 활성화
+    // 최초 로딩 직후와 같은 스토어·배치 전제(Zone/추적/팬딩 등 제거)
+    resetMapToInitialInteractionState()
     setResetToFullMap(true)
   }
   

@@ -1,33 +1,22 @@
 import { useCallback, memo } from 'react'
-import { useNavigationStore } from '../hooks/useMapStore'
+import { useMapStore } from '../store/useMapStore'
 import './NavigationUI.css'
 
 /**
  * 네비게이션 UI 컴포넌트 (최적화 버전)
  * 화면 하단 중앙에 "NAVIGATE" 텍스트 표시
- * 클릭 시 맵 전체가 보이도록 줌 아웃
+ * 클릭 시 최초 맵 진입과 동일한 뷰·상태로 복귀
  */
 const NavigationUI = memo(function NavigationUI() {
-  const {
-    setResetToFullMap,
-    clearSelectedZone,
-    clearSelectedCompany,
-    closeFullscreenCanvas,
-    clearCameraTarget,
-  } = useNavigationStore()
-  
+  const setResetToFullMap = useMapStore((s) => s.setResetToFullMap)
+  const resetMapToInitialInteractionState = useMapStore(
+    (s) => s.resetMapToInitialInteractionState,
+  )
+
   const handleClick = useCallback(() => {
-    console.log('NavigationUI clicked - resetting to full map')
-    
-    // 열려있는 모든 모달 닫기
-    clearSelectedZone() // ZoneInfoPanel 닫기
-    clearSelectedCompany() // 업체 선택 해제
-    closeFullscreenCanvas() // 전체 화면 모드 닫기
-    clearCameraTarget() // 카메라 타겟 초기화
-    
-    // 맵 전체 보기 모드 활성화
+    resetMapToInitialInteractionState()
     setResetToFullMap(true)
-  }, [setResetToFullMap, clearSelectedZone, clearSelectedCompany, closeFullscreenCanvas, clearCameraTarget])
+  }, [setResetToFullMap, resetMapToInitialInteractionState])
   
   return (
     <div className="navigation-ui" onClick={handleClick}>
