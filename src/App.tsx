@@ -202,6 +202,10 @@ function App() {
         duration: 0.5,
         ease: 'power2.in',
         onComplete: () => {
+          useMapStore.setState({
+            mapHeroCopyDismissed: false,
+            brandFilmCameraRecenterPending: false,
+          })
           setCurrentView('map')
           setInitialEntry(true)
           
@@ -227,6 +231,10 @@ function App() {
         },
       })
     } else {
+      useMapStore.setState({
+        mapHeroCopyDismissed: false,
+        brandFilmCameraRecenterPending: false,
+      })
       setCurrentView('map')
       setInitialEntry(true)
       setIsTransitioning(false)
