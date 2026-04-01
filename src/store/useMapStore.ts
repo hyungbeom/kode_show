@@ -84,6 +84,12 @@ interface MapStore {
 
   /** NAVIGATE 등: 최초 맵 진입과 동일한 스토어 상태로 맞춤(카메라는 setResetToFullMap 으로 별도) */
   resetMapToInitialInteractionState: () => void
+
+  /** SEE BRAND FILM 클릭 후 왼쪽 히어로 숨김 */
+  mapHeroCopyDismissed: boolean
+  brandFilmCameraRecenterPending: boolean
+  triggerBrandFilmCenterView: () => void
+  clearBrandFilmCameraRecenterPending: () => void
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -256,6 +262,15 @@ export const useMapStore = create<MapStore>((set) => ({
     set({ cameraTransitionComplete: complete })
   },
 
+  mapHeroCopyDismissed: false,
+  brandFilmCameraRecenterPending: false,
+  triggerBrandFilmCenterView: () => {
+    set({ mapHeroCopyDismissed: true, brandFilmCameraRecenterPending: true })
+  },
+  clearBrandFilmCameraRecenterPending: () => {
+    set({ brandFilmCameraRecenterPending: false })
+  },
+
   resetMapToInitialInteractionState: () => {
     set({
       selectedArea: null,
@@ -274,6 +289,8 @@ export const useMapStore = create<MapStore>((set) => ({
       physicsBoxTargetPosition: null,
       physicsBoxPath: [],
       cameraTransitionComplete: true,
+      mapHeroCopyDismissed: false,
+      brandFilmCameraRecenterPending: false,
     })
   },
 }))

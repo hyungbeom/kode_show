@@ -3,6 +3,7 @@ import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
 import {
   getZoneCameraFraming,
+  MAP_CENTERED_ORBIT_TARGET,
   MAP_DEFAULT_ORBIT_TARGET,
   MAP_DEFAULT_ORTHO_POSITION,
   MAP_ORTHO_DEFAULT_LOGICAL_ZOOM,
@@ -37,6 +38,10 @@ function CameraController({ controlsRef }) {
   const setIsFullMapRotating = useMapStore((state) => state.setIsFullMapRotating)
   const selectedArea = useMapStore((state) => state.selectedArea)
   const pendingZone = useMapStore((state) => state.pendingZone)
+  const brandFilmCameraRecenterPending = useMapStore((state) => state.brandFilmCameraRecenterPending)
+  const clearBrandFilmCameraRecenterPending = useMapStore(
+    (state) => state.clearBrandFilmCameraRecenterPending,
+  )
 
   const animationRef = useRef(null)
   const resetAnimationRef = useRef(null)
@@ -81,6 +86,57 @@ function CameraController({ controlsRef }) {
     orbitSuspendedRef.current = false
     setIsFullMapRotating(false)
   }, [initialEntry, camera, controlsRef, setInitialEntry, setIsFullMapRotating, followPhysicsBox])
+
+  /** SEE BRAND FILM — 오빗 타깃을 원점으로 옮겨 world.glb 가 화면 중앙에 오도록 */
+  useEffect(() => {
+    if (followPhysicsBox) return
+    if (!brandFilmCameraRecenterPending) return
+    if (!controlsRef?.current) return
+
+    orbitSuspendedRef.current = true
+    setIsFullMapRotating(false)
+
+    if (animationRef.current) animationRef.current.kill()
+    if (resetAnimationRef.current) resetAnimationRef.current.kill()
+    clearCameraTarget()
+
+    const controls = controlsRef.current
+    const endTarget = {
+      x: MAP_CENTERED_ORBIT_TARGET[0],
+      y: MAP_CENTERED_ORBIT_TARGET[1],
+      z: MAP_CENTERED_ORBIT_TARGET[2],
+    }
+
+    const timeline = gsap.timeline({
+      onComplete: () => {
+        clearBrandFilmCameraRecenterPending()
+        orbitSuspendedRef.current = false
+        syncOrbitFromCamera()
+      },
+    })
+
+    timeline.to(controls.target, {
+      x: endTarget.x,
+      y: endTarget.y,
+      z: endTarget.z,
+      duration: 1.35,
+      ease: 'power2.inOut',
+      onUpdate: () => {
+        controls.update()
+      },
+    })
+
+    return () => {
+      timeline.kill()
+    }
+  }, [
+    brandFilmCameraRecenterPending,
+    followPhysicsBox,
+    controlsRef,
+    clearCameraTarget,
+    clearBrandFilmCameraRecenterPending,
+    setIsFullMapRotating,
+  ])
   
   // Zone 클릭 시 줌아웃 애니메이션 트리거 (setSelectedZone에서 resetToFullMap: true 설정됨)
   // 줌아웃 애니메이션은 resetToFullMap useEffect에서 처리됨

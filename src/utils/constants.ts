@@ -9,8 +9,11 @@ export const MAP_ORTHO_DEFAULT_LOGICAL_ZOOM = 3.5
 /** 맵 전체 뷰 — CameraSystem OrthographicCamera 위치와 동일 */
 export const MAP_DEFAULT_ORTHO_POSITION: [number, number, number] = [200, 160, 200]
 
-/** 맵 전체 뷰 — CameraSystem OrbitControls target 과 동일 */
+/** 맵 전체 뷰 — CameraSystem OrbitControls target 과 동일 (왼쪽 히어로 카피 여백) */
 export const MAP_DEFAULT_ORBIT_TARGET: [number, number, number] = [-150, 0, 0]
+
+/** SEE BRAND FILM 등 — world.glb 를 캔버스 중앙에 두기 위한 오빗 타깃(월드 원점) */
+export const MAP_CENTERED_ORBIT_TARGET: [number, number, number] = [0, 0, 0]
 
 // 업체 정보
 export const COMPANY_NAMES: Record<number, string> = {

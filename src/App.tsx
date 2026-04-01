@@ -43,6 +43,9 @@ function App() {
     selectedZone,
     clearSelectedZone,
   } = useAppMapStore()
+
+  const mapHeroCopyDismissed = useMapStore((s) => s.mapHeroCopyDismissed)
+  const triggerBrandFilmCenterView = useMapStore((s) => s.triggerBrandFilmCenterView)
   
   // URL 체크 함수 - useCallback으로 메모이제이션
   const checkUrl = useCallback(() => {
@@ -316,24 +319,30 @@ function App() {
         <MapScene />
       </Suspense>
 
-      <section className="map-hero-copy" lang="en" aria-label="Welcome to Kode Sports Club">
-        <p className="map-hero-copy__logo">KODE</p>
-        <h1 className="map-hero-copy__headline">
-          <span className="map-hero-copy__headline-line">INTERNATIONAL EXHIBITION</span>
-          <span className="map-hero-copy__headline-line">ON ENVIRONMENTAL TECHNOLOGY &</span>
-          <span className="map-hero-copy__headline-line">GREEN ENERGY</span>
-        </h1>
-        <p className="map-hero-copy__body">
-          Kode is a multi-disciplinary sports club,
-          <br />
-          making its debut at Swan Lake Residences,
-          <br />
-          <span className="map-hero-copy__underline">Youssef El Sebai, First New Cairo</span>
-        </p>
-        <button type="button" className="map-hero-copy__cta">
-          See brand film
-        </button>
-      </section>
+      {!mapHeroCopyDismissed ? (
+        <section className="map-hero-copy" lang="en" aria-label="Welcome to Kode Sports Club">
+          <p className="map-hero-copy__logo">KODE</p>
+          <h1 className="map-hero-copy__headline">
+            <span className="map-hero-copy__headline-line">INTERNATIONAL EXHIBITION</span>
+            <span className="map-hero-copy__headline-line">ON ENVIRONMENTAL TECHNOLOGY &</span>
+            <span className="map-hero-copy__headline-line">GREEN ENERGY</span>
+          </h1>
+          <p className="map-hero-copy__body">
+            Kode is a multi-disciplinary sports club,
+            <br />
+            making its debut at Swan Lake Residences,
+            <br />
+            <span className="map-hero-copy__underline">Youssef El Sebai, First New Cairo</span>
+          </p>
+          <button
+            type="button"
+            className="map-hero-copy__cta"
+            onClick={() => triggerBrandFilmCenterView()}
+          >
+            SEE BRAND FILM
+          </button>
+        </section>
+      ) : null}
       
       {/* 상단 헤더 */}
       <MapHeader onClose={handleCloseMap} />
