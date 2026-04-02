@@ -6,6 +6,12 @@
   user-select: none;
 }
 
+.node-speech-bubble--interactive {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .node-speech-bubble__body {
   position: relative;
   background: #ffffff;

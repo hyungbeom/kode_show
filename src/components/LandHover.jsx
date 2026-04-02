@@ -17,14 +17,22 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
   const selectArea = useMapStore((s) => s.selectArea)
   const glbFocusPositions = useMapStore((s) => s.glbFocusPositions)
 
+  const activateZone = useCallback(() => {
+    if (!zoneId || !glbNode) return
+    const pos = glbFocusPositions[glbNode]
+    if (pos) selectArea(zoneId, pos)
+  }, [zoneId, glbNode, glbFocusPositions, selectArea])
+
+  const handleHitPointerDown = useCallback((e) => {
+    e.stopPropagation()
+  }, [])
+
   const handleZoneClick = useCallback(
     (e) => {
-      if (!zoneId || !glbNode) return
       e.stopPropagation()
-      const pos = glbFocusPositions[glbNode]
-      if (pos) selectArea(zoneId, pos)
+      activateZone()
     },
-    [zoneId, glbNode, glbFocusPositions, selectArea]
+    [activateZone],
   )
 
   const targets = useMemo(() => {
@@ -99,6 +107,7 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
     <>
       <mesh
         ref={hitRef}
+        onPointerDown={handleHitPointerDown}
         onClick={handleZoneClick}
         onPointerOver={(e) => {
           e.stopPropagation()
@@ -119,6 +128,7 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
         showBadge
         yPad={18}
         variant={hovered ? 'dark' : 'light'}
+        onBubbleActivate={activateZone}
       />
     </>
   )

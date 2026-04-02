@@ -1,7 +1,8 @@
 import { useRef, useEffect, memo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
-import { getZoneCameraFraming, MAP_CENTERED_ORBIT_TARGET } from '../utils/constants'
+import { MAP_CENTERED_ORBIT_TARGET } from '../utils/constants'
+import { getZoneCameraFramingForWidth } from '../utils/mapZoneCameraFraming'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 
@@ -36,6 +37,7 @@ function CameraController({ controlsRef }) {
   const mapViewportOrthoZoom = useMapStore((state) => state.mapViewportOrthoZoom)
   const mapDefaultOrthoPosition = useMapStore((state) => state.mapDefaultOrthoPosition)
   const mapDefaultOrbitTarget = useMapStore((state) => state.mapDefaultOrbitTarget)
+  const mapLayoutBrowserWidthPx = useMapStore((state) => state.mapLayoutBrowserWidthPx)
 
   const animationRef = useRef(null)
   const resetAnimationRef = useRef(null)
@@ -285,7 +287,7 @@ function CameraController({ controlsRef }) {
     }
     
     const zoneKey = pendingZone ?? selectedArea
-    const framing = getZoneCameraFraming(zoneKey)
+    const framing = getZoneCameraFramingForWidth(zoneKey, mapLayoutBrowserWidthPx)
     const sx = framing.cameraShiftX ?? 0
     const sy = framing.cameraShiftY ?? 0
     const sz = framing.cameraShiftZ ?? 0
@@ -368,6 +370,7 @@ function CameraController({ controlsRef }) {
     followPhysicsBox,
     selectedArea,
     pendingZone,
+    mapLayoutBrowserWidthPx,
   ])
   
   // 맵 전체 보기: 정면 기준 좌우 왕복 + 반주기 높이/반경 변조 (메비우스 띠 느낌, 360° 원형 아님)

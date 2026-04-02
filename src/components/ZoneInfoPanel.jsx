@@ -79,6 +79,8 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
 
   const setSelectedCompany = useMapStore((state) => state.setSelectedCompany)
   const closeFullscreenCanvas = useMapStore((state) => state.closeFullscreenCanvas)
+  const mapLayoutBrowserWidthPx = useMapStore((state) => state.mapLayoutBrowserWidthPx)
+  const isMobileSheet = mapLayoutBrowserWidthPx < 768
 
   const richPanel = getZoneRichPanel(zoneId)
   const zoneLabel = ZONE_GLB_FOCUS_LIST.find((z) => z.id === zoneId)?.text
@@ -115,51 +117,77 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
     gsap.killTweensOf(panelRef.current)
     gsap.killTweensOf(boxRef.current)
 
-    gsap.set(panelRef.current, { opacity: 0, x: enterX })
-    gsap.set(boxRef.current, { rotationY: richPanel ? 0 : -Math.PI / 4 })
-
-    gsap.to(panelRef.current, {
-      opacity: 1,
-      x: 0,
-      duration: 0.55,
-      ease: 'power3.out',
-      delay: 0.05,
-    })
-
-    if (!richPanel) {
-      gsap.to(boxRef.current, {
-        rotationY: 0,
-        duration: 0.5,
-        ease: 'power2.out',
-        delay: 0.1,
+    if (isMobileSheet) {
+      gsap.set(panelRef.current, { opacity: 0, x: 0, yPercent: 100 })
+      gsap.set(boxRef.current, { rotationY: 0 })
+      gsap.to(panelRef.current, {
+        opacity: 1,
+        yPercent: 0,
+        duration: 0.52,
+        ease: 'power3.out',
+        delay: 0.04,
       })
+    } else {
+      gsap.set(panelRef.current, { opacity: 0, x: enterX, yPercent: 0 })
+      gsap.set(boxRef.current, { rotationY: richPanel ? 0 : -Math.PI / 4 })
+
+      gsap.to(panelRef.current, {
+        opacity: 1,
+        x: 0,
+        duration: 0.55,
+        ease: 'power3.out',
+        delay: 0.05,
+      })
+
+      if (!richPanel) {
+        gsap.to(boxRef.current, {
+          rotationY: 0,
+          duration: 0.5,
+          ease: 'power2.out',
+          delay: 0.1,
+        })
+      }
     }
 
     prevZoneIdRef.current = zoneId
     isVisibleRef.current = true
-  }, [zoneId, richPanel])
+  }, [zoneId, richPanel, isMobileSheet])
 
   // 리치 소개 탭: 섹션 스태거 (구역 변경 또는 소개 탭으로 복귀)
   useLayoutEffect(() => {
     if (!richPanel || activeTab !== 'intro') return
     const slideFrom = richPanel.slideFrom ?? 'right'
-    const sectionNudge = slideFrom === 'right' ? 36 : -36
+    const sectionNudgeX = slideFrom === 'right' ? 36 : -36
+    const sectionNudgeY = 28
     const els = sectionsRef.current.filter(Boolean)
     if (!els.length) return
     gsap.killTweensOf(els)
-    gsap.set(els, { opacity: 0, x: sectionNudge })
-    gsap.to(els, {
-      opacity: 1,
-      x: 0,
-      duration: 0.42,
-      stagger: 0.09,
-      ease: 'power2.out',
-      delay: 0.28,
-    })
-  }, [activeTab, zoneId, richPanel])
+    if (isMobileSheet) {
+      gsap.set(els, { opacity: 0, x: 0, y: sectionNudgeY })
+      gsap.to(els, {
+        opacity: 1,
+        y: 0,
+        duration: 0.42,
+        stagger: 0.09,
+        ease: 'power2.out',
+        delay: 0.28,
+      })
+    } else {
+      gsap.set(els, { opacity: 0, x: sectionNudgeX, y: 0 })
+      gsap.to(els, {
+        opacity: 1,
+        x: 0,
+        duration: 0.42,
+        stagger: 0.09,
+        ease: 'power2.out',
+        delay: 0.28,
+      })
+    }
+  }, [activeTab, zoneId, richPanel, isMobileSheet])
 
-  const overlayClass =
-    richPanel?.slideFrom === 'left'
+  const overlayClass = isMobileSheet
+    ? 'zone-info-overlay zone-info-overlay--mobile-sheet'
+    : richPanel?.slideFrom === 'left'
       ? 'zone-info-overlay zone-info-overlay--left'
       : 'zone-info-overlay zone-info-overlay--right'
 
@@ -167,7 +195,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
     <div ref={overlayRef} className={overlayClass}>
       <div
         ref={panelRef}
-        className="zone-info-panel zone-info-panel--wide"
+        className={`zone-info-panel zone-info-panel--wide${isMobileSheet ? ' zone-info-panel--mobile-sheet' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div ref={boxRef} className={`zone-info-box ${richPanel ? 'zone-info-box--rich' : ''}`}>

@@ -14,6 +14,7 @@ import './NodeSpeechBubble.css'
  * @param {boolean} showBadge - 우측 상단 분홍 ! 배지
  * @param {number} yPad - 바운딩 박스 위 추가 오프셋 (월드 단위)
  * @param {'light' | 'dark'} variant - dark: 네이비 배경·흰 글씨·빨간 배지 (호버 등)
+ * @param {() => void} onBubbleActivate - 모바일 등: Html 말풍선 직접 탭 시 구역 포커스(캔버스 레이캐스트와 위치가 어긋나는 문제 방지)
  */
 export function NodeSpeechBubble({
   anchor,
@@ -22,6 +23,7 @@ export function NodeSpeechBubble({
   showBadge = true,
   yPad = 4,
   variant = 'light',
+  onBubbleActivate,
 }) {
   const groupRef = useRef(null)
   const box = useRef(new THREE.Box3())
@@ -48,20 +50,43 @@ export function NodeSpeechBubble({
 
   if (!anchor) return null
 
+  const bubbleInteractive = Boolean(onBubbleActivate)
+
   return (
     <group ref={groupRef}>
       <Html
         center
         position={[0, 0, 0]}
         transform={false}
-        style={{ pointerEvents: 'none' }}
+        style={{ pointerEvents: bubbleInteractive ? 'auto' : 'none' }}
         zIndexRange={[100, 0]}
       >
         <div
-          className={`node-speech-bubble${variant === 'dark' ? ' node-speech-bubble--dark' : ''}`}
+          role={bubbleInteractive ? 'button' : undefined}
+          tabIndex={bubbleInteractive ? 0 : undefined}
+          onKeyDown={
+            bubbleInteractive
+              ? (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onBubbleActivate?.()
+                  }
+                }
+              : undefined
+          }
+          className={`node-speech-bubble${variant === 'dark' ? ' node-speech-bubble--dark' : ''}${bubbleInteractive ? ' node-speech-bubble--interactive' : ''}`}
           style={{
             transform: `scale(${bubbleScale})`,
             transformOrigin: 'center center',
+          }}
+          onPointerDown={(e) => {
+            if (!bubbleInteractive) return
+            e.stopPropagation()
+          }}
+          onClick={(e) => {
+            if (!bubbleInteractive) return
+            e.stopPropagation()
+            onBubbleActivate()
           }}
         >
           <div className="node-speech-bubble__body">
