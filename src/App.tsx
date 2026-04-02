@@ -343,7 +343,7 @@ function App() {
             We invite you to <span className="map-hero-copy__underline">2026 ENVEX</span>  (International Exhibition on Environmental Technology & Green Energy)<br/> Korea's largest environmental exhibition.
             <br />
             {/*Don't miss this special opportunity to be the first <br/>to experience the newest trends in the environmental industry!*/}
-            <br />
+            {/*<br />*/}
 
           </p>
           <button
