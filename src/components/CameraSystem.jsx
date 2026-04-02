@@ -4,7 +4,6 @@ import { useThree, useFrame } from '@react-three/fiber'
 import CameraController from './CameraController'
 import OrthographicZoomCompensation from './OrthographicZoomCompensation'
 import { useMapStore } from '../store/useMapStore'
-import { MAP_DEFAULT_ORBIT_TARGET, MAP_DEFAULT_ORTHO_POSITION } from '../utils/constants'
 import * as THREE from 'three'
 
 /**
@@ -20,6 +19,8 @@ const CameraSystem = memo(() => {
   const cameraTarget = useMapStore((state) => state.cameraTarget)
   const selectedZone = useMapStore((state) => state.selectedZone)
   const mapViewportOrthoZoom = useMapStore((state) => state.mapViewportOrthoZoom)
+  const mapDefaultOrthoPosition = useMapStore((state) => state.mapDefaultOrthoPosition)
+  const mapDefaultOrbitTarget = useMapStore((state) => state.mapDefaultOrbitTarget)
   
   // 카메라 전환 애니메이션용 ref
   const transitionStartRef = useRef(null)
@@ -79,15 +80,21 @@ const CameraSystem = memo(() => {
       transitionProgressRef.current = 0
       isTransitioningRef.current = true
       
-      transitionTargetRef.current = new THREE.Vector3(...MAP_DEFAULT_ORTHO_POSITION)
-      transitionLookAtRef.current = new THREE.Vector3(...MAP_DEFAULT_ORBIT_TARGET)
+      transitionTargetRef.current = new THREE.Vector3(...mapDefaultOrthoPosition)
+      transitionLookAtRef.current = new THREE.Vector3(...mapDefaultOrbitTarget)
       
       prevFollowPhysicsBoxRef.current = followPhysicsBox
     }
     
     // 다음 프레임에서 캡처
     requestAnimationFrame(captureFrame)
-  }, [followPhysicsBox, camera, setCameraTransitionComplete])
+  }, [
+    followPhysicsBox,
+    camera,
+    setCameraTransitionComplete,
+    mapDefaultOrthoPosition,
+    mapDefaultOrbitTarget,
+  ])
   
   // 맵 전체 보기 모드에서 카메라 회전 애니메이션
   const rotationAngleRef = useRef(0)
@@ -173,7 +180,7 @@ const CameraSystem = memo(() => {
       {/* 맵 뷰일 때만 OrthographicCamera 렌더링 */}
       <OrthographicCamera
         makeDefault
-        position={MAP_DEFAULT_ORTHO_POSITION}
+        position={mapDefaultOrthoPosition}
         zoom={mapViewportOrthoZoom}
         near={0.1}
         far={500000}
@@ -193,7 +200,7 @@ const CameraSystem = memo(() => {
         maxZoom={50}
         minPolarAngle={Math.PI / 6}
         maxPolarAngle={Math.PI / 2}
-        target={MAP_DEFAULT_ORBIT_TARGET}
+        target={mapDefaultOrbitTarget}
       />
     </>
   )

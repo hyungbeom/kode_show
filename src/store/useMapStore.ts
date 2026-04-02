@@ -1,6 +1,9 @@
 import { create } from 'zustand'
-import { MAP_ORTHO_DEFAULT_LOGICAL_ZOOM } from '../utils/constants'
-import { computeMapOrthoZoomForWidth } from '../utils/mapViewport'
+import {
+  getMapDefaultOrthoPositionForWidth,
+  getMapDefaultOrbitTargetForWidth,
+} from '../utils/mapCameraLayout'
+import { computeMapOrthoZoomForWidth, readLayoutBrowserWidthPx } from '../utils/mapViewport'
 
 /**
  * KODE Clubs 지도 상태 관리 스토어
@@ -96,6 +99,18 @@ interface MapStore {
   /** 뷰포트 너비 기반 맵 OrthographicCamera 논리 줌 (PC/태블릿/모바일) */
   mapViewportOrthoZoom: number
   setMapViewportOrthoZoom: (zoom: number) => void
+
+  /** 브라우저 너비 기반 맵 기본 카메라 pose — CameraSystem / CameraController 와 동기화 */
+  mapDefaultOrthoPosition: [number, number, number]
+  mapDefaultOrbitTarget: [number, number, number]
+  setMapDefaultCameraLayout: (
+    ortho: [number, number, number],
+    target: [number, number, number],
+  ) => void
+
+  /** readLayoutBrowserWidthPx — ZONE 말풍선·Html 오버레이가 카메라와 동일 기준 사용 */
+  mapLayoutBrowserWidthPx: number
+  setMapLayoutBrowserWidthPx: (w: number) => void
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -277,12 +292,23 @@ export const useMapStore = create<MapStore>((set) => ({
     set({ brandFilmCameraRecenterPending: false })
   },
 
-  mapViewportOrthoZoom:
-    typeof window !== 'undefined'
-      ? computeMapOrthoZoomForWidth(window.innerWidth)
-      : MAP_ORTHO_DEFAULT_LOGICAL_ZOOM,
+  mapViewportOrthoZoom: computeMapOrthoZoomForWidth(readLayoutBrowserWidthPx()),
   setMapViewportOrthoZoom: (zoom: number) => {
     set({ mapViewportOrthoZoom: zoom })
+  },
+
+  mapDefaultOrthoPosition: getMapDefaultOrthoPositionForWidth(readLayoutBrowserWidthPx()),
+  mapDefaultOrbitTarget: getMapDefaultOrbitTargetForWidth(readLayoutBrowserWidthPx()),
+  setMapDefaultCameraLayout: (ortho, target) => {
+    set({
+      mapDefaultOrthoPosition: ortho,
+      mapDefaultOrbitTarget: target,
+    })
+  },
+
+  mapLayoutBrowserWidthPx: readLayoutBrowserWidthPx(),
+  setMapLayoutBrowserWidthPx: (w: number) => {
+    set({ mapLayoutBrowserWidthPx: w })
   },
 
   resetMapToInitialInteractionState: () => {

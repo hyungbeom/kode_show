@@ -1,12 +1,7 @@
 import { useRef, useEffect, memo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
-import {
-  getZoneCameraFraming,
-  MAP_CENTERED_ORBIT_TARGET,
-  MAP_DEFAULT_ORBIT_TARGET,
-  MAP_DEFAULT_ORTHO_POSITION,
-} from '../utils/constants'
+import { getZoneCameraFraming, MAP_CENTERED_ORBIT_TARGET } from '../utils/constants'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 
@@ -39,6 +34,8 @@ function CameraController({ controlsRef }) {
     (state) => state.clearBrandFilmCameraRecenterPending,
   )
   const mapViewportOrthoZoom = useMapStore((state) => state.mapViewportOrthoZoom)
+  const mapDefaultOrthoPosition = useMapStore((state) => state.mapDefaultOrthoPosition)
+  const mapDefaultOrbitTarget = useMapStore((state) => state.mapDefaultOrbitTarget)
 
   const animationRef = useRef(null)
   const resetAnimationRef = useRef(null)
@@ -65,14 +62,14 @@ function CameraController({ controlsRef }) {
 
     const controls = controlsRef.current
     controls.target.set(
-      MAP_DEFAULT_ORBIT_TARGET[0],
-      MAP_DEFAULT_ORBIT_TARGET[1],
-      MAP_DEFAULT_ORBIT_TARGET[2],
+      mapDefaultOrbitTarget[0],
+      mapDefaultOrbitTarget[1],
+      mapDefaultOrbitTarget[2],
     )
     camera.position.set(
-      MAP_DEFAULT_ORTHO_POSITION[0],
-      MAP_DEFAULT_ORTHO_POSITION[1],
-      MAP_DEFAULT_ORTHO_POSITION[2],
+      mapDefaultOrthoPosition[0],
+      mapDefaultOrthoPosition[1],
+      mapDefaultOrthoPosition[2],
     )
     camera.zoom = mapViewportOrthoZoom
     camera.updateProjectionMatrix()
@@ -90,6 +87,8 @@ function CameraController({ controlsRef }) {
     setIsFullMapRotating,
     followPhysicsBox,
     mapViewportOrthoZoom,
+    mapDefaultOrthoPosition,
+    mapDefaultOrbitTarget,
   ])
 
   /** SEE BRAND FILM — 오빗 타깃을 원점으로 옮겨 world.glb 가 화면 중앙에 오도록 */
@@ -179,15 +178,15 @@ function CameraController({ controlsRef }) {
     const initialZoom = mapViewportOrthoZoom
 
     const initialPosition = {
-      x: MAP_DEFAULT_ORTHO_POSITION[0],
-      y: MAP_DEFAULT_ORTHO_POSITION[1],
-      z: MAP_DEFAULT_ORTHO_POSITION[2],
+      x: mapDefaultOrthoPosition[0],
+      y: mapDefaultOrthoPosition[1],
+      z: mapDefaultOrthoPosition[2],
     }
 
     const initialTarget = {
-      x: MAP_DEFAULT_ORBIT_TARGET[0],
-      y: MAP_DEFAULT_ORBIT_TARGET[1],
-      z: MAP_DEFAULT_ORBIT_TARGET[2],
+      x: mapDefaultOrbitTarget[0],
+      y: mapDefaultOrbitTarget[1],
+      z: mapDefaultOrbitTarget[2],
     }
     
     // GSAP 애니메이션 - NavigationUI 클릭 시 맵 중앙으로 이동하고 줌 아웃
@@ -254,6 +253,8 @@ function CameraController({ controlsRef }) {
     setIsFullMapRotating,
     followPhysicsBox,
     mapViewportOrthoZoom,
+    mapDefaultOrthoPosition,
+    mapDefaultOrbitTarget,
   ])
   
   // 마커 클릭 시 카메라 이동

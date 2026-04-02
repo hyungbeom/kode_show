@@ -1,25 +1,39 @@
-import { Suspense, memo } from 'react'
+import { Suspense, memo, useMemo } from 'react'
 import { RigidBody } from '@react-three/rapier'
 import Player from './Player'
 import { WorldModel } from './WorldModel'
+import { useBrowserWidthPx } from '../hooks/useBrowserWidthPx'
+import {
+  getMapWorldResponsivePosition,
+  getMapWorldResponsiveScale,
+} from '../utils/mapViewportLayout'
 
 /**
  * 맵 지형 컴포넌트
  * world.glb 맵 + 캐릭터만 표시, 물리엔진용 ground 유지
+ * 태블릿·모바일: 브라우저(visualViewport / innerWidth) 너비로 월드 스케일·위치 조절
  */
 const MapTerrain = memo(function MapTerrain() {
+  const browserWidthPx = useBrowserWidthPx()
+
+  const worldScale = useMemo(
+    () => getMapWorldResponsiveScale(browserWidthPx),
+    [browserWidthPx],
+  )
+  const worldPosition = useMemo(
+    () => getMapWorldResponsivePosition(browserWidthPx),
+    [browserWidthPx],
+  )
+
   const scale = 5
   const groundLevel = 0
 
   return (
-    <group position={[0, 0, 0]}>
-      {/* world.glb 맵 모델 */}
+    <group scale={worldScale} position={worldPosition}>
       <WorldModel />
 
-      {/* 물리엔진용 바닥 - 캐릭터 이동 지원 */}
       <GroundPlane scale={scale} groundLevel={groundLevel} />
 
-      {/* Player 캐릭터 */}
       <Player scale={scale} groundLevel={groundLevel} />
     </group>
   )

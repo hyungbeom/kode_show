@@ -5,7 +5,14 @@ import { Physics } from '@react-three/rapier'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
 import { useMapStore } from '../store/useMapStore'
-import { computeMapOrthoZoomForWidth } from '../utils/mapViewport'
+import {
+  computeMapOrthoZoomForWidth,
+  readLayoutBrowserWidthPx,
+} from '../utils/mapViewport'
+import {
+  getMapDefaultOrthoPositionForWidth,
+  getMapDefaultOrbitTargetForWidth,
+} from '../utils/mapCameraLayout'
 import {
   maintainTransparentSceneBackground,
   syncTransparentWebGLCanvas,
@@ -108,14 +115,19 @@ function MapPhysicsSceneContent() {
 
 function MapViewportOrthoSync() {
   const setMapViewportOrthoZoom = useMapStore((s) => s.setMapViewportOrthoZoom)
+  const setMapDefaultCameraLayout = useMapStore((s) => s.setMapDefaultCameraLayout)
+  const setMapLayoutBrowserWidthPx = useMapStore((s) => s.setMapLayoutBrowserWidthPx)
 
   useEffect(() => {
-    const readWidth = () => {
-      if (typeof window === 'undefined') return 1024
-      const vv = window.visualViewport
-      return vv?.width && vv.width > 0 ? vv.width : window.innerWidth
+    const sync = () => {
+      const w = readLayoutBrowserWidthPx()
+      setMapLayoutBrowserWidthPx(w)
+      setMapViewportOrthoZoom(computeMapOrthoZoomForWidth(w))
+      setMapDefaultCameraLayout(
+        getMapDefaultOrthoPositionForWidth(w),
+        getMapDefaultOrbitTargetForWidth(w),
+      )
     }
-    const sync = () => setMapViewportOrthoZoom(computeMapOrthoZoomForWidth(readWidth()))
 
     sync()
     window.addEventListener('resize', sync)
@@ -124,7 +136,7 @@ function MapViewportOrthoSync() {
       window.removeEventListener('resize', sync)
       window.visualViewport?.removeEventListener('resize', sync)
     }
-  }, [setMapViewportOrthoZoom])
+  }, [setMapViewportOrthoZoom, setMapDefaultCameraLayout, setMapLayoutBrowserWidthPx])
 
   return null
 }

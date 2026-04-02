@@ -1,7 +1,9 @@
-import { useRef } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
+import { useMapStore } from '../store/useMapStore'
+import { getSpeechBubbleScaleForWidth } from '../utils/mapViewportLayout'
 import './NodeSpeechBubble.css'
 
 /**
@@ -24,6 +26,8 @@ export function NodeSpeechBubble({
   const groupRef = useRef(null)
   const box = useRef(new THREE.Box3())
   const pos = useRef(new THREE.Vector3())
+  const layoutWidthPx = useMapStore((s) => s.mapLayoutBrowserWidthPx)
+  const bubbleScale = useMemo(() => getSpeechBubbleScaleForWidth(layoutWidthPx), [layoutWidthPx])
 
   useFrame(() => {
     const g = groupRef.current
@@ -53,7 +57,13 @@ export function NodeSpeechBubble({
         style={{ pointerEvents: 'none' }}
         zIndexRange={[100, 0]}
       >
-        <div className={`node-speech-bubble${variant === 'dark' ? ' node-speech-bubble--dark' : ''}`}>
+        <div
+          className={`node-speech-bubble${variant === 'dark' ? ' node-speech-bubble--dark' : ''}`}
+          style={{
+            transform: `scale(${bubbleScale})`,
+            transformOrigin: 'center center',
+          }}
+        >
           <div className="node-speech-bubble__body">
             {showBadge ? <span className="node-speech-bubble__badge">!</span> : null}
             <p className="node-speech-bubble__text">{label}</p>
