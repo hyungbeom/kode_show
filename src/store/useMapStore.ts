@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { MAP_ORTHO_DEFAULT_LOGICAL_ZOOM } from '../utils/constants'
+import { computeMapOrthoZoomForWidth } from '../utils/mapViewport'
 
 /**
  * KODE Clubs 지도 상태 관리 스토어
@@ -90,6 +92,10 @@ interface MapStore {
   brandFilmCameraRecenterPending: boolean
   triggerBrandFilmCenterView: () => void
   clearBrandFilmCameraRecenterPending: () => void
+
+  /** 뷰포트 너비 기반 맵 OrthographicCamera 논리 줌 (PC/태블릿/모바일) */
+  mapViewportOrthoZoom: number
+  setMapViewportOrthoZoom: (zoom: number) => void
 }
 
 export const useMapStore = create<MapStore>((set) => ({
@@ -269,6 +275,14 @@ export const useMapStore = create<MapStore>((set) => ({
   },
   clearBrandFilmCameraRecenterPending: () => {
     set({ brandFilmCameraRecenterPending: false })
+  },
+
+  mapViewportOrthoZoom:
+    typeof window !== 'undefined'
+      ? computeMapOrthoZoomForWidth(window.innerWidth)
+      : MAP_ORTHO_DEFAULT_LOGICAL_ZOOM,
+  setMapViewportOrthoZoom: (zoom: number) => {
+    set({ mapViewportOrthoZoom: zoom })
   },
 
   resetMapToInitialInteractionState: () => {

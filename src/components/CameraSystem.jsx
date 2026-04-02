@@ -4,11 +4,7 @@ import { useThree, useFrame } from '@react-three/fiber'
 import CameraController from './CameraController'
 import OrthographicZoomCompensation from './OrthographicZoomCompensation'
 import { useMapStore } from '../store/useMapStore'
-import {
-  MAP_DEFAULT_ORBIT_TARGET,
-  MAP_DEFAULT_ORTHO_POSITION,
-  MAP_ORTHO_DEFAULT_LOGICAL_ZOOM,
-} from '../utils/constants'
+import { MAP_DEFAULT_ORBIT_TARGET, MAP_DEFAULT_ORTHO_POSITION } from '../utils/constants'
 import * as THREE from 'three'
 
 /**
@@ -23,6 +19,7 @@ const CameraSystem = memo(() => {
   const isFullMapRotating = useMapStore((state) => state.isFullMapRotating)
   const cameraTarget = useMapStore((state) => state.cameraTarget)
   const selectedZone = useMapStore((state) => state.selectedZone)
+  const mapViewportOrthoZoom = useMapStore((state) => state.mapViewportOrthoZoom)
   
   // 카메라 전환 애니메이션용 ref
   const transitionStartRef = useRef(null)
@@ -124,7 +121,7 @@ const CameraSystem = memo(() => {
         
         // OrthographicCamera인 경우 zoom 설정
         if (state.camera instanceof THREE.OrthographicCamera && !followPhysicsBox) {
-          state.camera.zoom = MAP_ORTHO_DEFAULT_LOGICAL_ZOOM
+          state.camera.zoom = mapViewportOrthoZoom
           state.camera.updateProjectionMatrix()
         }
         
@@ -156,7 +153,7 @@ const CameraSystem = memo(() => {
         // OrthographicCamera인 경우 zoom도 보간
         if (state.camera instanceof THREE.OrthographicCamera && !followPhysicsBox) {
           const startZoom = 1
-          const targetZoom = MAP_ORTHO_DEFAULT_LOGICAL_ZOOM
+          const targetZoom = mapViewportOrthoZoom
           const currentZoom = startZoom + (targetZoom - startZoom) * easedT
           state.camera.zoom = currentZoom
           state.camera.updateProjectionMatrix()
@@ -177,7 +174,7 @@ const CameraSystem = memo(() => {
       <OrthographicCamera
         makeDefault
         position={MAP_DEFAULT_ORTHO_POSITION}
-        zoom={MAP_ORTHO_DEFAULT_LOGICAL_ZOOM}
+        zoom={mapViewportOrthoZoom}
         near={0.1}
         far={500000}
       />

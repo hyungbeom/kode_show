@@ -4,6 +4,8 @@ import { Cloud, Clouds, Environment, Lightformer } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
+import { useMapStore } from '../store/useMapStore'
+import { computeMapOrthoZoomForWidth } from '../utils/mapViewport'
 import {
   maintainTransparentSceneBackground,
   syncTransparentWebGLCanvas,
@@ -104,12 +106,36 @@ function MapPhysicsSceneContent() {
   )
 }
 
+function MapViewportOrthoSync() {
+  const setMapViewportOrthoZoom = useMapStore((s) => s.setMapViewportOrthoZoom)
+
+  useEffect(() => {
+    const readWidth = () => {
+      if (typeof window === 'undefined') return 1024
+      const vv = window.visualViewport
+      return vv?.width && vv.width > 0 ? vv.width : window.innerWidth
+    }
+    const sync = () => setMapViewportOrthoZoom(computeMapOrthoZoomForWidth(readWidth()))
+
+    sync()
+    window.addEventListener('resize', sync)
+    window.visualViewport?.addEventListener('resize', sync)
+    return () => {
+      window.removeEventListener('resize', sync)
+      window.visualViewport?.removeEventListener('resize', sync)
+    }
+  }, [setMapViewportOrthoZoom])
+
+  return null
+}
+
 /**
  * KODE Clubs 지도 씬 — zone 구조물, 넓은 구역 배치
  */
 const MapScene = memo(function MapScene() {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <MapViewportOrthoSync />
       <div
         style={{
           width: '100%',
