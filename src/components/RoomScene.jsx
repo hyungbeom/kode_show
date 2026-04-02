@@ -840,18 +840,22 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
           }}
         >
           <div className="room-detail-scroll-hint-wrap">
-            {showMobileLandingHint && isProductDetailPanelMobileLayout ? (
-              <p
-                className="room-detail-scroll-hint"
-                role="status"
-                aria-live="polite"
-              >
-                <span className="room-detail-scroll-hint__chev" aria-hidden>
-                  ↑
-                </span>
-                아래 &quot;제품 추가 소개&quot;를 보려면 화면을 위로 밀어 올리세요
-              </p>
-            ) : null}
+            <div className="room-detail-scroll-hint-hit-top">
+              {showMobileLandingHint && isProductDetailPanelMobileLayout ? (
+                <p
+                  className="room-detail-scroll-hint"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="room-detail-scroll-hint__chev" aria-hidden>
+                    ↑
+                  </span>
+                  아래 &quot;제품 추가 소개&quot;를 보려면 화면을 위로 밀어 올리세요
+                </p>
+              ) : null}
+            </div>
+            {/* 모바일: 하단 ~제품 패널 높이만큼은 터치 통과 → 3D/패널 조작 가능. 그 위는 스크롤 루트가 스와이프 수신 */}
+            <div className="room-detail-scroll-hint-pass-panel" aria-hidden />
           </div>
           <div style={{ pointerEvents: 'auto', position: 'relative' }}>
             <RoomDetailLanding product={productDetail} />

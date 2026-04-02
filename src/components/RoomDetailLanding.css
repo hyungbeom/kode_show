@@ -429,13 +429,50 @@
   position: relative;
   min-height: 100vh;
   width: 100%;
+  display: flex;
+  flex-direction: column;
   pointer-events: none;
+}
+
+/* 데스크톱: 패널 구멍 0 — 전체가 관성 없이 휠·레이아웃용 스페이서 */
+.room-detail-scroll-hint-hit-top {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 100vh;
+  width: 100%;
+  pointer-events: none;
+}
+
+.room-detail-scroll-hint-pass-panel {
+  flex: 0 0 0;
+  width: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+
+/*
+ * 모바일: 상단 스트립만 pointer-events + pan-y → 스크롤 루트가 세로 스와이프 수신
+ * (기존 전체 none이면 터치가 z-index 아래 캔버스로만 가서 스크롤 불가)
+ */
+@media (max-width: 767px) {
+  .room-detail-scroll-hint-hit-top {
+    flex: 1 1 0;
+    min-height: 0;
+    pointer-events: auto;
+    touch-action: pan-y;
+  }
+
+  .room-detail-scroll-hint-pass-panel {
+    flex: 0 0 min(48vh, 480px);
+    min-height: min(48vh, 480px);
+    pointer-events: none;
+  }
 }
 
 .room-detail-scroll-hint {
   position: absolute;
   left: 50%;
-  bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   margin: 0;
   padding: 8px 14px;
