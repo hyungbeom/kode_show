@@ -14,9 +14,9 @@ export default function HomePage({ onEnter }: HomePageProps) {
         <h1 className="home-logo">PROGIST</h1>
 
         <div className="home-copy">
-          <h2 className="home-headline">프로지스트 회사</h2>
+          <h2 className="home-headline">LEEBIO</h2>
           <p className="home-desc">
-            저희 프로지스트는 2년차 webgl 회사이며 앞으로도 성장을 멈추지 않습니다
+            저희 LEEBIO는 2년차 webgl 회사이며 앞으로도 성장을 멈추지 않습니다
           </p>
           <button type="button" className="home-explorer" onClick={onEnter}>
             EXPLORER

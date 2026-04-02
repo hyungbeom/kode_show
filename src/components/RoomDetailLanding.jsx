@@ -1,5 +1,8 @@
 import './RoomDetailLanding.css'
 
+/** AQUAL 랜딩 히어로 아래 노출 영상 */
+const ROOM_DETAIL_YOUTUBE_EMBED_ID = 'Cx1nu20HccI'
+
 /** CSS 목업 — AQUAL 디바이스(흰 본체 + 하단 발광 버튼) */
 function DeviceMock({ className = '', variant = 'single' }) {
   if (variant === 'triple') {
@@ -48,6 +51,19 @@ export default function RoomDetailLanding({ product }) {
         <h1 className="room-detail-landing__brand">AQUAL(에이퀄)</h1>
         <p className="room-detail-landing__tagline-en">Water Quality Tester</p>
       </header>
+
+      <div className="room-detail-landing__video-wrap">
+        <div className="room-detail-landing__video-inner">
+          <iframe
+            title="AQUAL(에이퀄) 제품 소개 영상"
+            src={`https://www.youtube.com/embed/${ROOM_DETAIL_YOUTUBE_EMBED_ID}?rel=0`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="strict-origin-when-cross-origin"
+          />
+        </div>
+      </div>
 
       <div className="room-detail-landing__hero-grid">
         <div className="room-detail-landing__hero-visual">

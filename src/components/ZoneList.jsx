@@ -15,8 +15,6 @@ export default function ZoneList() {
   const buttonRef = useRef(null)
   const selectArea = useMapStore((state) => state.selectArea)
   const glbFocusPositions = useMapStore((state) => state.glbFocusPositions)
-  const followPhysicsBox = useMapStore((state) => state.followPhysicsBox)
-  const setFollowPhysicsBox = useMapStore((state) => state.setFollowPhysicsBox)
   const resetToFullMap = useMapStore((state) => state.resetToFullMap)
 
   // 전체맵 모드로 전환 시 ZoneList 자동 닫기
@@ -59,33 +57,8 @@ export default function ZoneList() {
     setIsOpen(false)
   }
 
-  const handleFollowToggle = () => {
-    setFollowPhysicsBox(!followPhysicsBox)
-  }
-
   return (
     <>
-      {/* 유저 아이콘 버튼 (리스트 버튼 왼쪽) */}
-      <button
-        className={`user-follow-button ${followPhysicsBox ? 'active' : ''}`}
-        onClick={handleFollowToggle}
-        aria-label="작은 상자 추적 모드"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      </button>
-
       {/* 리스트 버튼 (우측 하단) */}
       <button
         ref={buttonRef}

@@ -40,7 +40,6 @@ function App() {
   const {
     setInitialEntry,
     selectedCompanyId,
-    selectedCompanyName,
     setSelectedCompany,
     clearSelectedCompany,
     selectedZone,
@@ -312,7 +311,6 @@ function App() {
         <RoomScene
           key={selectedCompanyId ?? 0}
           companyId={selectedCompanyId ?? undefined}
-          companyName={selectedCompanyName || 'Company'}
           onBack={handleBackFromRoom}
         />
       </Suspense>

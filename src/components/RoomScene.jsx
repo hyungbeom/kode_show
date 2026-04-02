@@ -25,6 +25,10 @@ import {
   maintainTransparentSceneBackground,
   syncTransparentWebGLCanvas,
 } from '../utils/syncTransparentWebGLCanvas'
+import {
+  computeCarouselRoomCameraSettings,
+  getCarouselOrbitTargetY,
+} from '../utils/roomCarouselLayout'
 import ObjectInfoPanel from './ObjectInfoPanel'
 import ObjectViewer from './ObjectViewer'
 import ObjectDetailButton from './ObjectDetailButton'
@@ -32,6 +36,13 @@ import ProductCarousel from './ProductCarousel'
 import ProductDetailPanel from './ProductDetailPanel'
 import RoomDetailLanding from './RoomDetailLanding'
 import RoomCarouselIntro from './RoomCarouselIntro'
+import { PRODUCT_DETAIL_LIST } from '../data/productDetailCopy'
+import { useBrowserWidthPx } from '../hooks/useBrowserWidthPx'
+
+/** ProductDetailPanel.css 바텀시트 브레이크포인트와 동일 */
+const PRODUCT_DETAIL_PANEL_MOBILE_MAX_PX = 767
+
+const PRODUCT_DETAIL_NAV_ARROW_SVG = 34
 
 /** `false`면 show_room2 부스 + 박스 전시물 비표시 — 제품 캐러셀만 사용 */
 const SHOW_LEGACY_BOOTH_AND_EXHIBITS = false
@@ -40,12 +51,12 @@ const SHOW_LEGACY_BOOTH_AND_EXHIBITS = false
  * 방 씬 컴포넌트
  * 업체 클릭 시 표시되는 3D 방
  *
- * @react-three/a11y: A11yUserPreferences + A11yAnnouncer + 선호도 HUD.
+ * @react-three/a11y: A11yUserPreferences + A11yAnnouncer (다크 모드는 우측 상단 스위치).
  * 주의: 라이브러리의 <A11y>/<A11ySection> 은 내부 Html(createRoot)가 React 18/19 Strict Mode에서
  * 언마운트 후 render를 호출해 크래시가 납니다. 전시 오브젝트는 HoverableObject만 쓰고,
  * 구역 안내는 Canvas 밖 스크린리더 전용 div로 제공합니다.
  */
-const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, onBack }) {
+const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   const roomSceneRootRef = useRef(null)
   const scrollRootRef = useRef(null)
   const fixedLayerRef = useRef(null)
@@ -61,6 +72,9 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, on
   const { a11yPrefersState } = useUserPreferences()
   const prefersDark = a11yPrefersState.prefersDarkScheme
   const prefersReducedMotion = a11yPrefersState.prefersReducedMotion
+  const browserWidthPx = useBrowserWidthPx()
+  const isProductDetailPanelMobileLayout =
+    browserWidthPx <= PRODUCT_DETAIL_PANEL_MOBILE_MAX_PX
 
   /** App 이 lazy Room 을 50ms 만에 querySelector 하면 노드가 없어 opacity:0 에 고착됨 → 마운트 시 여기서 페이드인 */
   useLayoutEffect(() => {
@@ -311,6 +325,63 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, on
     resetCameraRef.current?.()
   }, [])
 
+  /**
+   * 좌상단 < BACK: 상세 제품 설명 중이면 캐러셀 뷰만 복귀, 아니면 App onBack(월드/맵 루트)
+   */
+  const handleBackButtonClick = useCallback(() => {
+    if (productDetail) {
+      handleViewAll()
+      return
+    }
+    onBack()
+  }, [productDetail, onBack, handleViewAll])
+
+  /** 제품 상세 — 화면 고정 좌·우 화살표(Glb 트래킹 없음) */
+  const navigateProductDetailAdjacent = useCallback(
+    (left) => {
+      if (!productDetail) return
+      const max = PRODUCT_DETAIL_LIST.length - 1
+      const idx = productDetail.index
+      const next = left ? Math.max(0, idx - 1) : Math.min(max, idx + 1)
+      if (next === idx) return
+      const copy = PRODUCT_DETAIL_LIST[next]
+      setProductDetail({ index: next, copy })
+    },
+    [productDetail],
+  )
+
+  const productDetailNavBtnStyle = useCallback(
+    (enabled) => {
+      const fg = prefersDark ? '#e2e8f0' : '#0f172a'
+      const fgMuted = prefersDark ? 'rgba(226, 232, 240, 0.5)' : 'rgba(15, 23, 42, 0.45)'
+      return {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 56,
+        height: 56,
+        borderRadius: 14,
+        border: 'none',
+        cursor: enabled ? 'pointer' : 'not-allowed',
+        background: enabled
+          ? prefersDark
+            ? 'rgba(51, 65, 85, 0.88)'
+            : 'rgba(241, 245, 249, 0.96)'
+          : prefersDark
+            ? 'rgba(30, 41, 59, 0.5)'
+            : 'rgba(226, 232, 240, 0.55)',
+        color: enabled ? fg : fgMuted,
+        opacity: enabled ? 1 : 0.4,
+        boxShadow: prefersDark
+          ? '0 8px 24px rgba(0,0,0,0.35)'
+          : '0 8px 20px rgba(15,23,42,0.12)',
+        transition: prefersReducedMotion ? 'none' : 'transform 0.15s ease, background 0.15s ease',
+        padding: 0,
+      }
+    },
+    [prefersDark, prefersReducedMotion],
+  )
+
   /** 제품 GLB 확대 시: 3D는 화면에 고정, 그 위 스크롤 레이어에서 랜딩만 올라옴 */
   const detailPageScroll = !!productDetail
 
@@ -377,9 +448,10 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, on
           background: sceneBackgroundGradient,
         }}
       >
-      {/* 뒤로가기 버튼 */}
+      {/* < BACK — 상세 시 캐러셀만, 캐러셀 시 월드(맵) 루트 */}
       <button
-        onClick={onBack}
+        type="button"
+        onClick={handleBackButtonClick}
         style={{
           position: 'absolute',
           top: '20px',
@@ -395,64 +467,86 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyName, companyId, on
           fontWeight: 'bold',
         }}
       >
-        ← 뒤로가기
+        {'< BACK'}
       </button>
 
       {showCarouselIntro ? (
         <RoomCarouselIntro onExplore={() => setCarouselIntroDismissed(true)} />
       ) : null}
-      
-      {/* 회사명 표시 */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          background: 'rgba(0, 0, 0, 0.7)',
-          color: 'white',
-          padding: '12px 24px',
-          borderRadius: '8px',
-          fontSize: '20px',
-          fontWeight: 'bold',
-        }}
-      >
-        {companyName}
-      </div>
-      
-      {/* 전체보기 버튼 — 캐러셀·그리드 전체가 보이는 초기 시점으로 */}
-      <button
-        type="button"
-        onClick={handleViewAll}
-        aria-label="전체 보기 — 제품 상세를 닫고 캐러셀 뷰로"
-        style={{
-          position: 'absolute',
-          bottom: '30px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          padding: '12px 24px',
-          background: 'rgba(0, 0, 0, 0.7)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          transition: prefersReducedMotion ? 'none' : 'all 0.2s',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)'
-        }}
-      >
-        전체보기
-      </button>
 
-      <RoomA11yPlaygroundHud />
+      {productDetail ? (
+        <>
+          <button
+            type="button"
+            aria-label="이전 제품 상세"
+            disabled={productDetail.index <= 0}
+            onClick={() => navigateProductDetailAdjacent(true)}
+            style={{
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 1150,
+              ...productDetailNavBtnStyle(productDetail.index > 0),
+            }}
+          >
+            <svg
+              width={PRODUCT_DETAIL_NAV_ARROW_SVG}
+              height={PRODUCT_DETAIL_NAV_ARROW_SVG}
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M15 6l-6 6 6 6"
+                stroke="currentColor"
+                strokeWidth="2.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label="다음 제품 상세"
+            disabled={productDetail.index >= PRODUCT_DETAIL_LIST.length - 1}
+            onClick={() => navigateProductDetailAdjacent(false)}
+            style={{
+              position: 'absolute',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 1150,
+              ...(isProductDetailPanelMobileLayout
+                ? { right: 16, left: 'auto' }
+                : {
+                    left: 'max(16px, calc(100vw - min(1040px, 78vw) - 72px))',
+                    right: 'auto',
+                  }),
+              ...productDetailNavBtnStyle(
+                productDetail.index < PRODUCT_DETAIL_LIST.length - 1,
+              ),
+            }}
+          >
+            <svg
+              width={PRODUCT_DETAIL_NAV_ARROW_SVG}
+              height={PRODUCT_DETAIL_NAV_ARROW_SVG}
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </>
+      ) : null}
+
+      <RoomDarkModeSwitch />
 
       {/* 캔버스보다 먼저 두어 ref가 ProductAnnotationCallouts 마운트 시 채워지게 */}
       <div
@@ -721,77 +815,84 @@ function AdaptiveAmbient() {
   return <ambientLight intensity={dark ? 0.12 : 0.3} />
 }
 
-/**
- * 공식 A11yDebuger 와 같은 역할의 안정적인 HUD (체크박스로 선호도 시뮬레이션)
- * @see https://n4rzi.csb.app
- */
-function RoomA11yPlaygroundHud() {
+/** 룸 우측 상단 — A11y 컨텍스트의 다크 모드만 전환 (모션 감소 등은 시스템/기본값 유지) */
+function RoomDarkModeSwitch() {
   const { a11yPrefersState, setA11yPrefersState } = useUserPreferences()
-  const [dark, setDark] = useState(a11yPrefersState.prefersDarkScheme)
-  const [reducedMotion, setReducedMotion] = useState(a11yPrefersState.prefersReducedMotion)
+  const dark = a11yPrefersState.prefersDarkScheme
+  const reducedMotion = a11yPrefersState.prefersReducedMotion
 
-  useEffect(() => {
-    setDark(a11yPrefersState.prefersDarkScheme)
-    setReducedMotion(a11yPrefersState.prefersReducedMotion)
-  }, [a11yPrefersState.prefersDarkScheme, a11yPrefersState.prefersReducedMotion])
+  const toggle = useCallback(() => {
+    setA11yPrefersState({
+      prefersDarkScheme: !dark,
+      prefersReducedMotion: reducedMotion,
+    })
+  }, [dark, reducedMotion, setA11yPrefersState])
+
+  const motion = !reducedMotion
 
   return (
     <div
-      className="room-a11y-hud"
       style={{
         position: 'absolute',
-        bottom: '16px',
-        left: '16px',
-        zIndex: 1002,
-        maxWidth: 'min(92vw, 320px)',
-        padding: '12px 14px',
-        borderRadius: '12px',
-        background: 'rgba(15, 23, 42, 0.88)',
-        color: '#e2e8f0',
-        fontSize: '13px',
-        lineHeight: 1.45,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+        top: 20,
+        right: 20,
+        zIndex: 1001,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '6px 12px 6px 14px',
+        borderRadius: 999,
+        background: dark ? 'rgba(15, 23, 42, 0.82)' : 'rgba(255, 255, 255, 0.9)',
+        border: dark ? '1px solid rgba(148, 163, 184, 0.35)' : '1px solid rgba(15, 23, 42, 0.12)',
+        boxShadow: dark ? '0 6px 24px rgba(0,0,0,0.35)' : '0 6px 20px rgba(15,23,42,0.12)',
         fontFamily: 'system-ui, sans-serif',
+        pointerEvents: 'auto',
       }}
-      aria-label="접근성 선호 설정 (React Three A11y 데모와 동일 패턴)"
     >
-      <div style={{ fontWeight: 700, marginBottom: '8px', color: '#fff' }}>A11y 선호 (데모)</div>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '6px' }}>
-        <input
-          type="checkbox"
-          checked={dark}
-          onChange={(e) => {
-            const v = e.target.checked
-            setDark(v)
-            setA11yPrefersState({
-              prefersDarkScheme: v,
-              prefersReducedMotion: reducedMotion,
-            })
+      <span
+        style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: dark ? '#e2e8f0' : '#0f172a',
+          userSelect: 'none',
+        }}
+      >
+        다크 모드
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={dark}
+        aria-label={dark ? '다크 모드 끄기' : '다크 모드 켜기'}
+        onClick={toggle}
+        style={{
+          position: 'relative',
+          width: 48,
+          height: 28,
+          borderRadius: 999,
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          background: dark ? 'rgba(56, 189, 248, 0.95)' : 'rgba(148, 163, 184, 0.55)',
+          flexShrink: 0,
+          transition: motion ? 'background 0.2s ease' : 'none',
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: 3,
+            left: dark ? 23 : 3,
+            width: 22,
+            height: 22,
+            borderRadius: '50%',
+            background: '#fff',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.28)',
+            transition: motion ? 'left 0.2s ease' : 'none',
           }}
         />
-        Prefer dark mode
-      </label>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginBottom: '10px' }}>
-        <input
-          type="checkbox"
-          checked={reducedMotion}
-          onChange={(e) => {
-            const v = e.target.checked
-            setReducedMotion(v)
-            setA11yPrefersState({
-              prefersDarkScheme: dark,
-              prefersReducedMotion: v,
-            })
-          }}
-        />
-        Prefer reduced motion
-      </label>
-      <p style={{ margin: 0, opacity: 0.85, fontSize: '12px' }}>
-        Tab으로 3D 객체 포커스 · Enter로 활성화. 공식 Playground:{' '}
-        <a href="https://n4rzi.csb.app" target="_blank" rel="noopener noreferrer" style={{ color: '#93c5fd' }}>
-          n4rzi.csb.app
-        </a>
-      </p>
+      </button>
     </div>
   )
 }
@@ -827,44 +928,11 @@ const CameraSetup = memo(function CameraSetup() {
   const isInitializedRef = useRef(false)
   const initialSizeRef = useRef(null)
   
-  // 부스 전체가 항상 화면에 보이도록 카메라 거리와 FOV 자동 계산
   const calculateCameraSettings = (currentSize) => {
     const targetSize = currentSize || size
-    if (!targetSize || targetSize.width === 0 || targetSize.height === 0) {
-      // 정면 뷰(X=0): 캐러셀·그리드 좌우 대칭 (대각선 (d,h,d)는 화면이 한쪽으로 돌아간 느낌)
-      return {
-        position: [0, 4.0, 15.5],
-        lookAt: [0, 3, 0],
-        fov: 32
-      }
-    }
-    
-    // 방의 크기: 10x10x6 (width x depth x height)
-    const roomSize = 10
-    const roomHeight = 6
-    const lookAtY = roomHeight * 0.5
-    
-    // 부스 전체를 보기 위한 최소 거리 계산
-    const diagonal = Math.sqrt(roomSize * roomSize + roomSize * roomSize)
-    const minDistance = diagonal * 1.3 + roomHeight * 0.7
-    
-    // 정면(+Z) 배치: 이전 (d,d) 대각선과 비슷한 시점 거리를 유지하려면 Z ≈ 0.7 * minDistance * √2
-    const cameraDistance = minDistance
-    const cameraHeight = 4.0
-    const cameraZ = cameraDistance * 0.7 * Math.SQRT2
-    
-    // FOV 계산
-    const baseFOV = 32
-    const screenArea = targetSize.width * targetSize.height
-    const referenceArea = 1920 * 1080
-    const fovMultiplier = Math.max(0.95, Math.min(1.2, referenceArea / screenArea))
-    const fov = baseFOV * fovMultiplier
-    
-    return {
-      position: [0, cameraHeight, cameraZ],
-      lookAt: [0, lookAtY, 0],
-      fov: Math.min(Math.max(fov, 30), 42)
-    }
+    const w = targetSize?.width ?? 0
+    const h = targetSize?.height ?? 0
+    return computeCarouselRoomCameraSettings(w, h)
   }
   
   // 초기 카메라 설정만 수행 (한 번만 실행)
@@ -922,8 +990,20 @@ const CameraControlContext = createContext(null)
 // 마우스로 직접 카메라 조작 비활성화 (객체 클릭 시에만 카메라 이동)
 const OrbitControlsWrapper = memo(function OrbitControlsWrapper() {
   const { controlsRef } = useContext(CameraControlContext) || {}
+  const { size, camera } = useThree()
   const { a11yPrefersState } = useUserPreferences()
   const reduceMotion = a11yPrefersState.prefersReducedMotion
+  const targetY = getCarouselOrbitTargetY(size.width || 0)
+
+  useEffect(() => {
+    const ctrl = controlsRef?.current
+    if (!ctrl) return
+    ctrl.target.set(0, targetY, 0)
+    ctrl.update()
+    if (camera && 'updateProjectionMatrix' in camera) {
+      camera.updateProjectionMatrix()
+    }
+  }, [controlsRef, targetY, camera])
 
   return (
     <OrbitControls
@@ -931,7 +1011,7 @@ const OrbitControlsWrapper = memo(function OrbitControlsWrapper() {
       enablePan={false}
       enableRotate={false}
       enableZoom={false}
-      target={[0, 3, 0]}
+      target={[0, targetY, 0]}
       minDistance={5}
       maxDistance={50}
       minPolarAngle={0}
@@ -959,37 +1039,8 @@ function CameraControlProvider({ children, resetCameraRef }) {
     
     const controls = controlsRef.current
     
-    // 초기 카메라 설정 계산 (CameraSetup과 동일한 로직)
-    const calculateInitialSettings = () => {
-      if (!size || size.width === 0 || size.height === 0) {
-        return {
-          position: [0, 4.0, 15.5],
-          lookAt: [0, 3, 0],
-          fov: 32
-        }
-      }
-      
-      const roomSize = 10
-      const roomHeight = 6
-      const lookAtY = roomHeight * 0.5
-      const diagonal = Math.sqrt(roomSize * roomSize + roomSize * roomSize)
-      const minDistance = diagonal * 1.3 + roomHeight * 0.7
-      const cameraDistance = minDistance
-      const cameraHeight = 4.0
-      const cameraZ = cameraDistance * 0.7 * Math.SQRT2
-      
-      const baseFOV = 32
-      const screenArea = size.width * size.height
-      const referenceArea = 1920 * 1080
-      const fovMultiplier = Math.max(0.95, Math.min(1.2, referenceArea / screenArea))
-      const fov = baseFOV * fovMultiplier
-      
-      return {
-        position: [0, cameraHeight, cameraZ],
-        lookAt: [0, lookAtY, 0],
-        fov: Math.min(Math.max(fov, 30), 42)
-      }
-    }
+    const calculateInitialSettings = () =>
+      computeCarouselRoomCameraSettings(size.width || 0, size.height || 0)
     
     const initialSettings = calculateInitialSettings()
     const initialPosition = new THREE.Vector3(...initialSettings.position)

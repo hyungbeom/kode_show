@@ -1,14 +1,28 @@
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
-import { ContactShadows, useGLTF } from '@react-three/drei'
+import { ContactShadows, Html, useGLTF } from '@react-three/drei'
 import { Suspense, useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import { useUserPreferences } from '@react-three/a11y'
 import { gsap } from 'gsap'
 import { PRODUCT_DETAIL_LIST } from '../data/productDetailCopy'
 import { PRODUCT_ANNOTATIONS } from '../data/productAnnotations'
 import ProductAnnotationCallouts from './ProductAnnotationCallouts'
+import {
+  getCarouselCaptionLocalY,
+  getCarouselGroupScale,
+  getCarouselGroupYOffset,
+  getCarouselSideNavLocalX,
+  getCarouselStripNavLocalY,
+  getCarouselStripSlotSpacing,
+  getRoomCarouselTier,
+} from '../utils/roomCarouselLayout'
 
 const COUNT = 5
+/** 일열 뷰에서 동시에 보이는 슬롯 수 */
+const VISIBLE_SLOTS = 3
+/** 캐러셀: 선택 vs 비선택 스케일 (비선택은 더 작게) */
+const CAROUSEL_ITEM_SCALE_ACTIVE = 2.55
+const CAROUSEL_ITEM_SCALE_INACTIVE = 0.68
 export const PRODUCT_GLB_URLS = [
   '/product/product1.glb',
   '/product/product2.glb',
@@ -39,7 +53,7 @@ function CarouselProductMesh({ url, active, onPick, pickingEnabled }) {
 
   useFrame((state, delta) => {
     if (!root.current) return
-    const s = active ? 2 : 1
+    const s = active ? CAROUSEL_ITEM_SCALE_ACTIVE : CAROUSEL_ITEM_SCALE_INACTIVE
     root.current.scale.lerp(new THREE.Vector3(s, s, s), motionDisabled ? 1 : 0.1)
     if (motionDisabled) {
       root.current.rotation.y = root.current.rotation.x = active ? 1.5 : 4
@@ -70,84 +84,314 @@ function CarouselProductMesh({ url, active, onPick, pickingEnabled }) {
   )
 }
 
-function NavDiamond({ left, navRadius, onNavigate }) {
-  const [hover, setHover] = useState(false)
-  const x = left ? -navRadius : navRadius
+function CarouselStrip({ active, onPickProduct, pickingEnabled }) {
+  const size = useThree((s) => s.size)
+  const tier = getRoomCarouselTier(size.width)
+  const slotSpacing = getCarouselStripSlotSpacing(tier)
+  const windowStart = Math.max(0, Math.min(active - 1, COUNT - VISIBLE_SLOTS))
+
   return (
-    <group position={[x, 0, 0]}>
-      <group scale={left ? [1, 1, 1] : [-1, 1, 1]}>
-        <mesh
-          rotation={[0, 0, -Math.PI / 4]}
-          onClick={(e) => {
-            e.stopPropagation()
-            onNavigate(left)
-          }}
-          onPointerOver={() => {
-            setHover(true)
-            document.body.style.cursor = 'pointer'
-          }}
-          onPointerLeave={() => {
-            setHover(false)
-            document.body.style.cursor = 'default'
-          }}
-        >
-          <tetrahedronGeometry />
-          <meshStandardMaterial
-            metalness={1}
-            roughness={0.8}
-            color={hover ? '#cc66dd' : '#ffffff'}
-            emissive={hover ? '#339922' : '#003399'}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      </group>
+    <group name="carousel-strip">
+      {Array.from({ length: VISIBLE_SLOTS }, (_, slot) => {
+        const idx = windowStart + slot
+        if (idx >= COUNT) return null
+        const x = (slot - 1) * slotSpacing
+        return (
+          <group key={`strip-${idx}`} position={[x, 0, 0]}>
+            <Suspense fallback={null}>
+              <CarouselProductMesh
+                url={PRODUCT_GLB_URLS[idx]}
+                active={active === idx}
+                onPick={() => onPickProduct(idx)}
+                pickingEnabled={pickingEnabled}
+              />
+            </Suspense>
+          </group>
+        )
+      })}
     </group>
   )
 }
 
-function CarouselRing({ rotation, active, motionDisabled, onPickProduct, pickingEnabled }) {
-  const viewport = useThree((s) => s.viewport)
-  const group = useRef(null)
-  const rotationRef = useRef(rotation)
-  rotationRef.current = rotation
-  const radius = Math.min(6, viewport.width / 5)
+const CAROUSEL_NAV_ARROW_BTN = 56
+const CAROUSEL_NAV_ARROW_SVG = 34
 
-  useFrame(() => {
-    if (!group.current) return
-    const target = rotationRef.current - Math.PI / 2
-    group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, target, motionDisabled ? 1 : 0.1)
-  })
+function carouselArrowBtnStyle(enabled, prefersDark, motionDisabled, fg, fgMuted) {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: CAROUSEL_NAV_ARROW_BTN,
+    height: CAROUSEL_NAV_ARROW_BTN,
+    borderRadius: 14,
+    border: 'none',
+    cursor: enabled ? 'pointer' : 'not-allowed',
+    background: enabled
+      ? prefersDark
+        ? 'rgba(51, 65, 85, 0.88)'
+        : 'rgba(241, 245, 249, 0.96)'
+      : prefersDark
+        ? 'rgba(30, 41, 59, 0.5)'
+        : 'rgba(226, 232, 240, 0.55)',
+    color: enabled ? fg : fgMuted,
+    opacity: enabled ? 1 : 0.4,
+    boxShadow: prefersDark ? '0 8px 24px rgba(0,0,0,0.35)' : '0 8px 20px rgba(15,23,42,0.12)',
+    transition: motionDisabled ? 'none' : 'transform 0.15s ease, background 0.15s ease',
+  }
+}
+
+/** 캐러셀 좌측 / 우측 — 각각 독립 Html */
+function CarouselSideArrow({
+  side,
+  tier,
+  prefersDark,
+  motionDisabled,
+  enabled,
+  onPress,
+  ariaLabel,
+}) {
+  const fg = prefersDark ? '#e2e8f0' : '#0f172a'
+  const fgMuted = prefersDark ? 'rgba(226, 232, 240, 0.5)' : 'rgba(15, 23, 42, 0.45)'
+  const x = getCarouselSideNavLocalX(tier) * (side === 'left' ? -1 : 1)
+  const y = getCarouselStripNavLocalY(tier)
 
   return (
-    <group ref={group}>
-      {PRODUCT_GLB_URLS.map((url, i) => (
-        <group
-          key={url}
-          position={[
-            radius * Math.cos(i * ((Math.PI * 2) / COUNT)),
-            0,
-            radius * Math.sin(i * ((Math.PI * 2) / COUNT)),
-          ]}
-        >
-          <Suspense fallback={null}>
-            <CarouselProductMesh
-              url={url}
-              active={active === i}
-              onPick={() => onPickProduct(i)}
-              pickingEnabled={pickingEnabled}
+    <Html
+      transform
+      occlude={false}
+      distanceFactor={5.5}
+      position={[x, y, 0.15]}
+      style={{
+        pointerEvents: 'auto',
+        userSelect: 'none',
+        width: 'auto',
+      }}
+      zIndexRange={[50, 0]}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          if (enabled) onPress()
+        }}
+        disabled={!enabled}
+        aria-label={ariaLabel}
+        style={carouselArrowBtnStyle(enabled, prefersDark, motionDisabled, fg, fgMuted)}
+      >
+        {side === 'left' ? (
+          <svg
+            width={CAROUSEL_NAV_ARROW_SVG}
+            height={CAROUSEL_NAV_ARROW_SVG}
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <path
+              d="M15 6l-6 6 6 6"
+              stroke="currentColor"
+              strokeWidth="2.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </Suspense>
-        </group>
-      ))}
-    </group>
+          </svg>
+        ) : (
+          <svg
+            width={CAROUSEL_NAV_ARROW_SVG}
+            height={CAROUSEL_NAV_ARROW_SVG}
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <path
+              d="M9 6l6 6-6 6"
+              stroke="currentColor"
+              strokeWidth="2.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </button>
+    </Html>
+  )
+}
+
+/** 하단 — 현재 제품 제목·설명 + 도트 */
+function CarouselCaptionBar({
+  tier,
+  active,
+  prefersDark,
+  motionDisabled,
+  onSelectIndex,
+  /** GLB 클릭과 동일하게 상세 화면 열기 */
+  onOpenDetail,
+}) {
+  const copy = PRODUCT_DETAIL_LIST[active]
+  if (!copy) return null
+
+  const bg = prefersDark ? 'rgba(15, 23, 42, 0.82)' : 'rgba(255, 255, 255, 0.92)'
+  const border = prefersDark ? '1px solid rgba(148, 163, 184, 0.35)' : '1px solid rgba(15, 23, 42, 0.12)'
+  const fg = prefersDark ? '#e2e8f0' : '#0f172a'
+  const fgMuted = prefersDark ? 'rgba(226, 232, 240, 0.55)' : 'rgba(15, 23, 42, 0.5)'
+  const dotActive = prefersDark ? '#38bdf8' : '#0369a1'
+  const y = getCarouselCaptionLocalY(tier)
+  const isMobileTier = tier === 'mobile'
+  /** 모바일·태블릿: 화면 가로·세로를 거의 채우고 양끝·상하에만 소량 여백 */
+  const isCompactCaption = tier === 'mobile' || tier === 'tablet'
+  const captionEdgeInsetPx = 24
+  const captionCardHeightStyle = isCompactCaption
+    ? `clamp(252px, calc(100dvh - 120px), 580px)`
+    : '246px'
+
+  return (
+    <Html
+      transform
+      occlude={false}
+      distanceFactor={5.5}
+      position={[0, y, 0.15]}
+      style={{
+        pointerEvents: 'auto',
+        userSelect: 'none',
+        width: isCompactCaption ? `calc(100vw - ${captionEdgeInsetPx}px)` : 'min(92vw, 520px)',
+        maxWidth: isCompactCaption ? `calc(100vw - ${captionEdgeInsetPx}px)` : undefined,
+      }}
+      zIndexRange={[50, 0]}
+    >
+      <div
+        role="region"
+        aria-label="제품 안내"
+        style={{
+          background: bg,
+          border,
+          borderRadius: 16,
+          padding: isMobileTier ? '16px 14px 18px' : '14px 16px 12px',
+          boxSizing: 'border-box',
+          height: captionCardHeightStyle,
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: prefersDark
+            ? '0 10px 30px rgba(0,0,0,0.45)'
+            : '0 10px 28px rgba(15,23,42,0.12)',
+        }}
+      >
+        <div
+          role="tablist"
+          aria-label="제품 번호"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+            flexShrink: 0,
+            marginBottom: isMobileTier ? 12 : 10,
+          }}
+        >
+          {Array.from({ length: COUNT }, (_, i) => {
+            const on = i === active
+            const dotOn = isMobileTier ? 13 : 12
+            const dotOff = isMobileTier ? 10 : 9
+            return (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                aria-label={`${i + 1}번 제품`}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelectIndex(i)
+                }}
+                style={{
+                  width: on ? dotOn : dotOff,
+                  height: on ? dotOn : dotOff,
+                  borderRadius: 999,
+                  padding: 0,
+                  border: on ? `2px solid ${dotActive}` : `1px solid ${fgMuted}`,
+                  background: on ? dotActive : 'transparent',
+                  cursor: 'pointer',
+                  transform: on ? 'scale(1.12)' : 'scale(1)',
+                  transition: motionDisabled ? 'none' : '0.15s ease',
+                }}
+              />
+            )
+          })}
+        </div>
+        <h2
+          style={{
+            margin: '0 0 8px',
+            fontSize: isMobileTier
+              ? 'clamp(1.12rem, 4.2vw, 1.38rem)'
+              : 'clamp(1rem, 2.8vw, 1.2rem)',
+            fontWeight: 700,
+            color: fg,
+            lineHeight: 1.3,
+            fontFamily: 'system-ui, sans-serif',
+            flexShrink: 0,
+          }}
+        >
+          {copy.title}
+        </h2>
+        <p
+          style={{
+            margin: 0,
+            fontSize: isMobileTier ? '0.97rem' : '0.875rem',
+            lineHeight: isMobileTier ? 1.7 : 1.65,
+            color: fgMuted,
+            fontFamily: 'system-ui, sans-serif',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
+          }}
+        >
+          {copy.description}
+        </p>
+        {typeof onOpenDetail === 'function' ? (
+          <button
+            type="button"
+            aria-label={`${copy.title} 자세히 보기`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpenDetail()
+            }}
+            style={{
+              flexShrink: 0,
+              marginTop: isMobileTier ? 12 : 10,
+              width: '100%',
+              padding: isMobileTier ? '12px 14px' : '10px 16px',
+              borderRadius: 12,
+              border: `1px solid ${dotActive}`,
+              background: prefersDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(3, 105, 161, 0.08)',
+              color: dotActive,
+              fontSize: isMobileTier ? '0.95rem' : '0.875rem',
+              fontWeight: 700,
+              fontFamily: 'system-ui, sans-serif',
+              cursor: 'pointer',
+              transition: motionDisabled ? 'none' : 'background 0.15s ease, transform 0.15s ease',
+            }}
+          >
+            자세히 보기
+          </button>
+        ) : null}
+      </div>
+    </Html>
   )
 }
 
 const PITCH_LIMIT = Math.PI / 2 - 0.15
+/** 상세 뷰 자동 회전 (라디안/초) — 프레임당 고정값 대신 delta 사용 */
+const DETAIL_AUTO_ROTATE_RAD_PER_SEC = 0.34
+/** NDC 오차 저역 통과 — 트림 적분과 함께 쓰여 떨림 억제 */
+const DETAIL_NDC_SMOOTH_TAU_SEC = 0.42
+/** NDC 오차 → 월드 트림 적분 게인 (rad/s 스케일 느낌으로 완만하게) */
+const DETAIL_FRAMING_TRIM_GAIN = 6.2
 
 /** ProductDetailPanel.css 과 동일해야 함: min(1040px, 78vw) */
 const DETAIL_PANEL_MAX_PX = 1040
 const DETAIL_PANEL_VW = 0.78
+/** ProductDetailPanel.css embedded 바텀시트와 맞춤 */
+const DETAIL_PANEL_MOBILE_MAX_PX = 767
 
 const _worldCenter = new THREE.Vector3()
 
@@ -169,6 +413,10 @@ function ProductDetailStage({
   const rotX = useRef(0)
   const dragging = useRef(false)
   const lastPointer = useRef({ x: 0, y: 0 })
+  const ndcErrSmooth = useRef({ x: 0, y: 0 })
+  /** baseX/baseY에 더하는 누적 보정(매 프레임 리셋하지 않아 덜컹거림 감소) */
+  const framingTrim = useRef({ x: 0, y: 0 })
+  const panelPxCacheRef = useRef({ px: 520, at: 0 })
   const { a11yPrefersState } = useUserPreferences()
   const motionDisabled = a11yPrefersState.prefersReducedMotion
 
@@ -180,6 +428,11 @@ function ProductDetailStage({
   useEffect(() => {
     rotY.current = 0
     rotX.current = 0
+    ndcErrSmooth.current.x = 0
+    ndcErrSmooth.current.y = 0
+    framingTrim.current.x = 0
+    framingTrim.current.y = 0
+    panelPxCacheRef.current.at = 0
   }, [url])
 
   const onPointerDown = useCallback((e) => {
@@ -212,41 +465,76 @@ function ProductDetailStage({
   useFrame((_, delta) => {
     if (!groupRef.current || !root.current) return
     const t = progressRef.current.value
-    const targetScale = THREE.MathUtils.lerp(0.08, 3.2, Math.pow(t, 0.85))
-    /** 등장 애니메이션용 기본 X (이후 NDC 보정으로 왼쪽으로) */
-    const baseX = THREE.MathUtils.lerp(0.55, -5.55, Math.pow(t, 0.85))
-    groupRef.current.position.x = baseX
-    groupRef.current.position.y = THREE.MathUtils.lerp(-0.75, -0.22, t)
-    groupRef.current.position.z = THREE.MathUtils.lerp(0, 0.4, t)
+    const vw = gl.domElement.getBoundingClientRect().width
+    const isMobile = vw <= DETAIL_PANEL_MOBILE_MAX_PX
+    const dt = Math.min(delta, 0.05)
+
+    const baseZ = THREE.MathUtils.lerp(0, 0.4, t)
+    let baseX
+    let baseY
+    if (isMobile) {
+      baseX = THREE.MathUtils.lerp(0.42, 0.04, Math.pow(t, 0.85))
+      baseY = THREE.MathUtils.lerp(-0.62, 0.58, t)
+    } else {
+      baseX = THREE.MathUtils.lerp(0.55, -5.55, Math.pow(t, 0.85))
+      baseY = THREE.MathUtils.lerp(-0.75, -0.22, t)
+    }
+
+    groupRef.current.position.set(
+      baseX + framingTrim.current.x,
+      baseY + framingTrim.current.y,
+      baseZ,
+    )
+
+    const targetScale = THREE.MathUtils.lerp(
+      0.08,
+      isMobile ? 2.55 : 3.2,
+      Math.pow(t, 0.85),
+    )
     root.current.scale.setScalar(targetScale)
+
     if (!dragging.current && !motionDisabled && t > 0.2) {
-      rotY.current += 0.006
+      rotY.current += DETAIL_AUTO_ROTATE_RAD_PER_SEC * dt
     }
     root.current.rotation.y = rotY.current
     root.current.rotation.x = rotX.current
 
-    /**
-     * 오른쪽 정보 패널을 제외한 왼쪽 띠의 수평 중앙에 모델(그룹 원점)이 오도록 보정.
-     * 패널 너비 비율 f = panelPx / viewportWidth 일 때, 그 구간의 화면 중앙 NDC x = -f.
-     */
     if (t > 0.04) {
-      const vw = gl.domElement.getBoundingClientRect().width
-      const panelEl = typeof document !== 'undefined' ? document.querySelector('.product-detail-panel') : null
-      let panelPx = Math.min(DETAIL_PANEL_MAX_PX, vw * DETAIL_PANEL_VW)
-      if (panelEl) {
-        const pw = panelEl.getBoundingClientRect().width
-        if (pw > 12) panelPx = pw
-      }
-      const f = Math.min(panelPx / vw, 0.95)
-      /** 왼쪽 띠 중앙 기준(NDC x); 값을 키우면 모델이 화면에서 더 오른쪽으로 */
-      const targetNdcX = -f - 0.18
-
       groupRef.current.getWorldPosition(_worldCenter)
       _worldCenter.project(camera)
-      const err = targetNdcX - _worldCenter.x
-      if (Math.abs(err) > 0.0005) {
-        const step = err * (20 + 10 * t) * Math.min(delta * 60, 2.5)
-        groupRef.current.position.x += THREE.MathUtils.clamp(step, -0.85, 0.85)
+      const smoothAlpha = 1 - Math.exp(-dt / DETAIL_NDC_SMOOTH_TAU_SEC)
+
+      if (isMobile) {
+        const targetNdcX = 0
+        const targetNdcY = 0.24
+        const errX = targetNdcX - _worldCenter.x
+        const errY = targetNdcY - _worldCenter.y
+        ndcErrSmooth.current.x = THREE.MathUtils.lerp(ndcErrSmooth.current.x, errX, smoothAlpha)
+        ndcErrSmooth.current.y = THREE.MathUtils.lerp(ndcErrSmooth.current.y, errY, smoothAlpha)
+        framingTrim.current.x += ndcErrSmooth.current.x * DETAIL_FRAMING_TRIM_GAIN * dt
+        framingTrim.current.y += ndcErrSmooth.current.y * DETAIL_FRAMING_TRIM_GAIN * 0.92 * dt
+        framingTrim.current.x = THREE.MathUtils.clamp(framingTrim.current.x, -1.25, 1.25)
+        framingTrim.current.y = THREE.MathUtils.clamp(framingTrim.current.y, -1.05, 1.05)
+      } else {
+        const now = typeof performance !== 'undefined' ? performance.now() : 0
+        if (now - panelPxCacheRef.current.at > 200) {
+          panelPxCacheRef.current.at = now
+          const panelEl = typeof document !== 'undefined' ? document.querySelector('.product-detail-panel') : null
+          let panelPx = Math.min(DETAIL_PANEL_MAX_PX, vw * DETAIL_PANEL_VW)
+          if (panelEl) {
+            const pw = panelEl.getBoundingClientRect().width
+            if (pw > 12) panelPx = pw
+          }
+          panelPxCacheRef.current.px = panelPx
+        }
+        const panelPx = panelPxCacheRef.current.px
+        const f = Math.min(panelPx / vw, 0.95)
+        const targetNdcX = -f - 0.18
+        const err = targetNdcX - _worldCenter.x
+        ndcErrSmooth.current.x = THREE.MathUtils.lerp(ndcErrSmooth.current.x, err, smoothAlpha)
+        framingTrim.current.x += ndcErrSmooth.current.x * DETAIL_FRAMING_TRIM_GAIN * dt
+        framingTrim.current.x = THREE.MathUtils.clamp(framingTrim.current.x, -1.45, 1.45)
+        framingTrim.current.y = 0
       }
     }
   })
@@ -312,12 +600,17 @@ export default function ProductCarousel({
   annotationPortalHostRef,
 }) {
   const [active, setActive] = useState(0)
-  const [rotation, setRotation] = useState(0)
   const { a11yPrefersState } = useUserPreferences()
   const motionDisabled = a11yPrefersState.prefersReducedMotion
   const prefersDark = a11yPrefersState.prefersDarkScheme
-  const viewport = useThree((s) => s.viewport)
-  const navRadius = Math.min(12, viewport.width / 2.5)
+  const size = useThree((s) => s.size)
+  const tier = getRoomCarouselTier(size.width)
+  const yOffset = getCarouselGroupYOffset(tier)
+  const carouselScale = getCarouselGroupScale(tier)
+  const windowStart = useMemo(
+    () => Math.max(0, Math.min(active - 1, COUNT - VISIBLE_SLOTS)),
+    [active],
+  )
 
   const detailProgress = useRef({ value: 0 })
   const carouselVis = useRef({ value: 1 })
@@ -325,26 +618,44 @@ export default function ProductCarousel({
 
   /** 상세 GLB는 닫힘 애니메이션 끝까지 유지 */
   const [displayIdx, setDisplayIdx] = useState(null)
+  /** 이미 상세가 열린 상태에서 제품만 바꿀 때는 줌 인 애니를 다시 켜지 않음 */
+  const prevOpenDetailRef = useRef(
+    /** @type {number | null | undefined} */ (undefined),
+  )
 
   useEffect(() => {
     if (openDetailIndex !== null && openDetailIndex !== undefined) {
+      const wasAlreadyOpen =
+        prevOpenDetailRef.current !== null && prevOpenDetailRef.current !== undefined
+      prevOpenDetailRef.current = openDetailIndex
       setDisplayIdx(openDetailIndex)
-      gsap.killTweensOf(detailProgress.current)
-      gsap.killTweensOf(carouselVis.current)
-      detailProgress.current.value = 0
-      carouselVis.current.value = 1
-      gsap.to(detailProgress.current, {
-        value: 1,
-        duration: motionDisabled ? 0.35 : 0.9,
-        ease: 'power2.out',
-      })
-      gsap.to(carouselVis.current, {
-        value: 0,
-        duration: 0.35,
-        ease: 'power2.in',
-      })
+
+      if (!wasAlreadyOpen) {
+        gsap.killTweensOf(detailProgress.current)
+        gsap.killTweensOf(carouselVis.current)
+        detailProgress.current.value = 0
+        carouselVis.current.value = 1
+        gsap.to(detailProgress.current, {
+          value: 1,
+          duration: motionDisabled ? 0.35 : 0.9,
+          ease: 'power2.out',
+        })
+        gsap.to(carouselVis.current, {
+          value: 0,
+          duration: 0.35,
+          ease: 'power2.in',
+        })
+      }
+    } else {
+      prevOpenDetailRef.current = null
     }
   }, [openDetailIndex, motionDisabled])
+
+  useEffect(() => {
+    if (openDetailIndex !== null && openDetailIndex !== undefined) {
+      setActive(openDetailIndex)
+    }
+  }, [openDetailIndex])
 
   useEffect(() => {
     if (openDetailIndex === null || openDetailIndex === undefined) {
@@ -375,8 +686,14 @@ export default function ProductCarousel({
   })
 
   const onNavigate = useCallback((left) => {
-    setRotation((r) => r + ((Math.PI * 2) / COUNT) * (left ? -1 : 1))
-    setActive((a) => (left ? (a === 0 ? COUNT - 1 : a - 1) : a === COUNT - 1 ? 0 : a + 1))
+    setActive((a) => {
+      if (left) return Math.max(0, a - 1)
+      return Math.min(COUNT - 1, a + 1)
+    })
+  }, [])
+
+  const onSelectCarouselIndex = useCallback((i) => {
+    setActive(Math.max(0, Math.min(COUNT - 1, i)))
   }, [])
 
   const handlePickProduct = useCallback(
@@ -392,17 +709,95 @@ export default function ProductCarousel({
   const detailUrl = displayIdx !== null ? PRODUCT_GLB_URLS[displayIdx] : null
   const pickingEnabled = displayIdx === null
 
+  const onDetailNavigate = useCallback(
+    (left) => {
+      if (
+        openDetailIndex === null ||
+        openDetailIndex === undefined ||
+        !onProductSelect
+      ) {
+        return
+      }
+      const next = left
+        ? Math.max(0, openDetailIndex - 1)
+        : Math.min(COUNT - 1, openDetailIndex + 1)
+      if (next === openDetailIndex) return
+      const copy = PRODUCT_DETAIL_LIST[next]
+      onProductSelect({ index: next, copy })
+    },
+    [openDetailIndex, onProductSelect],
+  )
+
+  useEffect(() => {
+    if (!pickingEnabled) return
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        onNavigate(true)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        onNavigate(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [pickingEnabled, onNavigate])
+
+  useEffect(() => {
+    if (pickingEnabled) return
+    const onKey = (e) => {
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        onDetailNavigate(true)
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        onDetailNavigate(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [pickingEnabled, onDetailNavigate])
+
   return (
-    <group position={position}>
-      <group ref={carouselGroupRef}>
-        <NavDiamond left navRadius={navRadius} onNavigate={onNavigate} />
-        <CarouselRing
-          rotation={rotation}
+    <group position={[position[0], position[1] + yOffset, position[2]]}>
+      <group ref={carouselGroupRef} scale={carouselScale}>
+        <CarouselStrip
           active={active}
-          motionDisabled={motionDisabled}
           onPickProduct={handlePickProduct}
           pickingEnabled={pickingEnabled}
         />
+        {pickingEnabled ? (
+          <>
+            <CarouselSideArrow
+              side="left"
+              tier={tier}
+              prefersDark={prefersDark}
+              motionDisabled={motionDisabled}
+              enabled={active > 0}
+              onPress={() => onNavigate(true)}
+              ariaLabel="이전 제품"
+            />
+            <CarouselSideArrow
+              side="right"
+              tier={tier}
+              prefersDark={prefersDark}
+              motionDisabled={motionDisabled}
+              enabled={active < COUNT - 1}
+              onPress={() => onNavigate(false)}
+              ariaLabel="다음 제품"
+            />
+            <CarouselCaptionBar
+              tier={tier}
+              active={active}
+              prefersDark={prefersDark}
+              motionDisabled={motionDisabled}
+              onSelectIndex={onSelectCarouselIndex}
+              onOpenDetail={
+                onProductSelect ? () => handlePickProduct(active) : undefined
+              }
+            />
+          </>
+        ) : null}
         <ContactShadows
           rotation-x={Math.PI / 2}
           position={[0, -5, 0]}
@@ -412,7 +807,6 @@ export default function ProductCarousel({
           blur={1}
           far={15}
         />
-        <NavDiamond left={false} navRadius={navRadius} onNavigate={onNavigate} />
       </group>
 
       {detailUrl !== null && (

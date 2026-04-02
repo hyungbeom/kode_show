@@ -15,8 +15,6 @@ export default function ZoneList() {
   const buttonRef = useRef<HTMLButtonElement>(null)
   const selectArea = useMapStore((state) => state.selectArea)
   const glbFocusPositions = useMapStore((state) => state.glbFocusPositions)
-  const followPhysicsBox = useMapStore((state) => state.followPhysicsBox)
-  const setFollowPhysicsBox = useMapStore((state) => state.setFollowPhysicsBox)
   const resetToFullMap = useMapStore((state) => state.resetToFullMap)
 
   useEffect(() => {
@@ -57,32 +55,8 @@ export default function ZoneList() {
     setIsOpen(false)
   }
 
-  const handleFollowToggle = () => {
-    setFollowPhysicsBox(!followPhysicsBox)
-  }
-
   return (
     <>
-      <button
-        className={`user-follow-button ${followPhysicsBox ? 'active' : ''}`}
-        onClick={handleFollowToggle}
-        aria-label="작은 상자 추적 모드"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      </button>
-
       <button
         ref={buttonRef}
         className={`zone-list-button ${isOpen ? 'active' : ''}`}

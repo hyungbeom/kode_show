@@ -3,7 +3,7 @@
   left: 20px;
   top: 88px;
   z-index: 1001;
-  max-width: min(380px, calc(100vw - 40px));
+  max-width: min(520px, calc(100vw - 40px));
   padding: 0;
   background: transparent;
   pointer-events: auto;

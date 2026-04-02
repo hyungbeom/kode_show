@@ -22,6 +22,32 @@
   min-height: 100%;
 }
 
+/* 모바일: 3D는 화면 상단, 제품 정보는 하단 중앙 바텀시트 */
+@media (max-width: 767px) {
+  .product-detail-panel--embedded {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto;
+    min-height: unset;
+    max-height: min(56vh, 560px);
+    padding: 0 14px calc(14px + env(safe-area-inset-bottom, 0px));
+    justify-content: flex-end;
+    align-items: stretch;
+    animation: product-panel-in-mobile 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .product-detail-panel--embedded .product-detail-panel__inner {
+    max-height: min(50vh, 520px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 20px 20px 12px 12px;
+    padding: clamp(20px, 5vw, 28px);
+  }
+}
+
 @keyframes product-panel-in {
   from {
     opacity: 0;
@@ -30,6 +56,17 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes product-panel-in-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

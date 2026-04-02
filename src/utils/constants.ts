@@ -17,7 +17,7 @@ export const MAP_CENTERED_ORBIT_TARGET: [number, number, number] = [0, 0, 0]
 
 // 업체 정보
 export const COMPANY_NAMES: Record<number, string> = {
-  1: '프로지스트',
+  1: 'LEEBIO',
   2: 'Aven',
   3: 'TechCorp',
   4: 'DesignStudio',
