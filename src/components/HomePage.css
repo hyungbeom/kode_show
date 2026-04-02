@@ -19,7 +19,7 @@
 .home-logo {
   font-size: 72px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #0c4a6e;
   letter-spacing: 4px;
   font-family: system-ui, -apple-system, sans-serif;
   margin: 0;
@@ -29,7 +29,7 @@
 .home-subtitle {
   font-size: 18px;
   font-weight: 700;
-  color: #ff1493;
+  color: #0284c7;
   letter-spacing: 2px;
   font-family: system-ui, -apple-system, sans-serif;
   margin: 0;
@@ -40,7 +40,7 @@
   width: 140px;
   height: 140px;
   border-radius: 50%;
-  border: 2px solid #1a1a2e;
+  border: 2px solid #0c4a6e;
   background: transparent;
   cursor: pointer;
   display: flex;
@@ -52,7 +52,7 @@
 }
 
 .enter-button:hover {
-  background: #1a1a2e;
+  background: #0369a1;
   transform: scale(1.05);
 }
 
@@ -63,7 +63,7 @@
 .enter-text {
   font-size: 18px;
   font-weight: 700;
-  color: #ff1493;
+  color: #0284c7;
   letter-spacing: 2px;
   font-family: system-ui, -apple-system, sans-serif;
   text-transform: uppercase;
@@ -84,7 +84,7 @@
 }
 
 .cookie-link {
-  color: #ff1493;
+  color: #0284c7;
   text-decoration: none;
 }
 

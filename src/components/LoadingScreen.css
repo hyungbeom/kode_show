@@ -1,51 +1,121 @@
 .loading-screen {
-  opacity: 0; /* 업체 클릭 후 로딩: 초기에는 숨김, 애니메이션으로 표시 */
+  opacity: 0;
   width: 100vw;
   height: 100vh;
-  background: #ffffff;
+  min-height: 100dvh;
+  background: #e8f4fc;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   position: relative;
+  overflow: hidden;
 }
 
 .loading-screen.initial-loading {
-  opacity: 1; /* 초기 로딩: 바로 표시 */
+  opacity: 1;
+}
+
+.loading-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.loading-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .loading-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
-.loading-logo {
-  font-size: 72px;
-  font-weight: 700;
-  color: #1a1a2e;
-  letter-spacing: 4px;
-  font-family: system-ui, -apple-system, sans-serif;
-  margin: 0;
-  text-transform: uppercase;
+.loading-content--overlay {
+  position: relative;
+  z-index: 1;
+  padding-bottom: clamp(100px, 18vh, 160px);
+  pointer-events: none;
+}
+
+.loading-content--overlay .loading-enter {
+  pointer-events: auto;
 }
 
 .loading-subtitle {
-  font-size: 18px;
+  font-size: clamp(0.75rem, 2vw, 18px);
   font-weight: 700;
-  color: #ff1493;
-  letter-spacing: 2px;
+  color: #0369a1;
+  letter-spacing: 0.14em;
   font-family: system-ui, -apple-system, sans-serif;
   margin: 0;
   text-transform: uppercase;
+  text-align: center;
+  max-width: 92vw;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
+}
+
+.loading-subtitle--landing {
+  color: #e91e8c;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.75);
+}
+
+/* 첫 진입 ENTER — 얇은 검정 링 + 마젠타 라벨 (모바일 랜딩 레퍼런스) */
+.loading-enter {
+  position: relative;
+  width: clamp(150px, 42vw, 220px);
+  height: clamp(150px, 42vw, 220px);
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.06));
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.loading-enter:hover {
+  transform: scale(1.04);
+}
+
+.loading-enter:active {
+  transform: scale(0.98);
+}
+
+.loading-enter__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid #121212;
+  box-sizing: border-box;
+}
+
+.loading-enter__label {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(15px, 3.8vw, 20px);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-family: system-ui, -apple-system, sans-serif;
+  text-transform: uppercase;
+  color: #e91e8c;
+  padding-left: 0.2em;
 }
 
 .loading-circle {
   position: relative;
   width: 120px;
   height: 120px;
-  margin-top: 40px;
+  margin-top: 8px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
 }
 
 .loading-circle-svg {
@@ -69,7 +139,7 @@
   transform: translate(-50%, -50%);
   font-size: 24px;
   font-weight: 700;
-  color: #ff1493;
+  color: #0369a1;
   font-family: system-ui, -apple-system, sans-serif;
 }
 
@@ -78,16 +148,18 @@
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 2;
   font-size: 12px;
-  color: #666;
+  color: #555;
   text-align: center;
   max-width: 600px;
   padding: 0 20px;
   font-family: system-ui, -apple-system, sans-serif;
+  pointer-events: auto;
 }
 
 .cookie-link {
-  color: #ff1493;
+  color: #e91e8c;
   text-decoration: none;
 }
 

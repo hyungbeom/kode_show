@@ -432,6 +432,50 @@
   align-items: stretch;
 }
 
+.zone-company-spotlight__secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.zone-company-spotlight__btn-secondary {
+  flex: 1 1 calc(33.333% - 6px);
+  min-width: min(100%, 108px);
+  min-height: 40px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border: 1px solid rgba(30, 27, 75, 0.22);
+  border-radius: 10px;
+  background: #fff;
+  color: #312e81;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    transform 0.12s;
+}
+
+.zone-company-spotlight__btn-secondary:hover {
+  background: #f8fafc;
+  border-color: rgba(49, 46, 129, 0.35);
+}
+
+.zone-company-spotlight__btn-secondary:active {
+  transform: scale(0.98);
+}
+
+.zone-company-spotlight__btn-secondary:focus-visible {
+  outline: 2px solid #4338ca;
+  outline-offset: 2px;
+}
+
 .zone-company-spotlight__btn {
   flex: 1;
   min-height: 44px;
@@ -510,6 +554,20 @@
   padding: 8px 10px;
   font-size: 0.7rem;
   border-radius: 10px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-company-spotlight__secondary-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  gap: 6px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-company-spotlight__btn-secondary {
+  flex: 1 1 100%;
+  min-width: 0;
+  min-height: 38px;
+  font-size: 0.72rem;
+  border-radius: 9px;
 }
 
 /* 모바일: 시트 높이 ≈ 뷰포트 44% (기존 50% 대비 축소), 내역 타이포·여백 축소 */

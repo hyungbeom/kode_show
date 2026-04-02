@@ -26,7 +26,9 @@
   color: #ffffff;
   text-decoration: none;
   font-family: system-ui, -apple-system, sans-serif;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.25),
+    0 0 24px rgba(14, 165, 233, 0.35);
   letter-spacing: 1px;
 }
 

@@ -5,8 +5,7 @@ interface MapHeaderProps {
 }
 
 /**
- * 지도 화면 상단 헤더 컴포넌트
- * KODE 로고와 닫기 버튼을 포함합니다.
+ * 지도 화면 상단 헤더 (ENVEX)
  */
 export default function MapHeader({ onClose }: MapHeaderProps) {
   return (

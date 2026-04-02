@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense, useRef, type MutableRefObject } from 'react'
 import { gsap } from 'gsap'
 import LoadingScreen from './components/LoadingScreen'
-import HomePage from './components/HomePage'
 import MapHeader from './components/MapHeader'
 import SoundControl from './components/SoundControl'
 import NavigationUI from './components/NavigationUI'
@@ -17,10 +16,10 @@ const MapScene = lazy(() => import('./components/MapScene'))
 const RoomScene = lazy(() => import('./components/RoomScene'))
 const ZoneInfoPanel = lazy(() => import('./components/ZoneInfoPanel'))
 
-type View = 'loading' | 'home' | 'map' | 'room'
+type View = 'loading' | 'map' | 'room'
 
 /**
- * KODE Clubs 메인 애플리케이션 (최적화 버전)
+ * ENVEX 전시 맵 메인 애플리케이션
  * - Zustand 셀렉터 최적화
  * - 메모이제이션 적용
  * - Lazy loading 적용
@@ -160,7 +159,8 @@ function App() {
     const fromRoomFlow = showLoadingRef.current
 
     if (!isValidRoom) {
-      setCurrentView('home')
+      setShowLoading(false)
+      setCurrentView('map')
       return
     }
 
@@ -243,10 +243,10 @@ function App() {
     }
   }, [setInitialEntry])
   
-  // 맵 닫기 핸들러
+  // 맵 닫기 핸들러 — 평면 랜딩은 사용하지 않으므로 맵에 머무름
   const handleCloseMap = useCallback(() => {
-    setCurrentView('home')
-    window.history.pushState({}, '', '/')
+    setCurrentView('map')
+    window.history.pushState({}, '', '/map')
   }, [])
   
   // 방에서 뒤로가기 핸들러
@@ -293,15 +293,17 @@ function App() {
     }
   }, [clearSelectedCompany])
   
-  // 로딩 화면 (초기 로딩 또는 업체 클릭 후 로딩)
+  // 로딩 화면: 첫 진입은 3D 랜딩 + ENTER, 업체 선택 후는 프로그레스 링
   if (currentView === 'loading' || showLoading) {
-    const isInitialLoading = currentView === 'loading' && !showLoading
-    return <LoadingScreen onComplete={handleLoadingComplete} isInitial={isInitialLoading} />
-  }
-  
-  // 홈페이지
-  if (currentView === 'home') {
-    return <HomePage onEnter={handleEnter} />
+    const isLanding = currentView === 'loading' && !showLoading
+    return (
+      <LoadingScreen
+        mode={isLanding ? 'landing' : 'room'}
+        onComplete={handleLoadingComplete}
+        onEnter={handleEnter}
+        isInitial={isLanding}
+      />
+    )
   }
   
   // 방 씬
@@ -329,7 +331,7 @@ function App() {
       </Suspense>
 
       {!mapHeroCopyDismissed ? (
-        <section className="map-hero-copy" lang="en" aria-label="Welcome to Kode Sports Club">
+        <section className="map-hero-copy" lang="en" aria-label="Welcome to ENVEX 2026">
           <img src="/logo.png" width={180} alt=""/>
           <h1 className="map-hero-copy__headline">
             <br/>

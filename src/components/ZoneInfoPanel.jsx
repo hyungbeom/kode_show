@@ -92,7 +92,6 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Fintech',
         description: 'Talk with GreenFi and water a tree.',
         imageUrl: 'https://picsum.photos/seed/greenfi-kode/480/480',
-        homepageUrl: 'https://greenfi.io/',
       },
       {
         id: 2,
@@ -100,7 +99,6 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Real Estate',
         description: 'Talk with Aven to renovate a house.',
         imageUrl: 'https://picsum.photos/seed/aven-kode/480/480',
-        homepageUrl: 'https://www.aven.com/',
       },
       {
         id: 3,
@@ -108,7 +106,6 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Technology',
         description: 'Complete 6 fintech quests.',
         imageUrl: 'https://picsum.photos/seed/techcorp-kode/480/480',
-        homepageUrl: 'https://example.com/',
       },
       {
         id: 4,
@@ -116,7 +113,6 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Design',
         description: 'Create amazing designs.',
         imageUrl: 'https://picsum.photos/seed/designstudio-kode/480/480',
-        homepageUrl: 'https://example.com/',
       },
       {
         id: 5,
@@ -124,7 +120,6 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Data',
         description: 'Analyze data insights.',
         imageUrl: 'https://picsum.photos/seed/datalab-kode/480/480',
-        homepageUrl: 'https://example.com/',
       },
     ],
     []
@@ -169,10 +164,10 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
       return
     }
 
-    const slideFrom = richPanel?.slideFrom ?? 'right'
     const slideDist =
       typeof window !== 'undefined' ? Math.min(window.innerWidth * 0.55, 960) : 600
-    const enterX = slideFrom === 'right' ? slideDist : -slideDist
+    /* 넓은 화면: 패널을 왼쪽에 두므로 화면 왼쪽 바깥에서 슬라이드 인 */
+    const enterX = isMobileSheet ? 0 : -slideDist
 
     gsap.killTweensOf(panelRef.current)
     gsap.killTweensOf(boxRef.current)
@@ -216,8 +211,8 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
   // 리치 소개 탭: 섹션 스태거 (구역 변경 또는 소개 탭으로 복귀)
   useLayoutEffect(() => {
     if (!richPanel || activeTab !== 'intro') return
-    const slideFrom = richPanel.slideFrom ?? 'right'
-    const sectionNudgeX = slideFrom === 'right' ? 36 : -36
+    /* 데스크톱은 패널이 왼쪽 → 소개 섹션은 왼쪽에서 스태거 */
+    const sectionNudgeX = isMobileSheet ? 0 : -36
     const sectionNudgeY = 28
     const els = sectionsRef.current.filter(Boolean)
     if (!els.length) return
@@ -247,9 +242,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
 
   const overlayClass = isMobileSheet
     ? 'zone-info-overlay zone-info-overlay--mobile-sheet'
-    : richPanel?.slideFrom === 'left'
-      ? 'zone-info-overlay zone-info-overlay--left'
-      : 'zone-info-overlay zone-info-overlay--right'
+    : 'zone-info-overlay zone-info-overlay--left'
 
   return (
     <div ref={overlayRef} className={overlayClass}>
@@ -319,7 +312,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
                   type="button"
                   className="zone-company-spotlight__btn-secondary"
                   onClick={() =>
-                    openCompanySpotlightMail('메시지', '안녕하세요.', companyPreview.name)
+                    openCompanySpotlightMail('메세지', '안녕하세요.', companyPreview.name)
                   }
                 >
                   메세지 보내기

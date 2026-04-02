@@ -2,8 +2,7 @@ import { useState } from 'react'
 import './HomePage.css'
 
 /**
- * 메인 랜딩 페이지 컴포넌트
- * KODE Clubs 실제 사이트의 홈페이지를 재현합니다.
+ * 메인 랜딩 페이지 — ENVEX
  */
 export default function HomePage({ onEnter }) {
   const [isHovered, setIsHovered] = useState(false)
@@ -11,8 +10,8 @@ export default function HomePage({ onEnter }) {
   return (
     <div className="home-page">
       <div className="home-content">
-        <h1 className="home-logo">KODE</h1>
-        <h2 className="home-subtitle">KODE SPORTS CLUB NEW CAIRO</h2>
+        <h1 className="home-logo">ENVEX</h1>
+        <h2 className="home-subtitle">2026 · Environmental Technology &amp; Green Energy</h2>
         
         <button
           className="enter-button"

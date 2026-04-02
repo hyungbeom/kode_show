@@ -1,16 +1,16 @@
 import './MapHeader.css'
 
 /**
- * 지도 화면 상단 헤더 컴포넌트
- * KODE 로고와 닫기 버튼을 포함합니다.
+ * 지도 화면 상단 헤더 — ENVEX 로고 + 닫기
  */
 export default function MapHeader({ onClose }) {
   return (
     <div className="map-header">
       <div className="map-header-spacer" aria-hidden />
-      {/* 중앙: KODE 로고 */}
       <div className="header-logo">
-        <a href="#" className="logo-link">Kode</a>
+        <a href="#" className="logo-link">
+          ENVEX
+        </a>
       </div>
       
       {/* 오른쪽: 닫기 버튼 */}
