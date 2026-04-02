@@ -426,7 +426,10 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     return () => root.removeEventListener('scroll', onScroll)
   }, [detailPageScroll, isProductDetailPanelMobileLayout, productDetail?.index])
 
-  /** 제품 상세: 휠·터치 스와이프를 스크롤 루트로 전달 (모바일은 캔버스/고정 레이어가 터치를 가져가 기본 스크롤이 안 됨) */
+  /**
+   * 제품 상세: 캔버스·고정 레이어 위 스와이프만 스크롤 루트로 연결.
+   * data-room-scroll 안(랜딩·스페이서)은 터치 리스너를 거치지 않고 브라우저 네이티브 스크롤(관성) 사용 — 수동 scrollTop 조작과 겹치면 덜컹거림.
+   */
   useEffect(() => {
     if (!detailPageScroll) return
     const fixed = fixedLayerRef.current
@@ -434,6 +437,12 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     if (!fixed || !root) return
 
     const onWheel = (e) => {
+      if (
+        typeof e.target?.closest === 'function' &&
+        e.target.closest('.product-detail-panel__inner')
+      ) {
+        return
+      }
       root.scrollTop += e.deltaY
       e.preventDefault()
     }
@@ -465,21 +474,12 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     fixed.addEventListener('touchend', onTouchEnd, { passive: true, capture: true })
     fixed.addEventListener('touchcancel', onTouchEnd, { passive: true, capture: true })
 
-    root.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
-    root.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
-    root.addEventListener('touchend', onTouchEnd, { passive: true, capture: true })
-    root.addEventListener('touchcancel', onTouchEnd, { passive: true, capture: true })
-
     return () => {
       fixed.removeEventListener('wheel', onWheel, capTrue)
       fixed.removeEventListener('touchstart', onTouchStart, capTrue)
       fixed.removeEventListener('touchmove', onTouchMove, capTrue)
       fixed.removeEventListener('touchend', onTouchEnd, capTrue)
       fixed.removeEventListener('touchcancel', onTouchEnd, capTrue)
-      root.removeEventListener('touchstart', onTouchStart, capTrue)
-      root.removeEventListener('touchmove', onTouchMove, capTrue)
-      root.removeEventListener('touchend', onTouchEnd, capTrue)
-      root.removeEventListener('touchcancel', onTouchEnd, capTrue)
     }
   }, [detailPageScroll])
 

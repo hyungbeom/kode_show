@@ -18,6 +18,11 @@ export default function ProductDetailPanel({ product, onClose, embedded = false 
         <button type="button" className="product-detail-panel__close" onClick={onClose} aria-label="닫기">
           ×
         </button>
+        {embedded ? (
+          <p className="product-detail-panel__scroll-hint">
+            이 영역 안에서 위·아래로 스크롤하면 전체를 볼 수 있어요
+          </p>
+        ) : null}
         <p className="product-detail-panel__subtitle">
           Product {index + 1} / 5
         </p>
