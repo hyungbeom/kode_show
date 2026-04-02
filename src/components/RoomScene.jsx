@@ -47,6 +47,121 @@ const PRODUCT_DETAIL_NAV_ARROW_SVG = 34
 /** `false`면 show_room2 부스 + 박스 전시물 비표시 — 제품 캐러셀만 사용 */
 const SHOW_LEGACY_BOOTH_AND_EXHIBITS = false
 
+/** 룸 상단 크롬 — 제품 상세 시 스크롤 레이어(z-index:1)보다 위에 두기 위해 분리 */
+function RoomSceneTopBar({
+  onBack,
+  productDetail,
+  isProductDetailPanelMobileLayout,
+  onPrevProduct,
+  onNextProduct,
+  productDetailNavBtnStyle,
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onBack}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          zIndex: 1000,
+          padding: '12px 24px',
+          background: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          /* 전체 화면 래퍼가 pointer-events:none 일 때도 호버·클릭이 확실히 타겟팅되도록 */
+          pointerEvents: 'auto',
+        }}
+      >
+        {'< BACK'}
+      </button>
+
+      {productDetail ? (
+        <>
+          <button
+            type="button"
+            aria-label="이전 제품 상세"
+            disabled={productDetail.index <= 0}
+            onClick={onPrevProduct}
+            style={{
+              position: 'absolute',
+              left: 16,
+              ...(isProductDetailPanelMobileLayout
+                ? { top: '40%', transform: 'translateY(-50%)' }
+                : { top: '50%', transform: 'translateY(-50%)' }),
+              zIndex: 1150,
+              pointerEvents: 'auto',
+              ...productDetailNavBtnStyle(productDetail.index > 0),
+            }}
+          >
+            <svg
+              width={PRODUCT_DETAIL_NAV_ARROW_SVG}
+              height={PRODUCT_DETAIL_NAV_ARROW_SVG}
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M15 6l-6 6 6 6"
+                stroke="currentColor"
+                strokeWidth="2.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-label="다음 제품 상세"
+            disabled={productDetail.index >= PRODUCT_DETAIL_LIST.length - 1}
+            onClick={onNextProduct}
+            style={{
+              position: 'absolute',
+              ...(isProductDetailPanelMobileLayout
+                ? { top: '40%', transform: 'translateY(-50%)' }
+                : { top: '50%', transform: 'translateY(-50%)' }),
+              zIndex: 1150,
+              pointerEvents: 'auto',
+              ...(isProductDetailPanelMobileLayout
+                ? { right: 16, left: 'auto' }
+                : {
+                    left: 'max(16px, calc(100vw - min(1040px, 78vw) - 72px))',
+                    right: 'auto',
+                  }),
+              ...productDetailNavBtnStyle(
+                productDetail.index < PRODUCT_DETAIL_LIST.length - 1,
+              ),
+            }}
+          >
+            <svg
+              width={PRODUCT_DETAIL_NAV_ARROW_SVG}
+              height={PRODUCT_DETAIL_NAV_ARROW_SVG}
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M9 6l6 6-6 6"
+                stroke="currentColor"
+                strokeWidth="2.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </>
+      ) : null}
+
+      <RoomDarkModeSwitch />
+    </>
+  )
+}
+
 /**
  * 방 씬 컴포넌트
  * 업체 클릭 시 표시되는 3D 방
@@ -483,58 +598,6 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     }
   }, [detailPageScroll])
 
-  /**
-   * 모바일 첫 화면 상단 스트립(.room-detail-scroll-hint-hit-top)은 fixed 와 형제 DOM 이라
-   * fixed 캡처 리스너가 터치를 못 받음 → 스크롤 부모 pointer-events:none 환경에서 네이티브 스와이프가 실패하는 경우가 있어
-   * 스크롤 루트에서만 동일한 scrollTop 수동 적용 (랜딩 본문은 여전히 네이티브 관성 스크롤)
-   */
-  useEffect(() => {
-    if (!detailPageScroll || !isProductDetailPanelMobileLayout) return
-    const root = scrollRootRef.current
-    if (!root) return
-
-    let lastTouchY = /** @type {number | null} */ (null)
-    let hintStripActive = false
-
-    const onTouchStart = (e) => {
-      if (e.touches?.length !== 1) {
-        hintStripActive = false
-        lastTouchY = null
-        return
-      }
-      const t = e.target
-      hintStripActive =
-        typeof t?.closest === 'function' &&
-        !!t.closest('.room-detail-scroll-hint-hit-top')
-      lastTouchY = hintStripActive ? e.touches[0].clientY : null
-    }
-    const onTouchEnd = () => {
-      hintStripActive = false
-      lastTouchY = null
-    }
-    const onTouchMove = (e) => {
-      if (!hintStripActive || lastTouchY == null || e.touches?.length !== 1) return
-      const y = e.touches[0].clientY
-      const dy = lastTouchY - y
-      lastTouchY = y
-      root.scrollTop += dy
-      e.preventDefault()
-    }
-
-    const capTrue = { capture: true }
-    root.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
-    root.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
-    root.addEventListener('touchend', onTouchEnd, { passive: true, capture: true })
-    root.addEventListener('touchcancel', onTouchEnd, { passive: true, capture: true })
-
-    return () => {
-      root.removeEventListener('touchstart', onTouchStart, capTrue)
-      root.removeEventListener('touchmove', onTouchMove, capTrue)
-      root.removeEventListener('touchend', onTouchEnd, capTrue)
-      root.removeEventListener('touchcancel', onTouchEnd, capTrue)
-    }
-  }, [detailPageScroll, isProductDetailPanelMobileLayout])
-
   return (
     <div
       ref={roomSceneRootRef}
@@ -560,107 +623,21 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
           background: sceneBackgroundGradient,
         }}
       >
-      {/* < BACK — 상세 시 캐러셀만, 캐러셀 시 월드(맵) 루트 */}
-      <button
-        type="button"
-        onClick={handleBackButtonClick}
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          zIndex: 1000,
-          padding: '12px 24px',
-          background: 'rgba(0, 0, 0, 0.7)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '16px',
-          fontWeight: 'bold',
-        }}
-      >
-        {'< BACK'}
-      </button>
+      {/* 상단 크롬: 제품 상세 스크롤 시 scroll 레이어(z-index:1)에 가려지지 않게 별도 고정 레이어로 띄움 */}
+      {!detailPageScroll ? (
+        <RoomSceneTopBar
+          onBack={handleBackButtonClick}
+          productDetail={productDetail}
+          isProductDetailPanelMobileLayout={isProductDetailPanelMobileLayout}
+          onPrevProduct={() => navigateProductDetailAdjacent(true)}
+          onNextProduct={() => navigateProductDetailAdjacent(false)}
+          productDetailNavBtnStyle={productDetailNavBtnStyle}
+        />
+      ) : null}
 
       {showCarouselIntro ? (
         <RoomCarouselIntro onExplore={() => setCarouselIntroDismissed(true)} />
       ) : null}
-
-      {productDetail ? (
-        <>
-          <button
-            type="button"
-            aria-label="이전 제품 상세"
-            disabled={productDetail.index <= 0}
-            onClick={() => navigateProductDetailAdjacent(true)}
-            style={{
-              position: 'absolute',
-              left: 16,
-              ...(isProductDetailPanelMobileLayout
-                ? { top: '40%', transform: 'translateY(-50%)' }
-                : { top: '50%', transform: 'translateY(-50%)' }),
-              zIndex: 1150,
-              ...productDetailNavBtnStyle(productDetail.index > 0),
-            }}
-          >
-            <svg
-              width={PRODUCT_DETAIL_NAV_ARROW_SVG}
-              height={PRODUCT_DETAIL_NAV_ARROW_SVG}
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden
-            >
-              <path
-                d="M15 6l-6 6 6 6"
-                stroke="currentColor"
-                strokeWidth="2.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            aria-label="다음 제품 상세"
-            disabled={productDetail.index >= PRODUCT_DETAIL_LIST.length - 1}
-            onClick={() => navigateProductDetailAdjacent(false)}
-            style={{
-              position: 'absolute',
-              ...(isProductDetailPanelMobileLayout
-                ? { top: '40%', transform: 'translateY(-50%)' }
-                : { top: '50%', transform: 'translateY(-50%)' }),
-              zIndex: 1150,
-              ...(isProductDetailPanelMobileLayout
-                ? { right: 16, left: 'auto' }
-                : {
-                    left: 'max(16px, calc(100vw - min(1040px, 78vw) - 72px))',
-                    right: 'auto',
-                  }),
-              ...productDetailNavBtnStyle(
-                productDetail.index < PRODUCT_DETAIL_LIST.length - 1,
-              ),
-            }}
-          >
-            <svg
-              width={PRODUCT_DETAIL_NAV_ARROW_SVG}
-              height={PRODUCT_DETAIL_NAV_ARROW_SVG}
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden
-            >
-              <path
-                d="M9 6l6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="2.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </>
-      ) : null}
-
-      <RoomDarkModeSwitch />
 
       {/* 캔버스보다 먼저 두어 ref가 ProductAnnotationCallouts 마운트 시 채워지게 */}
       <div
@@ -892,26 +869,48 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
           }}
         >
           <div className="room-detail-scroll-hint-wrap">
-            <div className="room-detail-scroll-hint-hit-top">
-              {showMobileLandingHint && isProductDetailPanelMobileLayout ? (
-                <p
-                  className="room-detail-scroll-hint"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <span className="room-detail-scroll-hint__chev" aria-hidden>
-                    ↑
-                  </span>
-                  아래 &quot;제품 추가 소개&quot;를 보려면 화면을 위로 밀어 올리세요
-                </p>
-              ) : null}
-            </div>
+            {showMobileLandingHint && isProductDetailPanelMobileLayout ? (
+              <p
+                className="room-detail-scroll-hint"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="room-detail-scroll-hint__chev" aria-hidden>
+                  ↑
+                </span>
+                아래 &quot;제품 추가 소개&quot;를 보려면 화면을 위로 밀어 올리세요
+              </p>
+            ) : null}
             {/* 모바일: 하단 ~제품 패널 높이만큼은 터치 통과 → 3D/패널 조작 가능. 그 위는 스크롤 루트가 스와이프 수신 */}
             <div className="room-detail-scroll-hint-pass-panel" aria-hidden />
           </div>
           <div style={{ pointerEvents: 'auto', position: 'relative' }}>
             <RoomDetailLanding product={productDetail} />
           </div>
+        </div>
+      ) : null}
+
+      {detailPageScroll ? (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            /* 스크롤 랜딩(z-index:1)·캔버스 고정층보다 확실히 위 — 투명 플랫폼이 포인터를 빼앗는 경우 방지 */
+            zIndex: 20,
+            pointerEvents: 'none',
+          }}
+        >
+          <RoomSceneTopBar
+            onBack={handleBackButtonClick}
+            productDetail={productDetail}
+            isProductDetailPanelMobileLayout={isProductDetailPanelMobileLayout}
+            onPrevProduct={() => navigateProductDetailAdjacent(true)}
+            onNextProduct={() => navigateProductDetailAdjacent(false)}
+            productDetailNavBtnStyle={productDetailNavBtnStyle}
+          />
         </div>
       ) : null}
     </div>

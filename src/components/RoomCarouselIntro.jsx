@@ -1,14 +1,59 @@
+import { useState, useRef, useEffect } from 'react'
 import './RoomCarouselIntro.css'
 
 const LEEBIO_HOMEPAGE_URL = 'https://leebio.co.kr/'
+/** 드롭다운 메일 링크용 처리 주소 — 실제 운영 메일로 교체 가능 */
+const LEEBIO_MAIL_TO = 'mailto:info@leebio.co.kr'
 
 /**
  * /room/1 캐러셀 최초 진입 시 — 투명 배경 영역 + 왼쪽 상단 카피 + HOMEPAGE
  */
 export default function RoomCarouselIntro({ onExplore }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuWrapRef = useRef(/** @type {HTMLDivElement | null} */ (null))
+
   const handleHomepageClick = () => {
     window.open(LEEBIO_HOMEPAGE_URL, '_blank', 'noopener,noreferrer')
     onExplore?.()
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDocDown = (e) => {
+      if (!menuWrapRef.current?.contains(/** @type {Node} */ (e.target))) {
+        setMenuOpen(false)
+      }
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDocDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
+
+  const openMail = (subject, body = '') => {
+    const q = new URLSearchParams()
+    q.set('subject', subject)
+    if (body) q.set('body', body)
+    window.location.href = `${LEEBIO_MAIL_TO}?${q.toString()}`
+    setMenuOpen(false)
+  }
+
+  const handleMeetingRequest = () => {
+    openMail('미팅 요청', '안녕하세요. LEEBIO 미팅을 요청드립니다.\n\n')
+  }
+
+  const handleSendMessage = () => {
+    openMail('문의 메시지', '안녕하세요.\n\n')
+  }
+
+  const handleBrochure = () => {
+    window.open(LEEBIO_HOMEPAGE_URL, '_blank', 'noopener,noreferrer')
+    setMenuOpen(false)
   }
 
   return (
@@ -21,9 +66,44 @@ export default function RoomCarouselIntro({ onExplore }) {
         다양한 수질 지표를 신속하게 측정하며, 운영자의 의사결정을 지원합니다. 당사는 2025년 대한민국 물산업
         혁신창업대전 장려상 및 2026년 CES 혁신상을 수상하며 기술력과 시장성을 인정받았습니다.
       </p>
-      <button type="button" className="room-carousel-intro__explorer" onClick={handleHomepageClick}>
-        HOMEPAGE
-      </button>
+      <div className="room-carousel-intro__actions" ref={menuWrapRef}>
+        <button type="button" className="room-carousel-intro__explorer" onClick={handleHomepageClick}>
+          HOMEPAGE
+        </button>
+        <div className="room-carousel-intro__more-wrap">
+          <button
+            type="button"
+            className="room-carousel-intro__more"
+            aria-label="추가 메뉴"
+            aria-expanded={menuOpen}
+            aria-haspopup="true"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span className="room-carousel-intro__more-dot" aria-hidden />
+            <span className="room-carousel-intro__more-dot" aria-hidden />
+            <span className="room-carousel-intro__more-dot" aria-hidden />
+          </button>
+          {menuOpen ? (
+            <ul className="room-carousel-intro__dropdown" role="menu">
+              <li role="none">
+                <button type="button" className="room-carousel-intro__dropdown-item" role="menuitem" onClick={handleMeetingRequest}>
+                  미팅요청
+                </button>
+              </li>
+              <li role="none">
+                <button type="button" className="room-carousel-intro__dropdown-item" role="menuitem" onClick={handleSendMessage}>
+                  메세지 보내기
+                </button>
+              </li>
+              <li role="none">
+                <button type="button" className="room-carousel-intro__dropdown-item" role="menuitem" onClick={handleBrochure}>
+                  브로슈어
+                </button>
+              </li>
+            </ul>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }

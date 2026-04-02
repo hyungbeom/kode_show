@@ -6,6 +6,24 @@ import { getZoneRichPanel } from '../data/zoneRichPanels'
 import { getZoneIntroPlain } from '../data/zoneIntroPlain'
 import './ZoneInfoPanel.css'
 
+function openCompanySpotlightMail(subject, bodyIntro, companyName) {
+  const q = new URLSearchParams()
+  q.set('subject', `${subject} — ${companyName}`)
+  q.set('body', `${bodyIntro}\n\n`)
+  window.location.href = `mailto:?${q.toString()}`
+}
+
+function openCompanySpotlightBrochure(preview) {
+  if (preview.homepageUrl) {
+    window.open(preview.homepageUrl, '_blank', 'noopener,noreferrer')
+    return
+  }
+  const q = new URLSearchParams()
+  q.set('subject', `브로슈어 요청 — ${preview.name}`)
+  q.set('body', '안녕하세요. 브로슈어를 요청드립니다.\n\n')
+  window.location.href = `mailto:?${q.toString()}`
+}
+
 const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
   const overlayRef = useRef(null)
   const panelRef = useRef(null)
@@ -74,6 +92,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Fintech',
         description: 'Talk with GreenFi and water a tree.',
         imageUrl: 'https://picsum.photos/seed/greenfi-kode/480/480',
+        homepageUrl: 'https://greenfi.io/',
       },
       {
         id: 2,
@@ -81,6 +100,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Real Estate',
         description: 'Talk with Aven to renovate a house.',
         imageUrl: 'https://picsum.photos/seed/aven-kode/480/480',
+        homepageUrl: 'https://www.aven.com/',
       },
       {
         id: 3,
@@ -88,6 +108,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Technology',
         description: 'Complete 6 fintech quests.',
         imageUrl: 'https://picsum.photos/seed/techcorp-kode/480/480',
+        homepageUrl: 'https://example.com/',
       },
       {
         id: 4,
@@ -95,6 +116,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Design',
         description: 'Create amazing designs.',
         imageUrl: 'https://picsum.photos/seed/designstudio-kode/480/480',
+        homepageUrl: 'https://example.com/',
       },
       {
         id: 5,
@@ -102,6 +124,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         category: 'Data',
         description: 'Analyze data insights.',
         imageUrl: 'https://picsum.photos/seed/datalab-kode/480/480',
+        homepageUrl: 'https://example.com/',
       },
     ],
     []
@@ -276,6 +299,37 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
                   }}
                 >
                   다음
+                </button>
+              </div>
+              <div className="zone-company-spotlight__secondary-actions">
+                <button
+                  type="button"
+                  className="zone-company-spotlight__btn-secondary"
+                  onClick={() =>
+                    openCompanySpotlightMail(
+                      '미팅 신청',
+                      '안녕하세요. 미팅을 신청드립니다.',
+                      companyPreview.name,
+                    )
+                  }
+                >
+                  미팅신청
+                </button>
+                <button
+                  type="button"
+                  className="zone-company-spotlight__btn-secondary"
+                  onClick={() =>
+                    openCompanySpotlightMail('메시지', '안녕하세요.', companyPreview.name)
+                  }
+                >
+                  메세지 보내기
+                </button>
+                <button
+                  type="button"
+                  className="zone-company-spotlight__btn-secondary"
+                  onClick={() => openCompanySpotlightBrochure(companyPreview)}
+                >
+                  브로슈어
                 </button>
               </div>
             </div>

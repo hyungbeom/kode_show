@@ -42,6 +42,13 @@
   word-break: break-word;
 }
 
+.room-carousel-intro__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .room-carousel-intro__explorer {
   display: inline-flex;
   align-items: center;
@@ -68,4 +75,94 @@
 
 .room-carousel-intro__explorer:active {
   transform: scale(0.98);
+}
+
+.room-carousel-intro__more-wrap {
+  position: relative;
+}
+
+.room-carousel-intro__more {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 48px;
+  height: 41px;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.room-carousel-intro__more:hover {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.room-carousel-intro__more:active {
+  transform: scale(0.98);
+}
+
+.room-carousel-intro__more-dot {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.room-carousel-intro__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  margin: 0;
+  padding: 6px;
+  min-width: 200px;
+  list-style: none;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 12px;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1002;
+}
+
+.room-carousel-intro__dropdown-item {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 11px 14px;
+  box-sizing: border-box;
+  text-align: left;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: rgba(255, 255, 255, 0.95);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.room-carousel-intro__dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.room-carousel-intro__dropdown-item:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.85);
+  outline-offset: 1px;
 }
