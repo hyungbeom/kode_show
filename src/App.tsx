@@ -329,31 +329,32 @@ function App() {
 
       {!mapHeroCopyDismissed ? (
         <section className="map-hero-copy" lang="en" aria-label="Welcome to Kode Sports Club">
-          <p className="map-hero-copy__logo">KODE</p>
+          <img src="/logo.png" width={200} alt=""/>
           <h1 className="map-hero-copy__headline">
+            <br/>
             <span className="map-hero-copy__headline-line">INTERNATIONAL EXHIBITION</span>
             <span className="map-hero-copy__headline-line">ON ENVIRONMENTAL TECHNOLOGY &</span>
             <span className="map-hero-copy__headline-line">GREEN ENERGY</span>
           </h1>
           <p className="map-hero-copy__body">
-            Kode is a multi-disciplinary sports club,
+            We invite you to <span className="map-hero-copy__underline">2026 ENVEX</span>  (International Exhibition on Environmental Technology & Green Energy)<br/> Korea's largest environmental exhibition.
             <br />
-            making its debut at Swan Lake Residences,
+            Don't miss this special opportunity to be the first <br/>to experience the newest trends in the environmental industry!
             <br />
-            <span className="map-hero-copy__underline">Youssef El Sebai, First New Cairo</span>
+
           </p>
           <button
             type="button"
             className="map-hero-copy__cta"
             onClick={() => triggerBrandFilmCenterView()}
           >
-            SEE BRAND FILM
+            EXPLORE THE 2026 ENVEX
           </button>
         </section>
       ) : null}
       
       {/* 상단 헤더 */}
-      <MapHeader onClose={handleCloseMap} />
+      {/*<MapHeader onClose={handleCloseMap} />*/}
       
       {/* 하단 왼쪽 사운드 컨트롤 */}
       <SoundControl />
