@@ -18,7 +18,7 @@ import {
 } from '../utils/roomCarouselLayout'
 
 /** 모바일 제품 안내: Html transform off 시 스크린 좌표로 캔버스 하단 중앙에 고정 (scale=1) */
-const MOBILE_CAPTION_HEIGHT_PX = 300
+const MOBILE_CAPTION_HEIGHT_PX = 258
 
 const COUNT = 5
 /** 일열 뷰에서 동시에 보이는 슬롯 수 */
@@ -292,7 +292,7 @@ function CarouselCaptionBar({
           borderBottom: isMobileTier ? 'none' : undefined,
           borderRadius: isMobileTier ? '16px 16px 0 0' : 16,
           padding: isMobileTier
-            ? '16px 16px calc(18px + env(safe-area-inset-bottom, 0px))'
+            ? '12px 14px calc(14px + env(safe-area-inset-bottom, 0px))'
             : '14px 16px 12px',
           boxSizing: 'border-box',
           height: captionCardHeightStyle,
@@ -315,13 +315,13 @@ function CarouselCaptionBar({
             gap: 10,
             flexWrap: 'wrap',
             flexShrink: 0,
-            marginBottom: isMobileTier ? 14 : 10,
+            marginBottom: isMobileTier ? 11 : 10,
           }}
         >
           {Array.from({ length: COUNT }, (_, i) => {
             const on = i === active
-            const dotOn = isMobileTier ? 15 : 12
-            const dotOff = isMobileTier ? 11 : 9
+            const dotOn = isMobileTier ? 13 : 12
+            const dotOff = isMobileTier ? 10 : 9
             return (
               <button
                 key={i}
@@ -352,7 +352,7 @@ function CarouselCaptionBar({
           style={{
             margin: '0 0 8px',
             fontSize: isMobileTier
-              ? 'clamp(1.22rem, 4.9vw, 1.52rem)'
+              ? 'clamp(1.08rem, 4.2vw, 1.36rem)'
               : 'clamp(1rem, 2.8vw, 1.2rem)',
             fontWeight: 700,
             color: fg,
@@ -366,8 +366,8 @@ function CarouselCaptionBar({
         <p
           style={{
             margin: 0,
-            fontSize: isMobileTier ? '1.06rem' : '0.875rem',
-            lineHeight: isMobileTier ? 1.68 : 1.65,
+            fontSize: isMobileTier ? '0.98rem' : '0.875rem',
+            lineHeight: isMobileTier ? 1.65 : 1.65,
             color: fgMuted,
             fontFamily: 'system-ui, sans-serif',
             flex: 1,
@@ -387,14 +387,14 @@ function CarouselCaptionBar({
             }}
             style={{
               flexShrink: 0,
-              marginTop: isMobileTier ? 14 : 10,
+              marginTop: isMobileTier ? 11 : 10,
               width: '100%',
-              padding: isMobileTier ? '13px 16px' : '10px 16px',
+              padding: isMobileTier ? '11px 14px' : '10px 16px',
               borderRadius: 12,
               border: `1px solid ${dotActive}`,
               background: prefersDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(3, 105, 161, 0.08)',
               color: dotActive,
-              fontSize: isMobileTier ? '1.03rem' : '0.875rem',
+              fontSize: isMobileTier ? '0.94rem' : '0.875rem',
               fontWeight: 700,
               fontFamily: 'system-ui, sans-serif',
               cursor: 'pointer',

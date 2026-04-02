@@ -385,6 +385,9 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   /** 제품 GLB 확대 시: 3D는 화면에 고정, 그 위 스크롤 레이어에서 랜딩만 올라옴 */
   const detailPageScroll = !!productDetail
 
+  /** 모바일: 첫 화면에서 아래 랜딩 유도 문구 (스크롤하면 숨김) — RoomDetailLanding.css */
+  const [showMobileLandingHint, setShowMobileLandingHint] = useState(true)
+
   const showCarouselIntro =
     companyId === 1 && !productDetail && !carouselIntroDismissed
 
@@ -407,6 +410,21 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     root?.addEventListener('scroll', updateCanvasDarkenFromScroll, { passive: true })
     return () => root?.removeEventListener('scroll', updateCanvasDarkenFromScroll)
   }, [detailPageScroll, updateCanvasDarkenFromScroll])
+
+  useEffect(() => {
+    if (!detailPageScroll || !isProductDetailPanelMobileLayout) {
+      setShowMobileLandingHint(true)
+      return
+    }
+    setShowMobileLandingHint(true)
+    const root = scrollRootRef.current
+    if (!root) return
+    const onScroll = () => {
+      if (root.scrollTop > 56) setShowMobileLandingHint(false)
+    }
+    root.addEventListener('scroll', onScroll, { passive: true })
+    return () => root.removeEventListener('scroll', onScroll)
+  }, [detailPageScroll, isProductDetailPanelMobileLayout, productDetail?.index])
 
   /** 제품 상세: 휠·터치 스와이프를 스크롤 루트로 전달 (모바일은 캔버스/고정 레이어가 터치를 가져가 기본 스크롤이 안 됨) */
   useEffect(() => {
@@ -821,7 +839,20 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
             WebkitOverflowScrolling: 'touch',
           }}
         >
-          <div style={{ minHeight: '100vh', width: '100%' }} aria-hidden />
+          <div className="room-detail-scroll-hint-wrap">
+            {showMobileLandingHint && isProductDetailPanelMobileLayout ? (
+              <p
+                className="room-detail-scroll-hint"
+                role="status"
+                aria-live="polite"
+              >
+                <span className="room-detail-scroll-hint__chev" aria-hidden>
+                  ↑
+                </span>
+                아래 &quot;제품 추가 소개&quot;를 보려면 화면을 위로 밀어 올리세요
+              </p>
+            ) : null}
+          </div>
           <div style={{ pointerEvents: 'auto', position: 'relative' }}>
             <RoomDetailLanding product={productDetail} />
           </div>
