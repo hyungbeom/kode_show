@@ -408,19 +408,61 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     return () => root?.removeEventListener('scroll', updateCanvasDarkenFromScroll)
   }, [detailPageScroll, updateCanvasDarkenFromScroll])
 
-  /** 제품 상세: 휠은 캔버스뿐 아니라 패널·HUD 등 고정 레이어 전체에서 스크롤 루트로 전달 */
+  /** 제품 상세: 휠·터치 스와이프를 스크롤 루트로 전달 (모바일은 캔버스/고정 레이어가 터치를 가져가 기본 스크롤이 안 됨) */
   useEffect(() => {
     if (!detailPageScroll) return
-    const el = fixedLayerRef.current
-    if (!el) return
+    const fixed = fixedLayerRef.current
+    const root = scrollRootRef.current
+    if (!fixed || !root) return
+
     const onWheel = (e) => {
-      const root = scrollRootRef.current
-      if (!root) return
       root.scrollTop += e.deltaY
       e.preventDefault()
     }
-    el.addEventListener('wheel', onWheel, { passive: false, capture: true })
-    return () => el.removeEventListener('wheel', onWheel, { capture: true })
+
+    let lastTouchY = /** @type {number | null} */ (null)
+    const onTouchStart = (e) => {
+      if (e.touches?.length === 1) lastTouchY = e.touches[0].clientY
+    }
+    const onTouchEnd = () => {
+      lastTouchY = null
+    }
+    const onTouchMove = (e) => {
+      if (lastTouchY == null || e.touches?.length !== 1) return
+      if (typeof e.target?.closest === 'function' && e.target.closest('.product-detail-panel__inner')) {
+        lastTouchY = e.touches[0].clientY
+        return
+      }
+      const y = e.touches[0].clientY
+      const dy = lastTouchY - y
+      lastTouchY = y
+      root.scrollTop += dy
+      e.preventDefault()
+    }
+
+    const capTrue = { capture: true }
+    fixed.addEventListener('wheel', onWheel, { passive: false, capture: true })
+    fixed.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
+    fixed.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
+    fixed.addEventListener('touchend', onTouchEnd, { passive: true, capture: true })
+    fixed.addEventListener('touchcancel', onTouchEnd, { passive: true, capture: true })
+
+    root.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
+    root.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
+    root.addEventListener('touchend', onTouchEnd, { passive: true, capture: true })
+    root.addEventListener('touchcancel', onTouchEnd, { passive: true, capture: true })
+
+    return () => {
+      fixed.removeEventListener('wheel', onWheel, capTrue)
+      fixed.removeEventListener('touchstart', onTouchStart, capTrue)
+      fixed.removeEventListener('touchmove', onTouchMove, capTrue)
+      fixed.removeEventListener('touchend', onTouchEnd, capTrue)
+      fixed.removeEventListener('touchcancel', onTouchEnd, capTrue)
+      root.removeEventListener('touchstart', onTouchStart, capTrue)
+      root.removeEventListener('touchmove', onTouchMove, capTrue)
+      root.removeEventListener('touchend', onTouchEnd, capTrue)
+      root.removeEventListener('touchcancel', onTouchEnd, capTrue)
+    }
   }, [detailPageScroll])
 
   return (
@@ -484,8 +526,9 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
             style={{
               position: 'absolute',
               left: 16,
-              top: '50%',
-              transform: 'translateY(-50%)',
+              ...(isProductDetailPanelMobileLayout
+                ? { top: '40%', transform: 'translateY(-50%)' }
+                : { top: '50%', transform: 'translateY(-50%)' }),
               zIndex: 1150,
               ...productDetailNavBtnStyle(productDetail.index > 0),
             }}
@@ -513,8 +556,9 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
             onClick={() => navigateProductDetailAdjacent(false)}
             style={{
               position: 'absolute',
-              top: '50%',
-              transform: 'translateY(-50%)',
+              ...(isProductDetailPanelMobileLayout
+                ? { top: '40%', transform: 'translateY(-50%)' }
+                : { top: '50%', transform: 'translateY(-50%)' }),
               zIndex: 1150,
               ...(isProductDetailPanelMobileLayout
                 ? { right: 16, left: 'auto' }
@@ -773,6 +817,8 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
             overflowX: 'hidden',
             overscrollBehavior: 'contain',
             pointerEvents: 'none',
+            touchAction: 'pan-y',
+            WebkitOverflowScrolling: 'touch',
           }}
         >
           <div style={{ minHeight: '100vh', width: '100%' }} aria-hidden />

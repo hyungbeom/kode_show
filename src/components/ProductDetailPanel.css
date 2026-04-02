@@ -46,6 +46,21 @@
     border-radius: 20px 20px 12px 12px;
     padding: clamp(20px, 5vw, 28px);
   }
+
+  .product-detail-panel--embedded .product-detail-panel__desc {
+    font-size: clamp(0.86rem, 3.3vw, 0.96rem);
+    line-height: 1.65;
+    margin-bottom: 16px;
+  }
+
+  .product-detail-panel--embedded .product-detail-panel__specs {
+    gap: 10px;
+  }
+
+  .product-detail-panel--embedded .product-detail-panel__specs li {
+    font-size: clamp(0.8rem, 3vw, 0.9rem);
+    padding: 11px 14px;
+  }
 }
 
 @keyframes product-panel-in {

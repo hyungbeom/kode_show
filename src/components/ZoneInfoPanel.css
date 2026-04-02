@@ -30,6 +30,7 @@
   perspective: 1000px;
   transform-style: preserve-3d;
   position: relative;
+  overflow: visible;
   z-index: 1001;
   pointer-events: auto;
   /* 화면 가로의 약 1/2 (좌우 최소 여백 반영) */
@@ -341,7 +342,177 @@
   background: #764ba2;
 }
 
-/* 모바일: 높이 = 가시 뷰포트의 1/2 (--vv-height = visualViewport, 없으면 100dvh) */
+/* 업체 미리보기 — 플로우 밖: 패널 위로 띄워 시트 본문 높이에 영향 없음 */
+.zone-info-panel--company-spotlight .zone-company-spotlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  z-index: 3;
+  pointer-events: auto;
+}
+
+.zone-company-spotlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 14px 8px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(118, 75, 162, 0.15) 100%
+  );
+  border-radius: 18px;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.2));
+}
+
+.zone-company-spotlight__figure {
+  width: min(168px, 44vw);
+  max-width: 220px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+  margin-bottom: -18px;
+  position: relative;
+  z-index: 1;
+}
+
+.zone-company-spotlight__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.zone-company-spotlight__card {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 18px;
+  padding: 26px 18px 16px;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.14);
+  box-sizing: border-box;
+}
+
+.zone-company-spotlight__lead {
+  margin: 0 0 14px;
+  text-align: center;
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: #1e3a5f;
+}
+
+.zone-company-spotlight__category {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e11d48;
+}
+
+.zone-company-spotlight__copy {
+  color: #0f2744;
+  font-weight: 500;
+}
+
+.zone-company-spotlight__actions {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.zone-company-spotlight__btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.zone-company-spotlight__btn:active {
+  transform: scale(0.98);
+}
+
+.zone-company-spotlight__btn--ghost {
+  background: #e8ecf4;
+  color: #475569;
+}
+
+.zone-company-spotlight__btn--ghost:hover {
+  background: #dfe6f0;
+}
+
+.zone-company-spotlight__btn--primary {
+  color: #fff;
+  background:
+    linear-gradient(135deg, #312e81 0%, #1e1b4b 50%, #4338ca 100%),
+    repeating-linear-gradient(
+      -12deg,
+      transparent,
+      transparent 3px,
+      rgba(255, 255, 255, 0.04) 3px,
+      rgba(255, 255, 255, 0.04) 6px
+    );
+  box-shadow: 0 4px 16px rgba(30, 27, 75, 0.35);
+}
+
+.zone-company-spotlight__btn--primary:hover {
+  filter: brightness(1.06);
+}
+
+.zone-info-overlay--mobile-sheet .zone-company-spotlight__figure {
+  width: min(120px, 34vw);
+  border-width: 3px;
+  margin-bottom: -12px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-company-spotlight {
+  padding: 12px 10px 6px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-company-spotlight__card {
+  padding: 18px 12px 12px;
+  border-radius: 14px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-company-spotlight__lead {
+  font-size: 0.82rem;
+  margin-bottom: 10px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-company-spotlight__category {
+  font-size: 0.62rem;
+  margin-bottom: 4px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-company-spotlight__btn {
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 0.7rem;
+  border-radius: 10px;
+}
+
+/* 모바일: 시트 높이 ≈ 뷰포트 44% (기존 50% 대비 축소), 내역 타이포·여백 축소 */
 .zone-info-overlay.zone-info-overlay--mobile-sheet {
   align-items: flex-end;
   justify-content: center;
@@ -356,9 +527,9 @@
 .zone-info-overlay--mobile-sheet .zone-info-panel.zone-info-panel--wide {
   width: 100%;
   max-width: min(440px, 100%);
-  height: calc(var(--vv-height, 100dvh) * 0.5);
-  min-height: calc(var(--vv-height, 100dvh) * 0.5);
-  max-height: calc(var(--vv-height, 100dvh) * 0.5);
+  height: calc(var(--vv-height, 100dvh) * 0.44);
+  min-height: calc(var(--vv-height, 100dvh) * 0.44);
+  max-height: calc(var(--vv-height, 100dvh) * 0.44);
   margin-top: auto;
   box-sizing: border-box;
 }
@@ -368,12 +539,12 @@
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-box {
-  border-radius: 20px;
+  border-radius: 18px;
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  max-height: calc(var(--vv-height, 100dvh) * 0.5);
+  max-height: calc(var(--vv-height, 100dvh) * 0.44);
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.22);
   box-sizing: border-box;
 }
@@ -396,16 +567,137 @@
 
 /* 모바일 시트: 헤더 타이틀·닫기 기본 크기 축소 */
 .zone-info-overlay--mobile-sheet .zone-info-header {
-  padding: 12px 14px;
+  padding: 10px 12px;
+  border-bottom-width: 1px;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-title {
-  font-size: clamp(0.92rem, 3.8vw, 1.1rem);
+  font-size: clamp(0.85rem, 3.4vw, 1rem);
   font-weight: 700;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-close {
-  font-size: 22px;
-  width: 34px;
-  height: 34px;
+  font-size: 20px;
+  width: 30px;
+  height: 30px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-tabs {
+  padding: 0 8px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-tab {
+  padding: 9px 10px;
+  font-size: 0.8rem;
+  border-bottom-width: 2px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-content {
+  padding: 12px 14px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-content--rich {
+  padding: 12px 14px 16px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-intro-plain {
+  font-size: 0.84rem;
+  line-height: 1.62;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-description-text {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  padding: 16px 12px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-description-text--tab {
+  padding: 4px 0 10px;
+  font-size: 0.84rem;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-section {
+  padding: 10px 0 14px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-section__index {
+  top: 10px;
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-section__title {
+  font-size: 0.95rem;
+  margin-right: 30px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-section__subtitle {
+  font-size: 0.74rem;
+  margin-bottom: 8px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-intro {
+  font-size: 0.84rem;
+  margin-bottom: 10px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-label {
+  font-size: 0.65rem;
+  margin-bottom: 4px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-text {
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-block {
+  margin-bottom: 10px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-rich-block--importance {
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-panel--wide .zone-rich-section__title {
+  font-size: 0.95rem;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-panel--wide .zone-rich-intro,
+.zone-info-overlay--mobile-sheet .zone-info-panel--wide .zone-rich-text {
+  font-size: 0.82rem;
+}
+
+.zone-info-overlay--mobile-sheet .company-list {
+  gap: 8px;
+}
+
+.zone-info-overlay--mobile-sheet .company-item {
+  padding: 11px 12px;
+  gap: 11px;
+  border-radius: 10px;
+}
+
+.zone-info-overlay--mobile-sheet .company-icon {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+.zone-info-overlay--mobile-sheet .company-name {
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.zone-info-overlay--mobile-sheet .company-category {
+  font-size: 10px;
+  margin-bottom: 4px;
+  letter-spacing: 0.35px;
+}
+
+.zone-info-overlay--mobile-sheet .company-description {
+  font-size: 12px;
+  line-height: 1.35;
 }

@@ -415,6 +415,12 @@
   color: #94a3b8;
 }
 
+@media (max-width: 767px) {
+  .room-detail-landing {
+    touch-action: pan-y;
+  }
+}
+
 @media (max-width: 900px) {
   .room-detail-landing__hero-grid {
     grid-template-columns: 1fr;

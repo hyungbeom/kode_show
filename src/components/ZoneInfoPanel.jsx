@@ -68,14 +68,51 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
 
   const companies = useMemo(
     () => [
-      { id: 1, name: 'GreenFi', category: 'Fintech', description: 'Talk with GreenFi and water a tree.' },
-      { id: 2, name: 'Aven', category: 'Real Estate', description: 'Talk with Aven to renovate a house.' },
-      { id: 3, name: 'TechCorp', category: 'Technology', description: 'Complete 6 fintech quests.' },
-      { id: 4, name: 'DesignStudio', category: 'Design', description: 'Create amazing designs.' },
-      { id: 5, name: 'DataLab', category: 'Data', description: 'Analyze data insights.' },
+      {
+        id: 1,
+        name: 'GreenFi',
+        category: 'Fintech',
+        description: 'Talk with GreenFi and water a tree.',
+        imageUrl: 'https://picsum.photos/seed/greenfi-kode/480/480',
+      },
+      {
+        id: 2,
+        name: 'Aven',
+        category: 'Real Estate',
+        description: 'Talk with Aven to renovate a house.',
+        imageUrl: 'https://picsum.photos/seed/aven-kode/480/480',
+      },
+      {
+        id: 3,
+        name: 'TechCorp',
+        category: 'Technology',
+        description: 'Complete 6 fintech quests.',
+        imageUrl: 'https://picsum.photos/seed/techcorp-kode/480/480',
+      },
+      {
+        id: 4,
+        name: 'DesignStudio',
+        category: 'Design',
+        description: 'Create amazing designs.',
+        imageUrl: 'https://picsum.photos/seed/designstudio-kode/480/480',
+      },
+      {
+        id: 5,
+        name: 'DataLab',
+        category: 'Data',
+        description: 'Analyze data insights.',
+        imageUrl: 'https://picsum.photos/seed/datalab-kode/480/480',
+      },
     ],
     []
   )
+
+  /** 업체 행 클릭 시 — 헤더 위 원형 이미지 + 카드(문구·버튼). '다음'에서만 룸 이동 */
+  const [companyPreview, setCompanyPreview] = useState(null)
+
+  useEffect(() => {
+    setCompanyPreview(null)
+  }, [zoneId, activeTab])
 
   const setSelectedCompany = useMapStore((state) => state.setSelectedCompany)
   const closeFullscreenCanvas = useMapStore((state) => state.closeFullscreenCanvas)
@@ -195,9 +232,55 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
     <div ref={overlayRef} className={overlayClass}>
       <div
         ref={panelRef}
-        className={`zone-info-panel zone-info-panel--wide${isMobileSheet ? ' zone-info-panel--mobile-sheet' : ''}`}
+        className={`zone-info-panel zone-info-panel--wide${isMobileSheet ? ' zone-info-panel--mobile-sheet' : ''}${companyPreview ? ' zone-info-panel--company-spotlight' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
+        {companyPreview ? (
+          <div
+            className="zone-company-spotlight"
+            role="region"
+            aria-label={`${companyPreview.name} 소개`}
+          >
+            <div className="zone-company-spotlight__figure">
+              <img
+                src={companyPreview.imageUrl}
+                alt={`${companyPreview.name} 소개 이미지`}
+                className="zone-company-spotlight__img"
+                loading="lazy"
+                width={240}
+                height={240}
+                decoding="async"
+              />
+            </div>
+            <div className="zone-company-spotlight__card">
+              <p className="zone-company-spotlight__lead">
+                <span className="zone-company-spotlight__category">{companyPreview.category}</span>{' '}
+                <span className="zone-company-spotlight__copy">{companyPreview.description}</span>
+              </p>
+              <div className="zone-company-spotlight__actions">
+                <button
+                  type="button"
+                  className="zone-company-spotlight__btn zone-company-spotlight__btn--ghost"
+                  onClick={() => setCompanyPreview(null)}
+                >
+                  닫기
+                </button>
+                <button
+                  type="button"
+                  className="zone-company-spotlight__btn zone-company-spotlight__btn--primary"
+                  onClick={() => {
+                    setSelectedCompany(companyPreview.id, companyPreview.name)
+                    setCompanyPreview(null)
+                    handleClose()
+                    window.history.pushState({}, '', `/room/${companyPreview.id}`)
+                  }}
+                >
+                  다음
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div ref={boxRef} className={`zone-info-box ${richPanel ? 'zone-info-box--rich' : ''}`}>
           <div className="zone-info-header">
             <h2 className="zone-info-title">{zoneLabel || zoneInfo.title}</h2>
@@ -274,11 +357,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
                   <div
                     key={company.id}
                     className="company-item"
-                    onClick={() => {
-                      setSelectedCompany(company.id, company.name)
-                      handleClose()
-                      window.history.pushState({}, '', `/room/${company.id}`)
-                    }}
+                    onClick={() => setCompanyPreview(company)}
                   >
                     <div className="company-icon">{company.name.charAt(0)}</div>
                     <div className="company-info">

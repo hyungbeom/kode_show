@@ -17,6 +17,9 @@ import {
   getRoomCarouselTier,
 } from '../utils/roomCarouselLayout'
 
+/** 모바일 제품 안내: Html transform off 시 스크린 좌표로 캔버스 하단 중앙에 고정 (scale=1) */
+const MOBILE_CAPTION_HEIGHT_PX = 300
+
 const COUNT = 5
 /** 일열 뷰에서 동시에 보이는 슬롯 수 */
 const VISIBLE_SLOTS = 3
@@ -229,6 +232,7 @@ function CarouselCaptionBar({
   const copy = PRODUCT_DETAIL_LIST[active]
   if (!copy) return null
 
+  const { width: canvasWidthPx } = useThree((s) => s.size)
   const bg = prefersDark ? 'rgba(15, 23, 42, 0.82)' : 'rgba(255, 255, 255, 0.92)'
   const border = prefersDark ? '1px solid rgba(148, 163, 184, 0.35)' : '1px solid rgba(15, 23, 42, 0.12)'
   const fg = prefersDark ? '#e2e8f0' : '#0f172a'
@@ -239,19 +243,41 @@ function CarouselCaptionBar({
   /** 모바일·태블릿: 화면 가로·세로를 거의 채우고 양끝·상하에만 소량 여백 */
   const isCompactCaption = tier === 'mobile' || tier === 'tablet'
   const captionEdgeInsetPx = 24
-  const captionCardHeightStyle = isCompactCaption ? '300px' : '246px'
+  const captionCardHeightStyle = isCompactCaption ? `${MOBILE_CAPTION_HEIGHT_PX}px` : '246px'
+
+  const mobileCaptionScreenPos = useCallback(
+    (_el, _camera, size) => {
+      const w = size.width
+      const h = size.height
+      const cx = w / 2
+      /* center 기준: 카드 하단 = 캔버스 하단. 홈 인디케이터는 padding + env(safe-area) */
+      const cy = h - MOBILE_CAPTION_HEIGHT_PX / 2
+      return [cx, cy]
+    },
+    [],
+  )
 
   return (
     <Html
-      transform
+      transform={!isMobileTier}
       occlude={false}
-      distanceFactor={5.5}
+      center={isMobileTier}
+      distanceFactor={isMobileTier ? undefined : 5.5}
+      calculatePosition={isMobileTier ? mobileCaptionScreenPos : undefined}
       position={[0, y, 0.15]}
       style={{
         pointerEvents: 'auto',
         userSelect: 'none',
-        width: isCompactCaption ? `calc(100vw - ${captionEdgeInsetPx}px)` : 'min(92vw, 520px)',
-        maxWidth: isCompactCaption ? `calc(100vw - ${captionEdgeInsetPx}px)` : undefined,
+        width: isMobileTier
+          ? `${canvasWidthPx}px`
+          : isCompactCaption
+            ? `calc(100vw - ${captionEdgeInsetPx}px)`
+            : 'min(92vw, 520px)',
+        maxWidth: isMobileTier
+          ? `${canvasWidthPx}px`
+          : isCompactCaption
+            ? `calc(100vw - ${captionEdgeInsetPx}px)`
+            : undefined,
       }}
       zIndexRange={[50, 0]}
     >
@@ -261,8 +287,13 @@ function CarouselCaptionBar({
         style={{
           background: bg,
           border,
-          borderRadius: 16,
-          padding: isMobileTier ? '16px 14px 18px' : '14px 16px 12px',
+          borderLeft: isMobileTier ? 'none' : undefined,
+          borderRight: isMobileTier ? 'none' : undefined,
+          borderBottom: isMobileTier ? 'none' : undefined,
+          borderRadius: isMobileTier ? '16px 16px 0 0' : 16,
+          padding: isMobileTier
+            ? '16px 16px calc(18px + env(safe-area-inset-bottom, 0px))'
+            : '14px 16px 12px',
           boxSizing: 'border-box',
           height: captionCardHeightStyle,
           width: '100%',
@@ -284,13 +315,13 @@ function CarouselCaptionBar({
             gap: 10,
             flexWrap: 'wrap',
             flexShrink: 0,
-            marginBottom: isMobileTier ? 12 : 10,
+            marginBottom: isMobileTier ? 14 : 10,
           }}
         >
           {Array.from({ length: COUNT }, (_, i) => {
             const on = i === active
-            const dotOn = isMobileTier ? 13 : 12
-            const dotOff = isMobileTier ? 10 : 9
+            const dotOn = isMobileTier ? 15 : 12
+            const dotOff = isMobileTier ? 11 : 9
             return (
               <button
                 key={i}
@@ -321,7 +352,7 @@ function CarouselCaptionBar({
           style={{
             margin: '0 0 8px',
             fontSize: isMobileTier
-              ? 'clamp(1.12rem, 4.2vw, 1.38rem)'
+              ? 'clamp(1.22rem, 4.9vw, 1.52rem)'
               : 'clamp(1rem, 2.8vw, 1.2rem)',
             fontWeight: 700,
             color: fg,
@@ -335,8 +366,8 @@ function CarouselCaptionBar({
         <p
           style={{
             margin: 0,
-            fontSize: isMobileTier ? '0.97rem' : '0.875rem',
-            lineHeight: isMobileTier ? 1.7 : 1.65,
+            fontSize: isMobileTier ? '1.06rem' : '0.875rem',
+            lineHeight: isMobileTier ? 1.68 : 1.65,
             color: fgMuted,
             fontFamily: 'system-ui, sans-serif',
             flex: 1,
@@ -356,14 +387,14 @@ function CarouselCaptionBar({
             }}
             style={{
               flexShrink: 0,
-              marginTop: isMobileTier ? 12 : 10,
+              marginTop: isMobileTier ? 14 : 10,
               width: '100%',
-              padding: isMobileTier ? '12px 14px' : '10px 16px',
+              padding: isMobileTier ? '13px 16px' : '10px 16px',
               borderRadius: 12,
               border: `1px solid ${dotActive}`,
               background: prefersDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(3, 105, 161, 0.08)',
               color: dotActive,
-              fontSize: isMobileTier ? '0.95rem' : '0.875rem',
+              fontSize: isMobileTier ? '1.03rem' : '0.875rem',
               fontWeight: 700,
               fontFamily: 'system-ui, sans-serif',
               cursor: 'pointer',
@@ -473,7 +504,8 @@ function ProductDetailStage({
     let baseY
     if (isMobile) {
       baseX = THREE.MathUtils.lerp(0.42, 0.04, Math.pow(t, 0.85))
-      baseY = THREE.MathUtils.lerp(-0.62, 0.58, t)
+      /* 상단·중앙 쪽으로 — 바텀시트와 겹침 줄임 */
+      baseY = THREE.MathUtils.lerp(-0.62, 0.72, t)
     } else {
       baseX = THREE.MathUtils.lerp(0.55, -5.55, Math.pow(t, 0.85))
       baseY = THREE.MathUtils.lerp(-0.75, -0.22, t)
@@ -505,7 +537,7 @@ function ProductDetailStage({
 
       if (isMobile) {
         const targetNdcX = 0
-        const targetNdcY = 0.24
+        const targetNdcY = 0.34
         const errX = targetNdcX - _worldCenter.x
         const errY = targetNdcY - _worldCenter.y
         ndcErrSmooth.current.x = THREE.MathUtils.lerp(ndcErrSmooth.current.x, errX, smoothAlpha)
