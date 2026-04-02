@@ -17,7 +17,8 @@ export default defineConfig({
           if (!id.includes('node_modules')) return
           if (id.includes('three')) return 'vendor-three'
           if (id.includes('@react-three')) return 'vendor-r3f'
-          if (id.includes('react-dom') || id.includes('/react/')) return 'vendor-react'
+          // React/react-dom은 수동 분리 금지 — 청크 순서·CJS interop 깨지면
+          // "Cannot set properties of undefined (setting 'Activity'|'Children')" 발생
           if (id.includes('gsap')) return 'vendor-gsap'
           if (id.includes('zustand')) return 'vendor-zustand'
         },
