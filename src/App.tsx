@@ -333,13 +333,13 @@ function App() {
           <h1 className="map-hero-copy__headline">
             <br/>
             <span className="map-hero-copy__headline-line">INTERNATIONAL EXHIBITION</span>
-            <span className="map-hero-copy__headline-line">ON ENVIRONMENTAL TECHNOLOGY &</span>
-            <span className="map-hero-copy__headline-line">GREEN ENERGY</span>
+            <span className="map-hero-copy__headline-line">ON ENVIRONMENTAL </span>
+            <span className="map-hero-copy__headline-line">TECHNOLOGY & GREEN ENERGY</span>
           </h1>
           <p className="map-hero-copy__body">
             We invite you to <span className="map-hero-copy__underline">2026 ENVEX</span>  (International Exhibition on Environmental Technology & Green Energy)<br/> Korea's largest environmental exhibition.
             <br />
-            Don't miss this special opportunity to be the first <br/>to experience the newest trends in the environmental industry!
+            {/*Don't miss this special opportunity to be the first <br/>to experience the newest trends in the environmental industry!*/}
             <br />
 
           </p>

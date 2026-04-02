@@ -43,9 +43,9 @@
 
 .map-hero-copy__headline {
   margin: 0;
-  font-size: clamp(1.35rem, 4.2vw, 2.65rem);
+  font-size: clamp(1.20rem, 4.2vw, 2.65rem);
   font-weight: 800;
-  line-height: 1.05;
+  line-height: 1.35;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
