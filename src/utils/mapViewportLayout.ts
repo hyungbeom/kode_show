@@ -24,7 +24,7 @@ export function getMapWorldResponsiveScale(widthPx: number): number {
  * 카메라·오빗 타깃은 유지한 채 씬만 미세 이동 (주로 Y: 아이소 뷰에서 아래로 살짝 내려 가시 영역 맞춤)
  */
 export function getMapWorldResponsivePosition(widthPx: number): [number, number, number] {
-  if (widthPx < 480) return [0, -80, 0]
+  if (widthPx < 480) return [0, -110, 0]
   if (widthPx < 768) return [-40, -80, 0]
   if (widthPx < 1024) return [-20, -40, 0]
   return [0, 0, 0]

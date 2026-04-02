@@ -332,7 +332,7 @@ function App() {
 
       {!mapHeroCopyDismissed ? (
         <section className="map-hero-copy" lang="en" aria-label="Welcome to Kode Sports Club">
-          <img src="/logo.png" width={200} alt=""/>
+          <img src="/logo.png" width={180} alt=""/>
           <h1 className="map-hero-copy__headline">
             <br/>
             <span className="map-hero-copy__headline-line">INTERNATIONAL EXHIBITION</span>
