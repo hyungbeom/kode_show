@@ -239,9 +239,7 @@ function CarouselCaptionBar({
   /** 모바일·태블릿: 화면 가로·세로를 거의 채우고 양끝·상하에만 소량 여백 */
   const isCompactCaption = tier === 'mobile' || tier === 'tablet'
   const captionEdgeInsetPx = 24
-  const captionCardHeightStyle = isCompactCaption
-    ? `clamp(252px, calc(100dvh - 120px), 580px)`
-    : '246px'
+  const captionCardHeightStyle = isCompactCaption ? '300px' : '246px'
 
   return (
     <Html
@@ -270,6 +268,7 @@ function CarouselCaptionBar({
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
+          justifyContent: isCompactCaption ? 'flex-start' : undefined,
           boxShadow: prefersDark
             ? '0 10px 30px rgba(0,0,0,0.45)'
             : '0 10px 28px rgba(15,23,42,0.12)',

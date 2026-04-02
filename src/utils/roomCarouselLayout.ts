@@ -33,15 +33,15 @@ export function getCarouselSideNavLocalX(tier: RoomCarouselTier): number {
   return spacing * 1.22 + 0.55
 }
 
-/** 하단 제품 설명 카드 — Y (캐러셀 그룹 로컬, GLB 줄 아래) */
+/** 하단 제품 설명 카드 — Y (캐러셀 그룹 로컬). 모바일·태블릿은 더 음수로 화면 하단 쪽에 붙이고, 데스크톱은 중간값 유지 */
 export function getCarouselCaptionLocalY(tier: RoomCarouselTier): number {
   switch (tier) {
     case 'mobile':
-      return -3.52
+      return -3.92
     case 'tablet':
-      return -3.22
+      return -3.62
     default:
-      return -3.36
+      return -2.82
   }
 }
 

@@ -393,3 +393,19 @@
 .zone-info-overlay--mobile-sheet .zone-info-box--rich .zone-info-content {
   max-height: none;
 }
+
+/* 모바일 시트: 헤더 타이틀·닫기 기본 크기 축소 */
+.zone-info-overlay--mobile-sheet .zone-info-header {
+  padding: 12px 14px;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-title {
+  font-size: clamp(0.92rem, 3.8vw, 1.1rem);
+  font-weight: 700;
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-close {
+  font-size: 22px;
+  width: 34px;
+  height: 34px;
+}
