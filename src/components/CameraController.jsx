@@ -6,13 +6,9 @@ import {
   MAP_CENTERED_ORBIT_TARGET,
   MAP_DEFAULT_ORBIT_TARGET,
   MAP_DEFAULT_ORTHO_POSITION,
-  MAP_ORTHO_DEFAULT_LOGICAL_ZOOM,
 } from '../utils/constants'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
-
-/** 전체 맵 뷰 Orthographic 줌(논리값) — OrthographicZoomCompensation이 브라우저 줌에 맞게 나눔 */
-const FULL_MAP_ZOOM = MAP_ORTHO_DEFAULT_LOGICAL_ZOOM
 
 /**
  * GSAP을 사용한 카메라 시점 전환 컨트롤러
@@ -42,6 +38,7 @@ function CameraController({ controlsRef }) {
   const clearBrandFilmCameraRecenterPending = useMapStore(
     (state) => state.clearBrandFilmCameraRecenterPending,
   )
+  const mapViewportOrthoZoom = useMapStore((state) => state.mapViewportOrthoZoom)
 
   const animationRef = useRef(null)
   const resetAnimationRef = useRef(null)
@@ -77,7 +74,7 @@ function CameraController({ controlsRef }) {
       MAP_DEFAULT_ORTHO_POSITION[1],
       MAP_DEFAULT_ORTHO_POSITION[2],
     )
-    camera.zoom = FULL_MAP_ZOOM
+    camera.zoom = mapViewportOrthoZoom
     camera.updateProjectionMatrix()
     controls.update()
 
@@ -85,7 +82,15 @@ function CameraController({ controlsRef }) {
     setInitialEntry(false)
     orbitSuspendedRef.current = false
     setIsFullMapRotating(false)
-  }, [initialEntry, camera, controlsRef, setInitialEntry, setIsFullMapRotating, followPhysicsBox])
+  }, [
+    initialEntry,
+    camera,
+    controlsRef,
+    setInitialEntry,
+    setIsFullMapRotating,
+    followPhysicsBox,
+    mapViewportOrthoZoom,
+  ])
 
   /** SEE BRAND FILM — 오빗 타깃을 원점으로 옮겨 world.glb 가 화면 중앙에 오도록 */
   useEffect(() => {
@@ -171,7 +176,7 @@ function CameraController({ controlsRef }) {
     
     const controls = controlsRef.current
     
-    const initialZoom = FULL_MAP_ZOOM
+    const initialZoom = mapViewportOrthoZoom
 
     const initialPosition = {
       x: MAP_DEFAULT_ORTHO_POSITION[0],
@@ -239,7 +244,17 @@ function CameraController({ controlsRef }) {
       }
       orbitSuspendedRef.current = false
     }
-  }, [resetToFullMap, camera, controlsRef, setResetToFullMap, clearCameraTarget, setMarkersVisible, setIsFullMapRotating, followPhysicsBox])
+  }, [
+    resetToFullMap,
+    camera,
+    controlsRef,
+    setResetToFullMap,
+    clearCameraTarget,
+    setMarkersVisible,
+    setIsFullMapRotating,
+    followPhysicsBox,
+    mapViewportOrthoZoom,
+  ])
   
   // 마커 클릭 시 카메라 이동
   useEffect(() => {
