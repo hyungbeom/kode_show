@@ -483,6 +483,58 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     }
   }, [detailPageScroll])
 
+  /**
+   * 모바일 첫 화면 상단 스트립(.room-detail-scroll-hint-hit-top)은 fixed 와 형제 DOM 이라
+   * fixed 캡처 리스너가 터치를 못 받음 → 스크롤 부모 pointer-events:none 환경에서 네이티브 스와이프가 실패하는 경우가 있어
+   * 스크롤 루트에서만 동일한 scrollTop 수동 적용 (랜딩 본문은 여전히 네이티브 관성 스크롤)
+   */
+  useEffect(() => {
+    if (!detailPageScroll || !isProductDetailPanelMobileLayout) return
+    const root = scrollRootRef.current
+    if (!root) return
+
+    let lastTouchY = /** @type {number | null} */ (null)
+    let hintStripActive = false
+
+    const onTouchStart = (e) => {
+      if (e.touches?.length !== 1) {
+        hintStripActive = false
+        lastTouchY = null
+        return
+      }
+      const t = e.target
+      hintStripActive =
+        typeof t?.closest === 'function' &&
+        !!t.closest('.room-detail-scroll-hint-hit-top')
+      lastTouchY = hintStripActive ? e.touches[0].clientY : null
+    }
+    const onTouchEnd = () => {
+      hintStripActive = false
+      lastTouchY = null
+    }
+    const onTouchMove = (e) => {
+      if (!hintStripActive || lastTouchY == null || e.touches?.length !== 1) return
+      const y = e.touches[0].clientY
+      const dy = lastTouchY - y
+      lastTouchY = y
+      root.scrollTop += dy
+      e.preventDefault()
+    }
+
+    const capTrue = { capture: true }
+    root.addEventListener('touchstart', onTouchStart, { passive: true, capture: true })
+    root.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
+    root.addEventListener('touchend', onTouchEnd, { passive: true, capture: true })
+    root.addEventListener('touchcancel', onTouchEnd, { passive: true, capture: true })
+
+    return () => {
+      root.removeEventListener('touchstart', onTouchStart, capTrue)
+      root.removeEventListener('touchmove', onTouchMove, capTrue)
+      root.removeEventListener('touchend', onTouchEnd, capTrue)
+      root.removeEventListener('touchcancel', onTouchEnd, capTrue)
+    }
+  }, [detailPageScroll, isProductDetailPanelMobileLayout])
+
   return (
     <div
       ref={roomSceneRootRef}
