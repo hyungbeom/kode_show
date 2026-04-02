@@ -7,6 +7,7 @@ import SoundControl from './components/SoundControl'
 import NavigationUI from './components/NavigationUI'
 import ZoneList from './components/ZoneList'
 import { useAppMapStore } from './hooks/useMapStore'
+import { useVisualViewportCssVars } from './hooks/useVisualViewportCssVars'
 import { useMapStore } from './store/useMapStore'
 import { COMPANY_NAMES } from './utils/constants'
 import './App.css'
@@ -26,6 +27,8 @@ type View = 'loading' | 'home' | 'map' | 'room'
  * - 공통 애니메이션 훅 사용
  */
 function App() {
+  useVisualViewportCssVars()
+
   const [currentView, setCurrentView] = useState<View>('loading')
   const [showLoading, setShowLoading] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
