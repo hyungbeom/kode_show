@@ -61,27 +61,55 @@
   overflow: hidden;
 }
 
-/* 상단 220px → 150px 로 줄어든 70px은 패널 min-height 로 보전 */
+/* 로고 박스 — 낮은 띠 형태 (로고는 contain, 없으면 텍스트) */
 .zone-company-stack-card__media {
   position: relative;
-  height: 150px;
+  height: 104px;
   flex-shrink: 0;
   overflow: hidden;
+  background: rgba(15, 23, 42, 0.65);
+}
+
+.zone-company-stack-card__media--no-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
 }
 
 .zone-company-stack--interactive .zone-company-stack-card__media,
-.zone-company-stack--interactive .zone-company-stack-card__media img {
+.zone-company-stack--interactive .zone-company-stack-card__logo-img {
   touch-action: none;
   -webkit-user-drag: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.zone-company-stack-card__media img {
+.zone-company-stack-card__logo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
+  padding: 8px 14px;
+  box-sizing: border-box;
+}
+
+.zone-company-stack-card__logo-text {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: #ffffff;
+  text-align: center;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .zone-company-stack-card__3d-badge {
@@ -206,23 +234,13 @@
 
 .zone-company-stack-card__panel {
   flex: 1;
-  min-height: 230px;
+  min-height: 240px;
   min-width: 0;
-  padding: 22px 20px 24px;
+  padding: 20px 20px 24px;
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.zone-company-stack-card__title {
-  margin: 0 0 10px;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.03em;
-  font-family: var(--font-sans);
-  line-height: 1.15;
 }
 
 .zone-company-stack-card__desc {

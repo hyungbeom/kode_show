@@ -5,6 +5,10 @@ import { ExhibitionFloorMapModal } from './ExhibitionFloorMapModal'
 import { CompanyQuickActionsModal } from './CompanyQuickActionsModal'
 import './ZoneCompanyCardStack.css'
 
+function hasCompanyLogo(imageUrl) {
+  return typeof imageUrl === 'string' && imageUrl.trim().length > 0
+}
+
 const SWIPE_PX = 64
 const VELOCITY_SWIPE = 0.22
 const DRAG_CLICK_THRESHOLD = 14
@@ -269,16 +273,27 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
               }
               aria-hidden={!isFront}
             >
-              <article ref={isFront ? frontCardRef : undefined} className="zone-company-stack-card">
-                <div className="zone-company-stack-card__media">
-                  <img
-                    src={company.imageUrl}
-                    alt={`${company.name} 이미지`}
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                    onDragStart={(e) => e.preventDefault()}
-                  />
+              <article
+                ref={isFront ? frontCardRef : undefined}
+                className="zone-company-stack-card"
+                aria-label={company.name}
+              >
+                <div
+                  className={`zone-company-stack-card__media${hasCompanyLogo(company.imageUrl) ? '' : ' zone-company-stack-card__media--no-logo'}`}
+                >
+                  {hasCompanyLogo(company.imageUrl) ? (
+                    <img
+                      src={company.imageUrl}
+                      alt={`${company.name} 로고`}
+                      loading="lazy"
+                      decoding="async"
+                      draggable={false}
+                      onDragStart={(e) => e.preventDefault()}
+                      className="zone-company-stack-card__logo-img"
+                    />
+                  ) : (
+                    <p className="zone-company-stack-card__logo-text">{company.name}</p>
+                  )}
                   {company.has3dRoom ? (
                     <span className="zone-company-stack-card__3d-badge" aria-label="3D 전시 룸 제공">
                       3D
@@ -325,7 +340,6 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
                   </button>
                 </div>
                 <div className="zone-company-stack-card__panel">
-                  <h3 className="zone-company-stack-card__title">{company.name}</h3>
                   <p className="zone-company-stack-card__desc" title={company.description}>
                     {company.description}
                   </p>
