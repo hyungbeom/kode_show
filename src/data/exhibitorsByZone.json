@@ -1,0 +1,114 @@
+{
+  "zone-water": [
+    {
+      "id": 1,
+      "name": "LEEBIO",
+      "category": "수질 · 바이오 센서",
+      "description": "디지털 센서 기반 수질 분석 및 현장 테스트 솔루션.",
+      "imageUrl": "https://picsum.photos/seed/leebio-water/480/480",
+      "keywords": ["리바이오", "바이오센서", "수질분석"]
+    },
+    {
+      "id": 2,
+      "name": "AquaSense Labs",
+      "category": "IoT 수질 모니터링",
+      "description": "상수도·하천용 실시간 탁도·pH 모니터링 플랫폼.",
+      "imageUrl": "https://picsum.photos/seed/aquasense-water/480/480"
+    },
+    {
+      "id": 3,
+      "name": "한빛 정수기술",
+      "category": "정수 · 재이용",
+      "description": "산업 폐수 2차 정수 및 중수 재이용 엔지니어링.",
+      "imageUrl": "https://picsum.photos/seed/hanbit-water/480/480"
+    }
+  ],
+  "zone-air": [
+    {
+      "id": 11,
+      "name": "클린에어 시스템즈",
+      "category": "대기 측정",
+      "description": "초미세먼지·VOC 휴대용 측정기 및 캘리브레이션 서비스.",
+      "imageUrl": "https://picsum.photos/seed/cleanair-air/480/480"
+    },
+    {
+      "id": 12,
+      "name": "SkyMetrics",
+      "category": "환경 데이터",
+      "description": "도시 대기 질 지도화와 알림 API.",
+      "imageUrl": "https://picsum.photos/seed/skymetrics-air/480/480"
+    }
+  ],
+  "zone-lab": [
+    {
+      "id": 21,
+      "name": "프리시전 계측",
+      "category": "측정 · 분석",
+      "description": "실험실용 마이크로밸런스·온도 교정 장비.",
+      "imageUrl": "https://picsum.photos/seed/precision-lab/480/480"
+    },
+    {
+      "id": 22,
+      "name": "NanoScope Inc",
+      "category": "현미경 · 스펙트럼",
+      "description": "나노입자 분석용 광학·전자현미경 패키지.",
+      "imageUrl": "https://picsum.photos/seed/nanoscope-lab/480/480"
+    },
+    {
+      "id": 23,
+      "name": "Calibra Korea",
+      "category": "교정 · 인증",
+      "description": "ISO 17025 기반 계측기 교정 및 문서화.",
+      "imageUrl": "https://picsum.photos/seed/calibra-lab/480/480"
+    }
+  ],
+  "zone-carbon": [
+    {
+      "id": 31,
+      "name": "그린캐노피",
+      "category": "탄소회계",
+      "description": "Scope 1–3 배출량 산정 및 감축 시나리오 시뮬레이션.",
+      "imageUrl": "https://picsum.photos/seed/greencanopy-carbon/480/480"
+    },
+    {
+      "id": 32,
+      "name": "ForestLink",
+      "category": "숲 · 크레딧",
+      "description": "산림 복원 프로젝트와 탄소 크레딧 거래 지원.",
+      "imageUrl": "https://picsum.photos/seed/forestlink-carbon/480/480"
+    }
+  ],
+  "zone-earth": [
+    {
+      "id": 41,
+      "name": "글로벌테크 파트너스",
+      "category": "해외 진출",
+      "description": "환경 장비 수출 통관·현지 규제 컨설팅.",
+      "imageUrl": "https://picsum.photos/seed/globaltech-earth/480/480"
+    },
+    {
+      "id": 42,
+      "name": "EU Green Desk",
+      "category": "유럽 규제",
+      "description": "EU 친환경 인증·CSRD 공시 대응 가이드.",
+      "imageUrl": "https://picsum.photos/seed/eugreendesk-earth/480/480"
+    }
+  ],
+  "zone-inst": [
+    {
+      "id": 51,
+      "name": "한국환경산업협회",
+      "category": "협회 · 단체",
+      "description": "회원사 네트워킹 및 정책 포럼.",
+      "imageUrl": "https://picsum.photos/seed/keia-inst/480/480",
+      "keywords": ["협회", "환경산업", "KEIA"]
+    },
+    {
+      "id": 52,
+      "name": "ENVEX 홍보실",
+      "category": "전시 · 홍보",
+      "description": "전시회 안내·미디어·스폰서십 문의.",
+      "imageUrl": "https://picsum.photos/seed/envex-inst/480/480"
+    }
+  ]
+}
