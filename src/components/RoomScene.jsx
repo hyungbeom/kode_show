@@ -1,5 +1,14 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { PerspectiveCamera, OrbitControls, Environment, Sky as SkyImpl, Outlines, useGLTF, Lightformer, Grid } from '@react-three/drei'
+import {
+  PerspectiveCamera,
+  OrbitControls,
+  Environment,
+  Outlines,
+  useGLTF,
+  Lightformer,
+  Grid,
+  Box,
+} from '@react-three/drei'
 import {
   A11yAnnouncer,
   A11yUserPreferencesContext,
@@ -17,7 +26,6 @@ import {
   useCallback,
   useMemo,
 } from 'react'
-import { Box } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
@@ -32,8 +40,9 @@ import {
 import ObjectInfoPanel from './ObjectInfoPanel'
 import ObjectViewer from './ObjectViewer'
 import ObjectDetailButton from './ObjectDetailButton'
-import ProductCarousel from './ProductCarousel'
+import ProductCarousel, { PRODUCT_GLB_URLS } from './ProductCarousel'
 import ProductDetailPanel from './ProductDetailPanel'
+import { ProductGlbViewerModal } from './ProductGlbViewerModal'
 import RoomDetailLanding from './RoomDetailLanding'
 import RoomCarouselIntro from './RoomCarouselIntro'
 import { PRODUCT_DETAIL_LIST } from '../data/productDetailCopy'
@@ -47,6 +56,31 @@ const PRODUCT_DETAIL_NAV_ARROW_SVG = 34
 /** `false`면 show_room2 부스 + 박스 전시물 비표시 — 제품 캐러셀만 사용 */
 const SHOW_LEGACY_BOOTH_AND_EXHIBITS = false
 
+const ROOM_SCENE_BACK_BUTTON_STYLE = {
+  position: 'absolute',
+  top: 'max(20px, env(safe-area-inset-top, 0px))',
+  left: 'max(20px, env(safe-area-inset-left, 0px))',
+  zIndex: 1000,
+  padding: '12px 24px',
+  background: 'rgba(0, 0, 0, 0.7)',
+  color: 'white',
+  border: 'none',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontSize: '16px',
+  fontWeight: 'bold',
+  pointerEvents: 'auto',
+}
+
+/** 캐러셀만 보일 때 — 상단은 BACK만 (제품 상세 시에는 RoomSceneTopBar 사용) */
+const RoomBackButton = memo(function RoomBackButton({ onBack }) {
+  return (
+    <button type="button" onClick={onBack} style={ROOM_SCENE_BACK_BUTTON_STYLE}>
+      {'< BACK'}
+    </button>
+  )
+})
+
 /** 룸 상단 크롬 — 제품 상세 시 스크롤 레이어(z-index:1)보다 위에 두기 위해 분리 */
 function RoomSceneTopBar({
   onBack,
@@ -55,31 +89,41 @@ function RoomSceneTopBar({
   onPrevProduct,
   onNextProduct,
   productDetailNavBtnStyle,
+  onOpenProduct3dView,
 }) {
   return (
     <>
-      <button
-        type="button"
-        onClick={onBack}
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          zIndex: 1000,
-          padding: '12px 24px',
-          background: 'rgba(0, 0, 0, 0.7)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          /* 전체 화면 래퍼가 pointer-events:none 일 때도 호버·클릭이 확실히 타겟팅되도록 */
-          pointerEvents: 'auto',
-        }}
-      >
+      <button type="button" onClick={onBack} style={ROOM_SCENE_BACK_BUTTON_STYLE}>
         {'< BACK'}
       </button>
+
+      {productDetail && onOpenProduct3dView ? (
+        <button
+          type="button"
+          onClick={onOpenProduct3dView}
+          style={{
+            position: 'absolute',
+            top: 'max(16px, env(safe-area-inset-top, 0px))',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            padding: '10px 20px',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '999px',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            pointerEvents: 'auto',
+            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.35)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          3D VIEW
+        </button>
+      ) : null}
 
       {productDetail ? (
         <>
@@ -180,7 +224,16 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   const [showModal, setShowModal] = useState(false)
   /** 제품 GLB 클릭 시 오른쪽 패널 + 캐러셀 상세 동기화 */
   const [productDetail, setProductDetail] = useState(null)
+  const [productGlbViewerOpen, setProductGlbViewerOpen] = useState(false)
   const { a11yPrefersState } = useUserPreferences()
+
+  const productGlbUrl = useMemo(() => {
+    if (!productDetail || productDetail.index < 0) return null
+    return PRODUCT_GLB_URLS[productDetail.index] ?? null
+  }, [productDetail])
+
+  const openProductGlbViewer = useCallback(() => setProductGlbViewerOpen(true), [])
+  const closeProductGlbViewer = useCallback(() => setProductGlbViewerOpen(false), [])
   /** /room/* 는 Provider에서 다크 고정 — OS 라이트여도 라이트 테마 없음 */
   const prefersDark = true
   const prefersReducedMotion = a11yPrefersState.prefersReducedMotion
@@ -510,6 +563,10 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   }, [])
 
   useEffect(() => {
+    if (!productDetail) setProductGlbViewerOpen(false)
+  }, [productDetail])
+
+  useEffect(() => {
     if (!detailPageScroll) {
       setCanvasDarken(0)
       return
@@ -619,16 +676,7 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
         }}
       >
       {/* 상단 크롬: 제품 상세 스크롤 시 scroll 레이어(z-index:1)에 가려지지 않게 별도 고정 레이어로 띄움 */}
-      {!detailPageScroll ? (
-        <RoomSceneTopBar
-          onBack={handleBackButtonClick}
-          productDetail={productDetail}
-          isProductDetailPanelMobileLayout={isProductDetailPanelMobileLayout}
-          onPrevProduct={() => navigateProductDetailAdjacent(true)}
-          onNextProduct={() => navigateProductDetailAdjacent(false)}
-          productDetailNavBtnStyle={productDetailNavBtnStyle}
-        />
-      ) : null}
+      {!detailPageScroll ? <RoomBackButton onBack={handleBackButtonClick} /> : null}
 
       {showCarouselIntro ? (
         <RoomCarouselIntro />
@@ -905,9 +953,16 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
             onPrevProduct={() => navigateProductDetailAdjacent(true)}
             onNextProduct={() => navigateProductDetailAdjacent(false)}
             productDetailNavBtnStyle={productDetailNavBtnStyle}
+            onOpenProduct3dView={openProductGlbViewer}
           />
         </div>
       ) : null}
+
+      <ProductGlbViewerModal
+        open={productGlbViewerOpen}
+        glbUrl={productGlbUrl}
+        onClose={closeProductGlbViewer}
+      />
     </div>
   )
 })
@@ -1740,19 +1795,14 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
       console.warn('방 모델이 로드되지 않았습니다.')
       return null
     }
-      
-    console.log('GLB 모델 로드 성공:', { room: roomScene })
-    
+
     // 부스 모델 복제
     const roomClone = roomScene.clone(true) // 깊은 복사로 매터리얼/텍스처도 복사
     
     // 부스 모델의 바운딩 박스 계산
     const roomBox = new THREE.Box3().setFromObject(roomClone)
     const roomCenter = roomBox.getCenter(new THREE.Vector3())
-    const roomSize = roomBox.getSize(new THREE.Vector3())
-    
-    console.log('부스 모델 바운딩 박스:', { center: roomCenter, size: roomSize })
-    
+
     // 부스 모델을 원점으로 이동
     roomClone.position.sub(roomCenter)
     
@@ -1761,12 +1811,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
     
     // 부스 모델 스케일 설정
     roomClone.scale.setScalar(1.5)
-    
-    console.log('부스 모델 위치/스케일 적용 완료:', { 
-      position: roomClone.position, 
-      scale: roomClone.scale 
-    })
-    
+
     // 모든 메시 추출 및 원본 메시 숨기기
     meshesRef.current = []
     roomClone.traverse((child) => {
@@ -1806,12 +1851,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
       // 클릭한 메시의 월드 위치 계산
       const worldPosition = new THREE.Vector3()
       e.object.getWorldPosition(worldPosition)
-      
-      console.log('메시 클릭:', { 
-        meshName: e.object.name,
-        worldPosition: worldPosition 
-      })
-      
+
       // 카메라 줌인
       if (moveCameraToTarget) {
         moveCameraToTarget([worldPosition.x, worldPosition.y, worldPosition.z], false)
@@ -1853,9 +1893,7 @@ const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
   
   const handleObjectClick = useCallback((objectId, position) => (e) => {
     e.stopPropagation()
-    
-    console.log('3D 객체 클릭:', { objectId, position })
-    
+
     // 카메라 줌인
     if (moveCameraToTarget && position) {
       moveCameraToTarget(position, false)

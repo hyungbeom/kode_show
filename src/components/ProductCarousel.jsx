@@ -16,6 +16,7 @@ import {
   getCarouselStripSlotSpacing,
   getRoomCarouselTier,
 } from '../utils/roomCarouselLayout'
+import { normalizeProductGlbToUnit } from '../utils/productGlbNormalize'
 
 /** 모바일 제품 안내: Html transform off 시 스크린 좌표로 캔버스 하단 중앙에 고정 (scale=1) */
 const MOBILE_CAPTION_HEIGHT_PX = 258
@@ -35,23 +36,10 @@ export const PRODUCT_GLB_URLS = [
   '/product/product5.glb',
 ];
 
-function normalizeToUnit(scene) {
-  const clone = scene.clone(true)
-  clone.updateMatrixWorld(true)
-  const box = new THREE.Box3().setFromObject(clone)
-  const center = box.getCenter(new THREE.Vector3())
-  const size = box.getSize(new THREE.Vector3())
-  const maxDim = Math.max(size.x, size.y, size.z, 0.001)
-  clone.position.sub(center)
-  const s = 1.65 / maxDim
-  clone.scale.setScalar(s)
-  return clone
-}
-
 function CarouselProductMesh({ url, active, onPick, pickingEnabled }) {
   const { scene } = useGLTF(url)
   const root = useRef(null)
-  const object = useMemo(() => normalizeToUnit(scene), [scene])
+  const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
   const { a11yPrefersState } = useUserPreferences()
   const motionDisabled = a11yPrefersState.prefersReducedMotion;
 
@@ -436,7 +424,7 @@ function ProductDetailStage({
   const { scene } = useGLTF(url)
   const { camera, gl } = useThree()
   const root = useRef(null)
-  const object = useMemo(() => normalizeToUnit(scene), [scene])
+  const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
   const groupRef = useRef(null)
   const rotY = useRef(0)
   const rotX = useRef(0)
