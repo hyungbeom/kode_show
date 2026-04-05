@@ -13,6 +13,10 @@
   pointer-events: auto;
 }
 
+.navigation-ui__desktop--hidden {
+  display: none !important;
+}
+
 .navigate-text {
   margin-bottom: 20px;
   padding: 0 12px;

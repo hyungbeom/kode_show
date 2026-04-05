@@ -5,6 +5,7 @@ import { Physics } from '@react-three/rapier'
 import { suspend } from 'suspend-react'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
+import { MapCameraDebugOverlay } from './MapCameraDebugOverlay'
 import { useMapStore } from '../store/useMapStore'
 import { readLayoutBrowserWidthPx } from '../utils/mapViewport'
 import {
@@ -178,6 +179,7 @@ function MapViewportOrthoSync() {
 const MapScene = memo(function MapScene() {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <MapCameraDebugOverlay />
       <MapViewportOrthoSync />
       {MapCameraDevControlsLazy && (
         <Suspense fallback={null}>

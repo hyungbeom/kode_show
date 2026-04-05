@@ -49,7 +49,9 @@ function MapViewChromeInner({
           />
         </>
       ) : null}
-      {mapReady ? <NavigationUI /> : null}
+      {mapReady ? (
+        <NavigationUI mapNotificationModalOpen={mapNotificationOpen} />
+      ) : null}
       {mapReady && selectedZone ? (
         <Suspense fallback={null}>
           <ZoneInfoPanel zoneId={selectedZone} onClose={onClearZone} />

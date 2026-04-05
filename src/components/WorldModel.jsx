@@ -351,7 +351,7 @@ export const WorldModel = memo(function WorldModel(props) {
             nodes.Institution_Builidng || nodes.Institution_Building || nodes.Institution_Land
           }
           clonedScene={clonedScene}
-          label={'Associations\n& Organizations'}
+          label="Associations & Organizations"
           zoneId={ZONE_ID_INST}
           glbNode="Institution_Builidng"
         />

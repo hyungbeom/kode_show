@@ -2,7 +2,10 @@ import { useRef, useEffect, memo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
 import { getNavigateResetCamera } from '../config/mapNavigateReset'
-import { getZoneCameraFramingForWidth } from '../utils/mapZoneCameraFraming'
+import {
+  getZoneCameraFramingForWidth,
+  getZoneCameraMobileAbsolutePose,
+} from '../utils/mapZoneCameraFraming'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 
@@ -237,24 +240,45 @@ function CameraController({ controlsRef }) {
     
     const zoneKey = pendingZone ?? selectedArea
     const framing = getZoneCameraFramingForWidth(zoneKey, mapLayoutBrowserWidthPx)
-    const sx = framing.cameraShiftX ?? 0
-    const sy = framing.cameraShiftY ?? 0
-    const sz = framing.cameraShiftZ ?? 0
+    const absoluteMobile = getZoneCameraMobileAbsolutePose(zoneKey, mapLayoutBrowserWidthPx)
 
-    // offset: 카메라만 타깃에서 벌어지는 아이소 거리 / cameraShift: 카메라·타깃 동일 평행이동(시선 유지·회전 없음)
-    const targetPosition = {
-      x: cameraTarget[0] + framing.offsetX + sx,
-      y: cameraTarget[1] + framing.offsetY + sy,
-      z: cameraTarget[2] + framing.offsetZ + sz,
+    let targetPosition
+    let targetControlsTarget
+    let targetZoom
+
+    if (absoluteMobile) {
+      targetPosition = {
+        x: absoluteMobile.orthoPosition[0],
+        y: absoluteMobile.orthoPosition[1],
+        z: absoluteMobile.orthoPosition[2],
+      }
+      targetControlsTarget = {
+        x: absoluteMobile.orbitTarget[0],
+        y: absoluteMobile.orbitTarget[1],
+        z: absoluteMobile.orbitTarget[2],
+      }
+      targetZoom = absoluteMobile.zoom
+    } else {
+      const sx = framing.cameraShiftX ?? 0
+      const sy = framing.cameraShiftY ?? 0
+      const sz = framing.cameraShiftZ ?? 0
+
+      // offset: 카메라만 타깃에서 벌어지는 아이소 거리 / cameraShift: 카메라·타깃 동일 평행이동(시선 유지·회전 없음)
+      targetPosition = {
+        x: cameraTarget[0] + framing.offsetX + sx,
+        y: cameraTarget[1] + framing.offsetY + sy,
+        z: cameraTarget[2] + framing.offsetZ + sz,
+      }
+
+      targetControlsTarget = {
+        x: cameraTarget[0] + sx,
+        y: cameraTarget[1] + sy,
+        z: cameraTarget[2] + sz,
+      }
+
+      targetZoom = framing.targetZoom
     }
 
-    const targetControlsTarget = {
-      x: cameraTarget[0] + sx,
-      y: cameraTarget[1] + sy,
-      z: cameraTarget[2] + sz,
-    }
-    
-    const targetZoom = framing.targetZoom
     const zoomDuration = framing.duration
 
     // GSAP 애니메이션 생성

@@ -23,6 +23,9 @@ const _worldCorners = [
   new THREE.Vector3(),
 ]
 
+/** true: 랜드(투명 히트 박스) 클릭 시 해당 관으로 카메라 이동 */
+const MAP_LAND_MESH_CLICK_NAVIGATES_ZONE = true
+
 /** 월드축 정렬 AABB 8꼭짓점 → parent 로컬에서 다시 AABB (히트 박스 position/scale 정합) */
 function worldAabbToParentLocal(mesh, worldMin, worldMax, centerOut, sizeOut) {
   const parent = mesh.parent
@@ -187,7 +190,7 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
           e.stopPropagation()
           setHovered(false)
         }}
-        onClick={handleZoneClick}
+        onClick={MAP_LAND_MESH_CLICK_NAVIGATES_ZONE ? handleZoneClick : undefined}
         onPointerOver={(e) => {
           e.stopPropagation()
           setHovered(true)

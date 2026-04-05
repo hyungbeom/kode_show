@@ -119,3 +119,58 @@ export function getZoneCameraFramingForWidth(
 
   return merged
 }
+
+/** 모바일에서만 쓰는 절대 pose (offset+GLB 중심 계산 대신 고정값) */
+export type ZoneCameraAbsolutePose = {
+  orthoPosition: readonly [number, number, number]
+  orbitTarget: readonly [number, number, number]
+  zoom: number
+}
+
+/**
+ * 모바일(가로 768px 미만, narrow 포함) + 특정 관 클릭 시 카메라를 절대 pose로 맞춤.
+ * Leva 등으로 맞춘 월드 좌표 그대로 사용.
+ */
+export function getZoneCameraMobileAbsolutePose(
+  zoneId: string | null | undefined,
+  widthPx: number,
+): ZoneCameraAbsolutePose | null {
+  const tier = getMapWorldViewportTier(widthPx)
+  if (tier !== 'mobile' && tier !== 'mobile-narrow') return null
+  if (zoneId === ZONE_ID_AIR) {
+    return {
+      orthoPosition: [-7, 400, 800],
+      orbitTarget: [-35, -135, -111],
+      zoom: 4.05,
+    }
+  }
+  if (zoneId === ZONE_ID_WATER) {
+    return {
+      orthoPosition: [91.97, 91.03, 330.12],
+      orbitTarget: [-52.16, -72.07, 88.82],
+      zoom: 4.68,
+    }
+  }
+  if (zoneId === ZONE_ID_CARBON) {
+    return {
+      orthoPosition: [133.63, 71.59, 314.44],
+      orbitTarget: [24.32, -91.51, 55.5],
+      zoom: 3.44,
+    }
+  }
+  if (zoneId === ZONE_ID_LAB) {
+    return {
+      orthoPosition: [103.87, 75.11, 250.54],
+      orbitTarget: [111.37, -99.01, -23.73],
+      zoom: 6.05,
+    }
+  }
+  if (zoneId === ZONE_ID_INST) {
+    return {
+      orthoPosition: [178.86, 120.74, 97.97],
+      orbitTarget: [-11.58, -78.62, -74.03],
+      zoom: 7.43,
+    }
+  }
+  return null
+}

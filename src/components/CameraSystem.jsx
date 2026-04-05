@@ -3,6 +3,7 @@ import { OrthographicCamera, OrbitControls } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import CameraController from './CameraController'
 import OrthographicZoomCompensation from './OrthographicZoomCompensation'
+import { MapCameraDebugBridgeRecorder } from './MapCameraDebugBridgeRecorder'
 import { useMapStore } from '../store/useMapStore'
 import * as THREE from 'three'
 
@@ -217,17 +218,20 @@ const CameraSystem = memo(() => {
       {/* 카메라 컨트롤러 (GSAP 애니메이션) */}
       <CameraController controlsRef={controlsRef} />
 
-      {/* 유저 조작 비활성 — 카메라는 GSAP·스토어 레이아웃만 적용 */}
       <OrbitControls
         ref={controlsRef}
-        enablePan={false}
-        enableRotate={false}
-        enableZoom={false}
+        enablePan
+        enableRotate
+        enableZoom
         minZoom={0.5}
         maxZoom={50}
         minPolarAngle={0.06}
         maxPolarAngle={Math.PI / 2}
       />
+
+      {import.meta.env.DEV ? (
+        <MapCameraDebugBridgeRecorder controlsRef={controlsRef} />
+      ) : null}
     </>
   )
 })
