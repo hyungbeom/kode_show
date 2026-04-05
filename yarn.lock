@@ -1975,7 +1975,7 @@ lcid@^1.0.0:
   dependencies:
     invert-kv "^1.0.0"
 
-leva@^0.10.0, leva@^0.10.1:
+leva@^0.10.0:
   version "0.10.1"
   resolved "https://registry.npmjs.org/leva/-/leva-0.10.1.tgz"
   integrity sha512-BcjnfUX8jpmwZUz2L7AfBtF9vn4ggTH33hmeufDULbP3YgNZ/C+ss/oO3stbrqRQyaOmRwy70y7BGTGO81S3rA==

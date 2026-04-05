@@ -3,7 +3,6 @@ import { OrthographicCamera, OrbitControls } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import CameraController from './CameraController'
 import OrthographicZoomCompensation from './OrthographicZoomCompensation'
-import { MapCameraDebugBridgeRecorder } from './MapCameraDebugBridgeRecorder'
 import { useMapStore } from '../store/useMapStore'
 import * as THREE from 'three'
 
@@ -228,10 +227,6 @@ const CameraSystem = memo(() => {
         minPolarAngle={0.06}
         maxPolarAngle={Math.PI / 2}
       />
-
-      {import.meta.env.DEV ? (
-        <MapCameraDebugBridgeRecorder controlsRef={controlsRef} />
-      ) : null}
     </>
   )
 })

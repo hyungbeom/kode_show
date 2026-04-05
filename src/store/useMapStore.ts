@@ -131,13 +131,6 @@ interface MapStore {
   /** readLayoutBrowserWidthPx — ZONE 말풍선·Html 오버레이가 카메라와 동일 기준 사용 */
   mapLayoutBrowserWidthPx: number
   setMapLayoutBrowserWidthPx: (w: number) => void
-
-  /**
-   * 개발용(Leva): true면 뷰포트 리사이즈 시 `resolveMapCameraLayoutForViewport`가
-   * ortho 위치·타깃·줌을 덮어쓰지 않음 — 슬라이더로 맞춘 값을 유지.
-   */
-  devMapCameraLayoutLocked: boolean
-  setDevMapCameraLayoutLocked: (locked: boolean) => void
 }
 
 export const useMapStore = create<MapStore>((set, get) => ({
@@ -357,11 +350,6 @@ export const useMapStore = create<MapStore>((set, get) => ({
   mapLayoutBrowserWidthPx: readLayoutBrowserWidthPx(),
   setMapLayoutBrowserWidthPx: (w: number) => {
     set({ mapLayoutBrowserWidthPx: w })
-  },
-
-  devMapCameraLayoutLocked: false,
-  setDevMapCameraLayoutLocked: (locked: boolean) => {
-    set({ devMapCameraLayoutLocked: locked })
   },
 
   resetMapToInitialInteractionState: () => {

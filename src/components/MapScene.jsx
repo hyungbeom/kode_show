@@ -5,7 +5,6 @@ import { Physics } from '@react-three/rapier'
 import { suspend } from 'suspend-react'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
-import { MapCameraDebugOverlay } from './MapCameraDebugOverlay'
 import { useMapStore } from '../store/useMapStore'
 import { readLayoutBrowserWidthPx } from '../utils/mapViewport'
 import {
@@ -17,19 +16,10 @@ import {
   syncTransparentWebGLCanvas,
 } from '../utils/syncTransparentWebGLCanvas'
 
-/**
- * Vite 프로덕션 빌드에서 `import.meta.env.DEV`는 false로 정적 치환되어
- * 아래 lazy 청크(Leva, r3f-perf)가 번들에 포함되지 않습니다.
- */
-const ENABLE_MAP_DEV_ONLY_UI = import.meta.env.DEV === true && import.meta.env.PROD !== true
+/** 개발 전용 r3f-perf — 프로덕션 빌드에서는 청크 미포함 */
+const ENABLE_MAP_R3F_PERF = import.meta.env.DEV === true && import.meta.env.PROD !== true
 
-const MapCameraDevControlsLazy = ENABLE_MAP_DEV_ONLY_UI
-  ? lazy(() =>
-      import('./MapCameraDevControls').then((mod) => ({ default: mod.MapCameraDevControls })),
-    )
-  : null
-
-const MapR3fPerfLazy = ENABLE_MAP_DEV_ONLY_UI
+const MapR3fPerfLazy = ENABLE_MAP_R3F_PERF
   ? lazy(() => import('./MapR3fPerf').then((mod) => ({ default: mod.MapR3fPerf })))
   : null
 
@@ -144,13 +134,11 @@ function MapViewportOrthoSync() {
   const setMapViewportOrthoZoom = useMapStore((s) => s.setMapViewportOrthoZoom)
   const setMapDefaultCameraLayout = useMapStore((s) => s.setMapDefaultCameraLayout)
   const setMapLayoutBrowserWidthPx = useMapStore((s) => s.setMapLayoutBrowserWidthPx)
-  const devMapCameraLayoutLocked = useMapStore((s) => s.devMapCameraLayoutLocked)
 
   useEffect(() => {
     const sync = () => {
       const w = readLayoutBrowserWidthPx()
       setMapLayoutBrowserWidthPx(w)
-      if (devMapCameraLayoutLocked) return
       setMapViewportOrthoZoom(getMapInitialOrthoZoomForWidth(w))
       const { orthoPosition, orbitTarget } = resolveMapCameraLayoutForViewport(w)
       setMapDefaultCameraLayout(orthoPosition, orbitTarget)
@@ -163,12 +151,7 @@ function MapViewportOrthoSync() {
       window.removeEventListener('resize', sync)
       window.visualViewport?.removeEventListener('resize', sync)
     }
-  }, [
-    devMapCameraLayoutLocked,
-    setMapViewportOrthoZoom,
-    setMapDefaultCameraLayout,
-    setMapLayoutBrowserWidthPx,
-  ])
+  }, [setMapViewportOrthoZoom, setMapDefaultCameraLayout, setMapLayoutBrowserWidthPx])
 
   return null
 }
@@ -179,13 +162,7 @@ function MapViewportOrthoSync() {
 const MapScene = memo(function MapScene() {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <MapCameraDebugOverlay />
       <MapViewportOrthoSync />
-      {MapCameraDevControlsLazy && (
-        <Suspense fallback={null}>
-          <MapCameraDevControlsLazy />
-        </Suspense>
-      )}
       <div
         style={{
           width: '100%',
