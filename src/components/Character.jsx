@@ -2,8 +2,6 @@ import { useRef, useEffect, useState, memo } from 'react'
 import { Box } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useBox } from '@react-three/cannon'
-import { useMapStore } from '../store/useMapStore'
-
 /**
  * 맵 중앙에 배치될 캐릭터 컴포넌트
  * 물리 엔진 적용 및 WASD 키보드 입력으로 걷기

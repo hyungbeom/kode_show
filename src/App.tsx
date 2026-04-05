@@ -1,30 +1,30 @@
-import { useState, useEffect, useCallback, lazy, Suspense, useRef, type MutableRefObject } from 'react'
+import {
+  useState,
+  useEffect,
+  useCallback,
+  lazy,
+  Suspense,
+  useRef,
+  useMemo,
+  type MutableRefObject,
+} from 'react'
 import { gsap } from 'gsap'
 import LoadingScreen from './components/LoadingScreen'
-import MapHeader from './components/MapHeader'
-import SoundControl from './components/SoundControl'
-import NavigationUI from './components/NavigationUI'
-import ZoneList from './components/ZoneList'
+import { MapViewChrome } from './components/MapViewChrome'
 import { useAppMapStore } from './hooks/useMapStore'
 import { useVisualViewportCssVars } from './hooks/useVisualViewportCssVars'
 import { useMapStore } from './store/useMapStore'
 import { COMPANY_NAMES } from './utils/constants'
+import { fadeInLoadingScreen } from './utils/fadeLoadingScreen'
+import { prepareMapViewEntry } from './utils/prepareMapViewEntry'
 import './App.css'
 
-// Lazy loading for heavy components
-const MapScene = lazy(() => import('./components/MapScene'))
 const RoomScene = lazy(() => import('./components/RoomScene'))
-const ZoneInfoPanel = lazy(() => import('./components/ZoneInfoPanel'))
+
+const MAP_INTRO_EXIT_MS = 720
 
 type View = 'loading' | 'map' | 'room'
 
-/**
- * ENVEX 전시 맵 메인 애플리케이션
- * - Zustand 셀렉터 최적화
- * - 메모이제이션 적용
- * - Lazy loading 적용
- * - 공통 애니메이션 훅 사용
- */
 function App() {
   useVisualViewportCssVars()
 
@@ -34,8 +34,7 @@ function App() {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const showLoadingRef: MutableRefObject<boolean> = useRef(showLoading)
   showLoadingRef.current = showLoading
-  
-  // 최적화된 Zustand 셀렉터 사용 (한 번에 여러 값 선택)
+
   const {
     setInitialEntry,
     selectedCompanyId,
@@ -43,12 +42,63 @@ function App() {
     clearSelectedCompany,
     selectedZone,
     clearSelectedZone,
+    mapHeroCopyDismissed,
   } = useAppMapStore()
 
-  const mapHeroCopyDismissed = useMapStore((s) => s.mapHeroCopyDismissed)
-  const triggerBrandFilmCenterView = useMapStore((s) => s.triggerBrandFilmCenterView)
-  
-  // URL 체크 함수 - useCallback으로 메모이제이션
+  const [mapIntroExiting, setMapIntroExiting] = useState(false)
+  const mapIntroExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mapIntroExitingRef = useRef(false)
+
+  const isLandingPhase = currentView === 'loading' && !showLoading
+  const [landingAssetsReady, setLandingAssetsReady] = useState(false)
+  const showMapLayer = currentView === 'map' || (isLandingPhase && landingAssetsReady)
+
+  useEffect(() => {
+    if (!isLandingPhase) {
+      setLandingAssetsReady(false)
+      return
+    }
+    let cancelled = false
+    setLandingAssetsReady(false)
+    prepareMapViewEntry()
+      .then(() => {
+        if (!cancelled) setLandingAssetsReady(true)
+      })
+      .catch(() => {
+        if (!cancelled) setLandingAssetsReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isLandingPhase])
+
+  useEffect(() => {
+    if (mapHeroCopyDismissed) return
+    mapIntroExitingRef.current = false
+    setMapIntroExiting(false)
+    if (mapIntroExitTimerRef.current) {
+      clearTimeout(mapIntroExitTimerRef.current)
+      mapIntroExitTimerRef.current = null
+    }
+  }, [mapHeroCopyDismissed])
+
+  useEffect(() => {
+    return () => {
+      if (mapIntroExitTimerRef.current) clearTimeout(mapIntroExitTimerRef.current)
+    }
+  }, [])
+
+  const handleMapIntroExplore = useCallback(() => {
+    if (mapIntroExitingRef.current) return
+    mapIntroExitingRef.current = true
+    setMapIntroExiting(true)
+    if (mapIntroExitTimerRef.current) clearTimeout(mapIntroExitTimerRef.current)
+    mapIntroExitTimerRef.current = window.setTimeout(() => {
+      mapIntroExitTimerRef.current = null
+      useMapStore.getState().triggerBrandFilmCenterView()
+    }, MAP_INTRO_EXIT_MS)
+  }, [])
+
   const checkUrl = useCallback(() => {
     const path = window.location.pathname
     const roomMatch = path.match(/^\/room\/(\d+)/)
@@ -58,86 +108,46 @@ function App() {
         setSelectedCompany(companyId, COMPANY_NAMES[companyId])
         setCurrentView('loading')
         setShowLoading(true)
-        
-        // 로딩 화면 페이드 인 애니메이션
-        setTimeout(() => {
-          const loadingElement = document.querySelector('.loading-screen')
-          if (loadingElement) {
-            gsap.fromTo(
-              loadingElement,
-              { opacity: 0 },
-              {
-                opacity: 1,
-                duration: 0.5,
-                ease: 'power2.out',
-              }
-            )
-          }
-        }, 50)
+        fadeInLoadingScreen()
       }
     } else if (path === '/map') {
       setCurrentView('map')
     }
   }, [setSelectedCompany])
-  
-  // URL에서 초기 상태 읽기 (새로고침 시 방 유지)
+
   useEffect(() => {
     checkUrl()
-    
-    // 브라우저 뒤로가기/앞으로가기 처리
     window.addEventListener('popstate', checkUrl)
     return () => window.removeEventListener('popstate', checkUrl)
   }, [checkUrl])
 
-  // 전환 플래그가 꺼진 뒤에도 GSAP이 남긴 opacity:0이 있으면 맵·UI 전체가 안 보임 → 인라인만 제거해 CSS(또는 정상 값)로 복구
   useEffect(() => {
     if (currentView !== 'map' || isTransitioning) return
-    const el = mapContainerRef.current
-    if (!el) return
-    el.style.removeProperty('opacity')
+    mapContainerRef.current?.style.removeProperty('opacity')
   }, [currentView, isTransitioning])
-  
-  // 업체 선택 시 로딩 화면 표시 (페이드 애니메이션 포함)
+
   useEffect(() => {
-    if (selectedCompanyId && currentView === 'map') {
-      setIsTransitioning(true)
-      
-      // 맵 화면 페이드 아웃 애니메이션
-      const mapElement = document.querySelector('.app-container')
-      if (mapElement) {
-        gsap.to(mapElement, {
-          opacity: 0,
-          duration: 0.5,
-          ease: 'power2.in',
-          onComplete: () => {
-            setShowLoading(true)
-            setIsTransitioning(false)
-            
-            // 로딩 화면 페이드 인 애니메이션
-            setTimeout(() => {
-              const loadingElement = document.querySelector('.loading-screen')
-              if (loadingElement) {
-                gsap.fromTo(
-                  loadingElement,
-                  { opacity: 0 },
-                  {
-                    opacity: 1,
-                    duration: 0.5,
-                    ease: 'power2.out',
-                  }
-                )
-              }
-            }, 50)
-          },
-        })
-      } else {
-        setShowLoading(true)
-        setIsTransitioning(false)
-      }
+    if (!selectedCompanyId || currentView !== 'map') return
+
+    setIsTransitioning(true)
+    const mapElement = document.querySelector('.app-container')
+    if (mapElement) {
+      gsap.to(mapElement, {
+        opacity: 0,
+        duration: 0.5,
+        ease: 'power2.in',
+        onComplete: () => {
+          setShowLoading(true)
+          setIsTransitioning(false)
+          fadeInLoadingScreen()
+        },
+      })
+    } else {
+      setShowLoading(true)
+      setIsTransitioning(false)
     }
   }, [selectedCompanyId, currentView])
-  
-  // 로딩 완료 핸들러 — URL·getState() 기준 (showLoading 은 ref 로 최신값, /room/:id 직접 진입 안정화)
+
   const handleLoadingComplete = useCallback(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : ''
     const roomMatch = path.match(/^\/room\/(\d+)/)
@@ -179,7 +189,6 @@ function App() {
           ease: 'power2.in',
           onComplete: () => {
             goRoom()
-            /* Room 씬 페이드인은 RoomSceneInner useLayoutEffect 에서 처리 (lazy 로드 시 querySelector 타이밍 버그 방지) */
             setIsTransitioning(false)
           },
         })
@@ -192,67 +201,35 @@ function App() {
       setIsTransitioning(false)
     }
   }, [])
-  
-  // Enter 핸들러 - useCallback으로 메모이제이션
+
   const handleEnter = useCallback(() => {
-    setIsTransitioning(true)
-    
-    const homeElement = document.querySelector('.home-page')
-    if (homeElement) {
-      gsap.to(homeElement, {
-        opacity: 0,
-        duration: 0.5,
-        ease: 'power2.in',
-        onComplete: () => {
-          useMapStore.setState({
-            mapHeroCopyDismissed: false,
-            brandFilmCameraRecenterPending: false,
-          })
-          setCurrentView('map')
-          setInitialEntry(true)
-          
-          setTimeout(() => {
-            const mapElement = document.querySelector('.app-container')
-            if (mapElement) {
-              gsap.fromTo(
-                mapElement,
-                { opacity: 0 },
-                {
-                  opacity: 1,
-                  duration: 0.8,
-                  ease: 'power2.out',
-                  onComplete: () => {
-                    setIsTransitioning(false)
-                  },
-                }
-              )
-            } else {
-              setIsTransitioning(false)
-            }
-          }, 50)
-        },
-      })
+    useMapStore.setState({
+      mapHeroCopyDismissed: false,
+    })
+    setInitialEntry(true)
+    const curtain =
+      document.querySelector('.loading-screen--curtain') ?? document.querySelector('.loading-screen.initial-loading')
+    if (curtain) {
+      gsap.fromTo(
+        curtain,
+        { yPercent: 0 },
+        {
+          yPercent: -100,
+          duration: 1.15,
+          ease: 'power3.inOut',
+          onComplete: () => {
+            gsap.set(curtain, { visibility: 'hidden', pointerEvents: 'none' })
+            setCurrentView('map')
+          },
+        }
+      )
     } else {
-      useMapStore.setState({
-        mapHeroCopyDismissed: false,
-        brandFilmCameraRecenterPending: false,
-      })
       setCurrentView('map')
-      setInitialEntry(true)
-      setIsTransitioning(false)
     }
   }, [setInitialEntry])
-  
-  // 맵 닫기 핸들러 — 평면 랜딩은 사용하지 않으므로 맵에 머무름
-  const handleCloseMap = useCallback(() => {
-    setCurrentView('map')
-    window.history.pushState({}, '', '/map')
-  }, [])
-  
-  // 방에서 뒤로가기 핸들러
+
   const handleBackFromRoom = useCallback(() => {
     setIsTransitioning(true)
-    
     const roomElement = document.querySelector('[data-room-scene]')
     if (roomElement) {
       gsap.to(roomElement, {
@@ -263,7 +240,6 @@ function App() {
           setCurrentView('map')
           clearSelectedCompany()
           window.history.pushState({}, '', '/')
-          
           setTimeout(() => {
             const mapElement = document.querySelector('.app-container')
             if (mapElement) {
@@ -274,9 +250,7 @@ function App() {
                   opacity: 1,
                   duration: 0.8,
                   ease: 'power2.out',
-                  onComplete: () => {
-                    setIsTransitioning(false)
-                  },
+                  onComplete: () => setIsTransitioning(false),
                 }
               )
             } else {
@@ -292,21 +266,23 @@ function App() {
       setIsTransitioning(false)
     }
   }, [clearSelectedCompany])
-  
-  // 로딩 화면: 첫 진입은 3D 랜딩 + ENTER, 업체 선택 후는 프로그레스 링
-  if (currentView === 'loading' || showLoading) {
-    const isLanding = currentView === 'loading' && !showLoading
-    return (
-      <LoadingScreen
-        mode={isLanding ? 'landing' : 'room'}
-        onComplete={handleLoadingComplete}
-        onEnter={handleEnter}
-        isInitial={isLanding}
-      />
-    )
+
+  const mapAppClassName = useMemo(
+    () =>
+      [
+        'app-container',
+        isLandingPhase && landingAssetsReady ? 'app-container--behind-curtain' : '',
+        isTransitioning && currentView === 'map' ? 'transitioning' : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+    [isLandingPhase, landingAssetsReady, isTransitioning, currentView]
+  )
+
+  if (showLoading) {
+    return <LoadingScreen mode="room" onComplete={handleLoadingComplete} isInitial={false} />
   }
-  
-  // 방 씬
+
   if (currentView === 'room') {
     return (
       <Suspense fallback={<div>Loading room...</div>}>
@@ -318,66 +294,31 @@ function App() {
       </Suspense>
     )
   }
-  
-  // 지도 화면
+
   return (
-    <div
-      ref={mapContainerRef}
-      className={`app-container ${isTransitioning ? 'transitioning' : ''}`}
-    >
-      <Suspense fallback={<div>Loading map...</div>}>
-        {/* 3D 지도 씬 */}
-        <MapScene />
-      </Suspense>
-
-      {!mapHeroCopyDismissed ? (
-        <section className="map-hero-copy" lang="en" aria-label="Welcome to ENVEX 2026">
-          <img src="/logo.png" width={180} alt=""/>
-          <h1 className="map-hero-copy__headline">
-            <br/>
-            <span className="map-hero-copy__headline-line">INTERNATIONAL EXHIBITION</span>
-            <span className="map-hero-copy__headline-line">ON ENVIRONMENTAL </span>
-            <span className="map-hero-copy__headline-line">TECHNOLOGY & GREEN ENERGY</span>
-          </h1>
-          <p className="map-hero-copy__body">
-            We invite you to <span className="map-hero-copy__underline">2026 ENVEX</span>  (International Exhibition on Environmental Technology & Green Energy)<br/> Korea's largest environmental exhibition.
-            <br />
-            {/*Don't miss this special opportunity to be the first <br/>to experience the newest trends in the environmental industry!*/}
-            {/*<br />*/}
-
-          </p>
-          <button
-            type="button"
-            className="map-hero-copy__cta"
-            onClick={() => triggerBrandFilmCenterView()}
-          >
-            EXPLORE THE 2026 ENVEX
-          </button>
-        </section>
-      ) : null}
-      
-      {/* 상단 헤더 */}
-      {/*<MapHeader onClose={handleCloseMap} />*/}
-      
-      {/* 하단 왼쪽 사운드 컨트롤 */}
-      <SoundControl />
-      
-      {/* 하단 중앙 네비게이션 UI */}
-      <NavigationUI />
-      
-      {/* 우측 하단 Zone 리스트 버튼 및 패널 */}
-      <ZoneList />
-      
-      {/* Zone 정보 패널 (화면 중앙 모달) */}
-      {selectedZone && (
-        <Suspense fallback={null}>
-          <ZoneInfoPanel
-            zoneId={selectedZone}
-            onClose={clearSelectedZone}
+    <>
+      {showMapLayer ? (
+        <div ref={mapContainerRef} className={mapAppClassName}>
+          <MapViewChrome
+            showIntro={!mapHeroCopyDismissed}
+            introExiting={mapIntroExiting}
+            onIntroExplore={handleMapIntroExplore}
+            selectedZone={selectedZone}
+            onClearZone={clearSelectedZone}
           />
-        </Suspense>
-      )}
-    </div>
+        </div>
+      ) : null}
+
+      {isLandingPhase ? (
+        <LoadingScreen
+          mode="landing"
+          mapEntryReady={landingAssetsReady}
+          onEnter={handleEnter}
+          onComplete={handleLoadingComplete}
+          isInitial
+        />
+      ) : null}
+    </>
   )
 }
 

@@ -1,7 +1,24 @@
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  /**
+   * 플랫폼 기본 서체: Pretendard (Variable 권장)
+   * 로드: index.html — jsDelivr pretendardvariable-dynamic-subset
+   */
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-pretendard: var(--font-sans);
+  font-family: var(--font-sans);
   line-height: 1.5;
   font-weight: 400;
+
+  /**
+   * 맵/앱 라이트 모드 배경 — 레퍼런스 합성:
+   * · 방사형: 중심 #D6F5DC → 가장자리 #0091EA (디자인 툴 스펙)
+   * · 기저: 상단 스카이 블루 → 하단 아쿠아 (#46b1e1 … #bce8f1)
+   * · 오버레이: 우하단 연한 크림 광 (#f9fbe7 계열)
+   */
+  --map-app-backdrop:
+    radial-gradient(ellipse 84% 72% at 72% 86%, rgba(249, 251, 231, 0.5) 0%, rgba(249, 251, 231, 0.08) 32%, transparent 50%),
+    radial-gradient(ellipse 98% 86% at 50% 54%, #d6f5dc 0%, transparent 52%),
+    linear-gradient(180deg, #46b1e1 0%, #82d1f0 32%, #87e4e7 68%, #0091ea 100%);
 
   color-scheme: light;
   color: #1a1a2e;
@@ -26,12 +43,23 @@ body {
   height: 100vh;
   overflow: hidden;
   background-color: transparent;
+  font-family: var(--font-sans);
 }
 
 #root {
   width: 100%;
   height: 100%;
   background-color: transparent;
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+textarea,
+select,
+optgroup,
+option {
+  font-family: var(--font-sans);
 }
 
 /** 룸 제품 상세 랜딩 스크롤 — 스크롤은 유지, 스크롤바만 숨김 (Chrome / Firefox / Edge) */

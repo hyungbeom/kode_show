@@ -4,6 +4,7 @@ import { useMapStore } from '../store/useMapStore'
 import { ZONE_GLB_FOCUS_LIST } from '../utils/constants'
 import { getZoneRichPanel } from '../data/zoneRichPanels'
 import { getZoneIntroPlain } from '../data/zoneIntroPlain'
+import { ZoneCompanyCardStack } from './ZoneCompanyCardStack'
 import './ZoneInfoPanel.css'
 
 function openCompanySpotlightMail(subject, bodyIntro, companyName) {
@@ -22,6 +23,29 @@ function openCompanySpotlightBrochure(preview) {
   q.set('subject', `브로슈어 요청 — ${preview.name}`)
   q.set('body', '안녕하세요. 브로슈어를 요청드립니다.\n\n')
   window.location.href = `mailto:?${q.toString()}`
+}
+
+/** 모바일 시트 — 검정 라운드 스퀘어 + 흰 플라스크 아이콘 */
+function ZoneMobileBrandIcon() {
+  return (
+    <div className="zone-info-brand-icon" aria-hidden>
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M10 3h4v2.8c0 .4.12.78.34 1.1l3.66 5.5A3.2 3.2 0 0115.2 19H8.8a3.2 3.2 0 01-1.8-5.6l3.66-5.5A2 2 0 0010 5.8V3z"
+          stroke="currentColor"
+          strokeWidth="1.65"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+        <path
+          d="M9 14.5h6"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  )
 }
 
 const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
@@ -329,94 +353,121 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
           </div>
         ) : null}
         <div ref={boxRef} className={`zone-info-box ${richPanel ? 'zone-info-box--rich' : ''}`}>
-          <div className="zone-info-header">
-            <h2 className="zone-info-title">{zoneLabel || zoneInfo.title}</h2>
-            <button type="button" className="zone-info-close" onClick={handleClose} aria-label="닫기">
-              ×
-            </button>
-          </div>
-
-          <div className="zone-info-tabs" role="tablist" aria-label="구역 정보">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'intro'}
-              className={`zone-info-tab ${activeTab === 'intro' ? 'zone-info-tab--active' : ''}`}
-              onClick={() => setActiveTab('intro')}
-            >
-              소개
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'companies'}
-              className={`zone-info-tab ${activeTab === 'companies' ? 'zone-info-tab--active' : ''}`}
-              onClick={() => setActiveTab('companies')}
-            >
-              업체 리스트
-            </button>
-          </div>
-
-          {activeTab === 'intro' && (
-            <div
-              className={`zone-info-content ${richPanel ? 'zone-info-content--rich' : ''}`}
-              role="tabpanel"
-            >
-              {richPanel ? (
-                <>
-                  {richPanel.sections.map((section, i) => (
-                    <article
-                      key={`${zoneId}-${section.titleKo}-${i}`}
-                      ref={(el) => {
-                        sectionsRef.current[i] = el
-                      }}
-                      className="zone-rich-section"
-                    >
-                      <div className="zone-rich-section__index">{i + 1}</div>
-                      <h3 className="zone-rich-section__title">{section.titleKo}</h3>
-                      <p className="zone-rich-section__subtitle">{section.titleEn}</p>
-                      <p className="zone-rich-intro">{section.intro}</p>
-                      <div className="zone-rich-block">
-                        <span className="zone-rich-label">주요 내용</span>
-                        <p className="zone-rich-text">{section.mainPoints}</p>
-                      </div>
-                      <div className="zone-rich-block zone-rich-block--importance">
-                        <span className="zone-rich-label">중요성</span>
-                        <p className="zone-rich-text">{section.importance}</p>
-                      </div>
-                    </article>
-                  ))}
-                </>
-              ) : introPlainText ? (
-                <p className="zone-intro-plain">{introPlainText}</p>
-              ) : (
-                <div className="zone-info-description-text zone-info-description-text--tab">
-                  {zoneInfo.description}
+          <div className="zone-info-sheet-header">
+            {isMobileSheet ? (
+              <>
+                <div className="zone-info-sheet-header__top">
+                  <ZoneMobileBrandIcon />
+                  <button type="button" className="zone-info-close" onClick={handleClose} aria-label="닫기">
+                    ×
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'companies' && (
-            <div className="zone-info-content" role="tabpanel">
-              <div className="company-list">
-                {companies.map((company) => (
-                  <div
-                    key={company.id}
-                    className="company-item"
-                    onClick={() => setCompanyPreview(company)}
-                  >
-                    <div className="company-icon">{company.name.charAt(0)}</div>
-                    <div className="company-info">
-                      <div className="company-name">{company.name}</div>
-                      <div className="company-category">{company.category}</div>
-                      <div className="company-description">{company.description}</div>
-                    </div>
-                  </div>
-                ))}
+                <h2 className="zone-info-title">{zoneLabel || zoneInfo.title}</h2>
+              </>
+            ) : (
+              <div className="zone-info-header">
+                <h2 className="zone-info-title">{zoneLabel || zoneInfo.title}</h2>
+                <button type="button" className="zone-info-close" onClick={handleClose} aria-label="닫기">
+                  ×
+                </button>
               </div>
+            )}
+
+            <div className="zone-info-tabs" role="tablist" aria-label="구역 정보">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'intro'}
+                className={`zone-info-tab ${activeTab === 'intro' ? 'zone-info-tab--active' : ''}`}
+                onClick={() => setActiveTab('intro')}
+              >
+                소개
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'companies'}
+                className={`zone-info-tab ${activeTab === 'companies' ? 'zone-info-tab--active' : ''}`}
+                onClick={() => setActiveTab('companies')}
+              >
+                업체 리스트
+              </button>
             </div>
-          )}
+          </div>
+
+          <div className="zone-info-sheet-body">
+            {activeTab === 'intro' && (
+              <div
+                className={`zone-info-content ${richPanel ? 'zone-info-content--rich' : ''}`}
+                role="tabpanel"
+              >
+                {richPanel ? (
+                  <>
+                    {richPanel.sections.map((section, i) => (
+                      <article
+                        key={`${zoneId}-${section.titleKo}-${i}`}
+                        ref={(el) => {
+                          sectionsRef.current[i] = el
+                        }}
+                        className="zone-rich-section"
+                      >
+                        <div className="zone-rich-section__index">{i + 1}</div>
+                        <h3 className="zone-rich-section__title">{section.titleKo}</h3>
+                        <p className="zone-rich-section__subtitle">{section.titleEn}</p>
+                        <p className="zone-rich-intro">{section.intro}</p>
+                        <div className="zone-rich-block">
+                          <span className="zone-rich-label">주요 내용</span>
+                          <p className="zone-rich-text">{section.mainPoints}</p>
+                        </div>
+                        <div className="zone-rich-block zone-rich-block--importance">
+                          <span className="zone-rich-label">중요성</span>
+                          <p className="zone-rich-text">{section.importance}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </>
+                ) : introPlainText ? (
+                  <p className="zone-intro-plain">{introPlainText}</p>
+                ) : (
+                  <div className="zone-info-description-text zone-info-description-text--tab">
+                    {zoneInfo.description}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'companies' && (
+              <div
+                className={`zone-info-content${isMobileSheet ? ' zone-info-content--company-stack' : ''}`}
+                role="tabpanel"
+              >
+                {isMobileSheet ? (
+                  <ZoneCompanyCardStack
+                    companies={companies}
+                    onOpenCompany={setCompanyPreview}
+                    stackKey={zoneId ?? ''}
+                  />
+                ) : (
+                  <div className="company-list">
+                    {companies.map((company) => (
+                      <div
+                        key={company.id}
+                        className="company-item"
+                        onClick={() => setCompanyPreview(company)}
+                      >
+                        <div className="company-icon">{company.name.charAt(0)}</div>
+                        <div className="company-info">
+                          <div className="company-name">{company.name}</div>
+                          <div className="company-category">{company.category}</div>
+                          <div className="company-description">{company.description}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

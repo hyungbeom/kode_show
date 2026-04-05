@@ -16,6 +16,7 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
   const hitRef = useRef(null)
   const selectArea = useMapStore((s) => s.selectArea)
   const glbFocusPositions = useMapStore((s) => s.glbFocusPositions)
+  const mapHeroCopyDismissed = useMapStore((s) => s.mapHeroCopyDismissed)
 
   const activateZone = useCallback(() => {
     if (!zoneId || !glbNode) return
@@ -107,6 +108,7 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
     <>
       <mesh
         ref={hitRef}
+        visible={mapHeroCopyDismissed}
         onPointerDown={handleHitPointerDown}
         onClick={handleZoneClick}
         onPointerOver={(e) => {
@@ -121,15 +123,16 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
         <boxGeometry args={[1, 1, 1]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      <NodeSpeechBubble
-        anchor={bubbleAnchor}
-        clonedScene={clonedScene}
-        label={label}
-        showBadge
-        yPad={18}
-        variant={hovered ? 'dark' : 'light'}
-        onBubbleActivate={activateZone}
-      />
+      {mapHeroCopyDismissed ? (
+        <NodeSpeechBubble
+          anchor={bubbleAnchor}
+          clonedScene={clonedScene}
+          label={label}
+          yPad={18}
+          variant={hovered ? 'dark' : 'light'}
+          onBubbleActivate={activateZone}
+        />
+      ) : null}
     </>
   )
 }

@@ -18,6 +18,7 @@ function MapMarker({
 }) {
   const setSelectedZone = useMapStore((state) => state.setSelectedZone)
   const markersVisible = useMapStore((state) => state.markersVisible)
+  const mapHeroCopyDismissed = useMapStore((state) => state.mapHeroCopyDismissed)
   const markerRef = useRef(null)
   const isInitialMount = useRef(true)
   
@@ -71,8 +72,8 @@ function MapMarker({
     }
   }, [markersVisible, visible])
 
-  // 마커가 보이지 않을 때는 렌더링하지 않음
-  if (!visible || !markersVisible) {
+  // 인트로 EXPLORE 전에는 Html 마커 비표시
+  if (!visible || !markersVisible || !mapHeroCopyDismissed) {
     return null
   }
 

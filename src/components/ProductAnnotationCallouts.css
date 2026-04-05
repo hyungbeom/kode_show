@@ -10,7 +10,7 @@
   padding: 0.35rem 0.5rem;
   transform: translate(-100%, -50%);
   text-align: left;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.35;
 }
 

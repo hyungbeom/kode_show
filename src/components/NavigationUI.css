@@ -9,13 +9,22 @@
 }
 
 .navigate-text {
-  font-size: 24px;
-  font-weight: 700;
-  color: #FF69B4;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-family: system-ui, -apple-system, sans-serif;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  padding: 12px 24px;
   margin-bottom: 20px;
+  padding: 0 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 0;
+}
+
+.navigate-text__img {
+  display: block;
+  width: 232px;
+  max-width: min(232px, 82vw);
+  height: auto;
+  max-height: 78px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  pointer-events: none;
+  user-select: none;
 }

@@ -10,7 +10,7 @@
   box-sizing: border-box;
   background: transparent;
   pointer-events: auto;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
 }
 
 .room-carousel-intro__title {

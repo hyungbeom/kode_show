@@ -1,0 +1,122 @@
+.map-notification-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  background: rgba(26, 39, 68, 0.28);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.map-notification-modal__card {
+  display: flex;
+  width: 328px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 52px 24px 24px;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 40px rgba(26, 39, 68, 0.18), 0 2px 12px rgba(0, 0, 0, 0.06);
+  text-align: center;
+  font-family: Pretendard, var(--font-sans), sans-serif;
+}
+
+.map-notification-modal__icon-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.map-notification-modal__icon {
+  width: 30px;
+  height: 30px;
+  display: block;
+  margin-left: -2px;
+  color: #1a1a1a;
+}
+
+.map-notification-modal__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ff2d3d;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.map-notification-modal__title {
+  margin: 0;
+  color: #000000;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 130%;
+  letter-spacing: -0.2px;
+}
+
+.map-notification-modal__body {
+  margin: 0;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.1px;
+}
+
+.map-notification-modal__close {
+  display: flex;
+  margin: 0;
+  padding: 16px 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  border: none;
+  border-radius: 999px;
+  background: #1a1a1a;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-notification-modal__close:hover {
+  background: #333333;
+}
+
+.map-notification-modal__close:active {
+  transform: scale(0.98);
+}
+
+.map-notification-modal__close:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}

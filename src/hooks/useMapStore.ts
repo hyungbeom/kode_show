@@ -16,6 +16,7 @@ export function useAppMapStore() {
       clearSelectedCompany: state.clearSelectedCompany,
       selectedZone: state.selectedZone,
       clearSelectedZone: state.clearSelectedZone,
+      mapHeroCopyDismissed: state.mapHeroCopyDismissed,
     }))
   )
 }

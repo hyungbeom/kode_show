@@ -1,0 +1,74 @@
+.map-top-toolbar {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  max-width: calc(100vw - 24px);
+}
+
+.map-top-toolbar__left {
+  display: flex;
+  padding: 10px;
+  align-items: center;
+  gap: 7.778px;
+}
+
+.map-top-toolbar__search {
+  display: flex;
+  width: min(280px, calc(100vw - 120px));
+  padding: 10px 16px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: rgba(30, 58, 68, 0.92);
+  border-radius: 9999px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  border: none;
+  box-sizing: border-box;
+}
+
+.map-top-toolbar__search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+}
+
+.map-top-toolbar__search-input::placeholder {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.map-top-toolbar__search-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  opacity: 0.95;
+}
+
+.map-top-toolbar__search-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.map-top-toolbar__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

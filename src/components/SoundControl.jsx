@@ -3,9 +3,11 @@ import './SoundControl.css'
 
 /**
  * 사운드 컨트롤 버튼 컴포넌트
- * 지도 화면 하단 왼쪽에 표시됩니다.
+ * - corner: 지도 하단 왼쪽
+ * - intro: 맵 인트로(블러) 상단 오른쪽
+ * - topbar: 맵 상단 툴바(원형, 위치는 부모가 잡음)
  */
-export default function SoundControl() {
+export default function SoundControl({ variant = 'corner' }) {
   const [isSoundOn, setIsSoundOn] = useState(true)
   
   const toggleSound = () => {
@@ -15,7 +17,7 @@ export default function SoundControl() {
   
   return (
     <button
-      className="sound-control"
+      className={`sound-control sound-control--${variant}`}
       onClick={toggleSound}
       aria-label={isSoundOn ? 'Sound on' : 'Sound off'}
     >

@@ -1,7 +1,7 @@
 import { useRef, useEffect, memo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
-import { MAP_CENTERED_ORBIT_TARGET } from '../utils/constants'
+import { getNavigateResetCamera } from '../config/mapNavigateReset'
 import { getZoneCameraFramingForWidth } from '../utils/mapZoneCameraFraming'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
@@ -18,26 +18,21 @@ function CameraController({ controlsRef }) {
   const cameraTarget = useMapStore((state) => state.cameraTarget)
   const clearCameraTarget = useMapStore((state) => state.clearCameraTarget)
   const resetToFullMap = useMapStore((state) => state.resetToFullMap)
-  const setResetToFullMap = useMapStore((state) => state.setResetToFullMap)
   const setMarkersVisible = useMapStore((state) => state.setMarkersVisible)
   const initialEntry = useMapStore((state) => state.initialEntry)
   const openPendingZone = useMapStore((state) => state.openPendingZone)
   const setInitialEntry = useMapStore((state) => state.setInitialEntry)
   const selectedZone = useMapStore((state) => state.selectedZone)
-  const selectedZonePosition = useMapStore((state) => state.selectedZonePosition)
   const followPhysicsBox = useMapStore((state) => state.followPhysicsBox)
   const isFullMapRotating = useMapStore((state) => state.isFullMapRotating)
   const setIsFullMapRotating = useMapStore((state) => state.setIsFullMapRotating)
   const selectedArea = useMapStore((state) => state.selectedArea)
   const pendingZone = useMapStore((state) => state.pendingZone)
-  const brandFilmCameraRecenterPending = useMapStore((state) => state.brandFilmCameraRecenterPending)
-  const clearBrandFilmCameraRecenterPending = useMapStore(
-    (state) => state.clearBrandFilmCameraRecenterPending,
-  )
   const mapViewportOrthoZoom = useMapStore((state) => state.mapViewportOrthoZoom)
   const mapDefaultOrthoPosition = useMapStore((state) => state.mapDefaultOrthoPosition)
   const mapDefaultOrbitTarget = useMapStore((state) => state.mapDefaultOrbitTarget)
   const mapLayoutBrowserWidthPx = useMapStore((state) => state.mapLayoutBrowserWidthPx)
+  const worldGlbBoundsCenter = useMapStore((state) => state.worldGlbBoundsCenter)
 
   const animationRef = useRef(null)
   const resetAnimationRef = useRef(null)
@@ -93,57 +88,6 @@ function CameraController({ controlsRef }) {
     mapDefaultOrbitTarget,
   ])
 
-  /** SEE BRAND FILM — 오빗 타깃을 원점으로 옮겨 world.glb 가 화면 중앙에 오도록 */
-  useEffect(() => {
-    if (followPhysicsBox) return
-    if (!brandFilmCameraRecenterPending) return
-    if (!controlsRef?.current) return
-
-    orbitSuspendedRef.current = true
-    setIsFullMapRotating(false)
-
-    if (animationRef.current) animationRef.current.kill()
-    if (resetAnimationRef.current) resetAnimationRef.current.kill()
-    clearCameraTarget()
-
-    const controls = controlsRef.current
-    const endTarget = {
-      x: MAP_CENTERED_ORBIT_TARGET[0],
-      y: MAP_CENTERED_ORBIT_TARGET[1],
-      z: MAP_CENTERED_ORBIT_TARGET[2],
-    }
-
-    const timeline = gsap.timeline({
-      onComplete: () => {
-        clearBrandFilmCameraRecenterPending()
-        orbitSuspendedRef.current = false
-        syncOrbitFromCamera()
-      },
-    })
-
-    timeline.to(controls.target, {
-      x: endTarget.x,
-      y: endTarget.y,
-      z: endTarget.z,
-      duration: 1.35,
-      ease: 'power2.inOut',
-      onUpdate: () => {
-        controls.update()
-      },
-    })
-
-    return () => {
-      timeline.kill()
-    }
-  }, [
-    brandFilmCameraRecenterPending,
-    followPhysicsBox,
-    controlsRef,
-    clearCameraTarget,
-    clearBrandFilmCameraRecenterPending,
-    setIsFullMapRotating,
-  ])
-  
   // Zone 클릭 시 줌아웃 애니메이션 트리거 (setSelectedZone에서 resetToFullMap: true 설정됨)
   // 줌아웃 애니메이션은 resetToFullMap useEffect에서 처리됨
   
@@ -176,25 +120,27 @@ function CameraController({ controlsRef }) {
     clearCameraTarget()
     
     const controls = controlsRef.current
-    
-    const initialZoom = mapViewportOrthoZoom
 
-    const initialPosition = {
-      x: mapDefaultOrthoPosition[0],
-      y: mapDefaultOrthoPosition[1],
-      z: mapDefaultOrthoPosition[2],
-    }
+    // Navigate 모드 목표 pose (직교 위치 · 타깃 · 줌)
+    const { position: endPosition, target: endTarget, zoom: endZoom } = getNavigateResetCamera(
+      mapDefaultOrthoPosition,
+      mapDefaultOrbitTarget,
+      mapViewportOrthoZoom,
+      mapLayoutBrowserWidthPx,
+      worldGlbBoundsCenter,
+    )
 
-    const initialTarget = {
-      x: mapDefaultOrbitTarget[0],
-      y: mapDefaultOrbitTarget[1],
-      z: mapDefaultOrbitTarget[2],
-    }
-    
-    // GSAP 애니메이션 - NavigationUI 클릭 시 맵 중앙으로 이동하고 줌 아웃
+    // GSAP — NAVIGATE 등에서 Navigate 모드로 전환
     const timeline = gsap.timeline({
       onComplete: () => {
-        setResetToFullMap(false)
+        // Navigate 모드 종료 자세와 스토어 mapDefault* 가 다르면 resetToFullMap false 직후
+        // CameraSystem useLayoutEffect 가 옛 mapDefault 로 카메라를 덮어 최종 구도가 바뀌는 현상 방지
+        useMapStore.setState({
+          mapDefaultOrthoPosition: [endPosition.x, endPosition.y, endPosition.z],
+          mapDefaultOrbitTarget: [endTarget.x, endTarget.y, endTarget.z],
+          mapViewportOrthoZoom: endZoom,
+          resetToFullMap: false,
+        })
         setMarkersVisible(true)
         orbitSuspendedRef.current = false
         syncOrbitFromCamera()
@@ -206,18 +152,18 @@ function CameraController({ controlsRef }) {
     
     resetAnimationRef.current = timeline
       .to(camera.position, {
-        x: initialPosition.x,
-        y: initialPosition.y,
-        z: initialPosition.z,
+        x: endPosition.x,
+        y: endPosition.y,
+        z: endPosition.z,
         duration: 1.5,
         ease: 'power2.inOut',
       })
       .to(
         controls.target,
         {
-          x: initialTarget.x,
-          y: initialTarget.y,
-          z: initialTarget.z,
+          x: endTarget.x,
+          y: endTarget.y,
+          z: endTarget.z,
           duration: 1.5,
           ease: 'power2.inOut',
           onUpdate: () => {
@@ -229,7 +175,7 @@ function CameraController({ controlsRef }) {
       .to(
         camera,
         {
-          zoom: initialZoom,
+          zoom: endZoom,
           duration: 1.5,
           ease: 'power2.inOut',
           onUpdate: () => {
@@ -249,7 +195,6 @@ function CameraController({ controlsRef }) {
     resetToFullMap,
     camera,
     controlsRef,
-    setResetToFullMap,
     clearCameraTarget,
     setMarkersVisible,
     setIsFullMapRotating,
@@ -257,6 +202,8 @@ function CameraController({ controlsRef }) {
     mapViewportOrthoZoom,
     mapDefaultOrthoPosition,
     mapDefaultOrbitTarget,
+    mapLayoutBrowserWidthPx,
+    worldGlbBoundsCenter,
   ])
   
   // 마커 클릭 시 카메라 이동
@@ -305,7 +252,6 @@ function CameraController({ controlsRef }) {
       z: cameraTarget[2] + sz,
     }
     
-    const startZoom = camera.zoom || 2.5
     const targetZoom = framing.targetZoom
     const zoomDuration = framing.duration
 

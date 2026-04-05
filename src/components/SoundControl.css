@@ -1,20 +1,42 @@
 .sound-control {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
   width: 50px;
   height: 50px;
   border-radius: 50%;
   border: none;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   transition: all 0.2s ease;
-  z-index: 1000;
+  z-index: 1;
   color: #ffffff;
+  flex-shrink: 0;
+}
+
+.sound-control--corner {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+}
+
+.sound-control--intro {
+  position: relative;
+  z-index: 1;
+}
+
+.sound-control--topbar {
+  position: static;
+  width: 44px;
+  height: 44px;
+  background: rgba(30, 58, 68, 0.92);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+}
+
+.sound-control--topbar:hover {
+  background: rgba(24, 48, 56, 0.96);
 }
 
 .sound-control:hover {

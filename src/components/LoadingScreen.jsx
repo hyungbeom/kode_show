@@ -1,4 +1,4 @@
-import { Suspense, useRef, useEffect } from 'react'
+import { Suspense, useRef, useEffect, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import {
   Center,
@@ -9,7 +9,6 @@ import {
   Text3D,
 } from '@react-three/drei'
 import * as THREE from 'three'
-import { useState } from 'react'
 import './LoadingScreen.css'
 
 /** three.js 예제 JSON — 기하 산세리프(볼드), Vite에서 경로 이슈 없이 CDN 사용 */
@@ -124,10 +123,16 @@ function LoadingScene3D() {
 
 /**
  * 로딩 화면 — ENVEX 3D 글래스 타포 + 그리드 / 접촉 그림자 (drei Text3D + MeshTransmissionMaterial)
- * - landing: ENTER만 표시 (첫 진입), 자동 진행 없음
+ * - landing: 부모가 mapEntryReady 줄 때 ENTER (맵은 커튼 뒤에서 이미 마운트)
  * - room: 업체 룸 전환 시 프로그레스 링 + onComplete
  */
-export default function LoadingScreen({ onComplete, isInitial = false, mode = 'room', onEnter }) {
+export default function LoadingScreen({
+  onComplete,
+  isInitial = false,
+  mode = 'room',
+  onEnter,
+  mapEntryReady = false,
+}) {
   const [progress, setProgress] = useState(0)
   const onCompleteRef = useRef(onComplete)
   onCompleteRef.current = onComplete
@@ -153,7 +158,9 @@ export default function LoadingScreen({ onComplete, isInitial = false, mode = 'r
   }, [isLanding])
 
   return (
-    <div className={`loading-screen ${isInitial ? 'initial-loading' : ''}`}>
+    <div
+      className={`loading-screen ${isInitial ? 'initial-loading' : ''}${isLanding ? ' loading-screen--curtain' : ''}`}
+    >
       <div className="loading-canvas-wrap" aria-hidden>
         <Canvas
           className="loading-canvas"
@@ -181,14 +188,21 @@ export default function LoadingScreen({ onComplete, isInitial = false, mode = 'r
         </h2>
 
         {isLanding ? (
-          <button
-            type="button"
-            className="loading-enter"
-            onClick={() => onEnter?.()}
-          >
-            <span className="loading-enter__ring" aria-hidden />
-            <span className="loading-enter__label">ENTER</span>
-          </button>
+          mapEntryReady ? (
+            <button
+              type="button"
+              className="loading-enter"
+              onClick={() => onEnter?.()}
+            >
+              <span className="loading-enter__ring" aria-hidden />
+              <span className="loading-enter__label">ENTER</span>
+            </button>
+          ) : (
+            <div className="loading-map-prep" role="status" aria-live="polite">
+              <div className="loading-map-prep__spinner" aria-hidden />
+              <span className="loading-map-prep__label">3D 맵 로딩 중…</span>
+            </div>
+          )
         ) : (
           <div className="loading-circle">
             <svg className="loading-circle-svg" viewBox="0 0 100 100">

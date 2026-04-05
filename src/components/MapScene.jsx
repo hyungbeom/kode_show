@@ -1,26 +1,38 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Suspense, useEffect, memo } from 'react'
+import { Suspense, useEffect, memo, lazy } from 'react'
 import { Cloud, Clouds, Environment, Lightformer } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
 import { useMapStore } from '../store/useMapStore'
+import { readLayoutBrowserWidthPx } from '../utils/mapViewport'
 import {
-  computeMapOrthoZoomForWidth,
-  readLayoutBrowserWidthPx,
-} from '../utils/mapViewport'
-import {
-  getMapDefaultOrthoPositionForWidth,
-  getMapDefaultOrbitTargetForWidth,
+  getMapInitialOrthoZoomForWidth,
+  resolveMapCameraLayoutForViewport,
 } from '../utils/mapCameraLayout'
 import {
   maintainTransparentSceneBackground,
   syncTransparentWebGLCanvas,
 } from '../utils/syncTransparentWebGLCanvas'
 
-/** div 그라데이션과 동일 톤 — Canvas 뒤 레이어 */
-const MAP_BACKDROP_GRADIENT =
-  'linear-gradient(to bottom, #CCFFCC 0%, #B8E6CC 20%, #87CEEB 45%, #5F9EA0 70%, #4682B4 100%)'
+/**
+ * Vite 프로덕션 빌드에서 `import.meta.env.DEV`는 false로 정적 치환되어
+ * 아래 lazy 청크(Leva, r3f-perf)가 번들에 포함되지 않습니다.
+ */
+const ENABLE_MAP_DEV_ONLY_UI = import.meta.env.DEV === true && import.meta.env.PROD !== true
+
+const MapCameraDevControlsLazy = ENABLE_MAP_DEV_ONLY_UI
+  ? lazy(() =>
+      import('./MapCameraDevControls').then((mod) => ({ default: mod.MapCameraDevControls })),
+    )
+  : null
+
+const MapR3fPerfLazy = ENABLE_MAP_DEV_ONLY_UI
+  ? lazy(() => import('./MapR3fPerf').then((mod) => ({ default: mod.MapR3fPerf })))
+  : null
+
+/** Canvas 뒤 레이어 — index.css :root --map-app-backdrop 과 동일 */
+const MAP_BACKDROP_GRADIENT = 'var(--map-app-backdrop)'
 
 /**
  * 배경 투명 유지 — 컴포넌트는 모듈 스코프에 두어 매 렌더마다 타입이 바뀌지 않게 함
@@ -117,16 +129,16 @@ function MapViewportOrthoSync() {
   const setMapViewportOrthoZoom = useMapStore((s) => s.setMapViewportOrthoZoom)
   const setMapDefaultCameraLayout = useMapStore((s) => s.setMapDefaultCameraLayout)
   const setMapLayoutBrowserWidthPx = useMapStore((s) => s.setMapLayoutBrowserWidthPx)
+  const devMapCameraLayoutLocked = useMapStore((s) => s.devMapCameraLayoutLocked)
 
   useEffect(() => {
     const sync = () => {
       const w = readLayoutBrowserWidthPx()
       setMapLayoutBrowserWidthPx(w)
-      setMapViewportOrthoZoom(computeMapOrthoZoomForWidth(w))
-      setMapDefaultCameraLayout(
-        getMapDefaultOrthoPositionForWidth(w),
-        getMapDefaultOrbitTargetForWidth(w),
-      )
+      if (devMapCameraLayoutLocked) return
+      setMapViewportOrthoZoom(getMapInitialOrthoZoomForWidth(w))
+      const { orthoPosition, orbitTarget } = resolveMapCameraLayoutForViewport(w)
+      setMapDefaultCameraLayout(orthoPosition, orbitTarget)
     }
 
     sync()
@@ -136,7 +148,12 @@ function MapViewportOrthoSync() {
       window.removeEventListener('resize', sync)
       window.visualViewport?.removeEventListener('resize', sync)
     }
-  }, [setMapViewportOrthoZoom, setMapDefaultCameraLayout, setMapLayoutBrowserWidthPx])
+  }, [
+    devMapCameraLayoutLocked,
+    setMapViewportOrthoZoom,
+    setMapDefaultCameraLayout,
+    setMapLayoutBrowserWidthPx,
+  ])
 
   return null
 }
@@ -148,6 +165,11 @@ const MapScene = memo(function MapScene() {
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <MapViewportOrthoSync />
+      {MapCameraDevControlsLazy && (
+        <Suspense fallback={null}>
+          <MapCameraDevControlsLazy />
+        </Suspense>
+      )}
       <div
         style={{
           width: '100%',
@@ -183,6 +205,11 @@ const MapScene = memo(function MapScene() {
         }}
       >
         <Physics gravity={[0, -9.81, 0]} debug={false}>
+          {MapR3fPerfLazy && (
+            <Suspense fallback={null}>
+              <MapR3fPerfLazy />
+            </Suspense>
+          )}
           <MapPhysicsSceneContent />
         </Physics>
       </Canvas>

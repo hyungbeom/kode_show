@@ -26,13 +26,14 @@ const VISIBLE_SLOTS = 3
 /** 캐러셀: 선택 vs 비선택 스케일 (비선택은 더 작게) */
 const CAROUSEL_ITEM_SCALE_ACTIVE = 2.55
 const CAROUSEL_ITEM_SCALE_INACTIVE = 0.68
+
 export const PRODUCT_GLB_URLS = [
   '/product/product1.glb',
   '/product/product2.glb',
   '/product/product3.glb',
   '/product/product4.glb',
   '/product/product5.glb',
-]
+];
 
 function normalizeToUnit(scene) {
   const clone = scene.clone(true)
@@ -52,7 +53,7 @@ function CarouselProductMesh({ url, active, onPick, pickingEnabled }) {
   const root = useRef(null)
   const object = useMemo(() => normalizeToUnit(scene), [scene])
   const { a11yPrefersState } = useUserPreferences()
-  const motionDisabled = a11yPrefersState.prefersReducedMotion
+  const motionDisabled = a11yPrefersState.prefersReducedMotion;
 
   useFrame((state, delta) => {
     if (!root.current) return
@@ -357,7 +358,7 @@ function CarouselCaptionBar({
             fontWeight: 700,
             color: fg,
             lineHeight: 1.3,
-            fontFamily: 'system-ui, sans-serif',
+            fontFamily: 'var(--font-sans)',
             flexShrink: 0,
           }}
         >
@@ -369,7 +370,7 @@ function CarouselCaptionBar({
             fontSize: isMobileTier ? '0.98rem' : '0.875rem',
             lineHeight: isMobileTier ? 1.65 : 1.65,
             color: fgMuted,
-            fontFamily: 'system-ui, sans-serif',
+            fontFamily: 'var(--font-sans)',
             flex: 1,
             minHeight: 0,
             overflow: 'auto',
@@ -396,7 +397,7 @@ function CarouselCaptionBar({
               color: dotActive,
               fontSize: isMobileTier ? '0.94rem' : '0.875rem',
               fontWeight: 700,
-              fontFamily: 'system-ui, sans-serif',
+              fontFamily: 'var(--font-sans)',
               cursor: 'pointer',
               transition: motionDisabled ? 'none' : 'background 0.15s ease, transform 0.15s ease',
             }}

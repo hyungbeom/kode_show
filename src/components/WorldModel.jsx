@@ -8,9 +8,15 @@ world.glb 맵 모델
 - 구역별 LandHover: *_Land 합 히트, 말풍선은 CH_* / Earth / Institution_Builidng 등 마커 노드 위
 - Carbon_Land+CH_Leaf_Body — 말풍선은 CH_Leaf_Body·CARBON NATURAL
 - NeonScreen — world.glb의 cube001 앵커 + screen.glb 지오 + /neon.png (WorldModel에서 마운트 필요)
+- Navigate 모드(`isNavigateModeWorldSpinActive`)일 때 루트 group이 Y로 저속 회전
+- Water_all — `WaterAllWaves` 버텍스 파동(geometry clone)
 */
 
 import React, { useMemo, memo, useLayoutEffect, useRef, useEffect } from 'react'
+import {
+  isNavigateModeWorldSpinActive,
+  NAVIGATE_MODE_WORLD_YAW_RAD_PER_S,
+} from '../config/mapNavigateReset'
 import * as THREE from 'three'
 import { useFrame, useGraph, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
@@ -19,6 +25,7 @@ import { SakuraWind } from './SakuraWind'
 import { AirplaneFlight } from './AirplaneFlight'
 import { LandHover } from './LandHover'
 import { NeonScreen } from './NeonScreen'
+import { WaterAllWaves, getWaterAllMeshFromNodes } from './WaterAllWaves'
 import { resolveSceneNode } from '../utils/gltfNodeUtils'
 import {
   ZONE_ID_AIR,
@@ -184,7 +191,10 @@ export const WorldModel = memo(function WorldModel(props) {
   }, [scene])
 
   const { nodes } = useGraph(clonedScene)
+  const waterAllMesh = useMemo(() => getWaterAllMeshFromNodes(nodes, clonedScene), [nodes, clonedScene])
   const setGlbFocusPositions = useMapStore((s) => s.setGlbFocusPositions)
+  const setWorldGlbBoundsCenter = useMapStore((s) => s.setWorldGlbBoundsCenter)
+  const worldYawRootRef = useRef(/** @type {THREE.Group | null} */ (null))
 
   useLayoutEffect(() => {
     const box = new THREE.Box3()
@@ -201,6 +211,11 @@ export const WorldModel = memo(function WorldModel(props) {
 
     const apply = () => {
       clonedScene.updateMatrixWorld(true)
+      box.setFromObject(clonedScene)
+      if (!box.isEmpty()) {
+        box.getCenter(center)
+        setWorldGlbBoundsCenter([center.x, center.y, center.z])
+      }
       const map = {}
       GLB_FOCUS_NODES.forEach((name) => {
         const pos = writeCenter(nodes[name])
@@ -214,9 +229,22 @@ export const WorldModel = memo(function WorldModel(props) {
 
     const id = requestAnimationFrame(apply)
     return () => cancelAnimationFrame(id)
-  }, [clonedScene, nodes, setGlbFocusPositions])
+  }, [clonedScene, nodes, setGlbFocusPositions, setWorldGlbBoundsCenter])
 
   useFrame((_, delta) => {
+    const st = useMapStore.getState()
+    if (
+      isNavigateModeWorldSpinActive({
+        followPhysicsBox: st.followPhysicsBox,
+        cameraTarget: st.cameraTarget,
+        selectedZone: st.selectedZone,
+        isFullscreenCanvas: st.isFullscreenCanvas,
+      }) &&
+      worldYawRootRef.current
+    ) {
+      worldYawRootRef.current.rotation.y += delta * NAVIGATE_MODE_WORLD_YAW_RAD_PER_S
+    }
+
     const angleGear = delta * ROTATION_SPEED
     const angleFan = angleGear * FAN_ROTATION_MULTIPLIER
     SPIN_Y_GEARS.forEach((name) => {
@@ -236,7 +264,10 @@ export const WorldModel = memo(function WorldModel(props) {
   })
   return (
     <>
-      <primitive object={clonedScene} {...props} />
+      <group ref={worldYawRootRef}>
+        <primitive object={clonedScene} {...props} />
+      </group>
+      {waterAllMesh ? <WaterAllWaves mesh={waterAllMesh} /> : null}
       <NeonScreen nodes={nodes} />
       <SakuraWind
         fan={nodes.Air_Fan_A_propeller}
@@ -281,7 +312,7 @@ export const WorldModel = memo(function WorldModel(props) {
           lands={[nodes.Measurement_Land, nodes.CH_Microscope].filter(Boolean)}
           speechAnchor={nodes.CH_Microscope || nodes.Measurement_Land}
           clonedScene={clonedScene}
-          label={'Measurement &\nAnalysis'}
+          label={'Measurement\n& Analysis'}
           zoneId={ZONE_ID_LAB}
           glbNode="CH_Microscope"
         />
@@ -316,7 +347,7 @@ export const WorldModel = memo(function WorldModel(props) {
             nodes.Institution_Builidng || nodes.Institution_Building || nodes.Institution_Land
           }
           clonedScene={clonedScene}
-          label={'Associations &\nOrganizations'}
+          label={'Associations\n& Organizations'}
           zoneId={ZONE_ID_INST}
           glbNode="Institution_Builidng"
         />

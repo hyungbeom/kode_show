@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import React, { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
@@ -11,7 +11,7 @@ import './NodeSpeechBubble.css'
  * @param {THREE.Object3D} anchor - 추적할 오브젝트 (예: nodes.CH_Water)
  * @param {THREE.Object3D} clonedScene - world 행렬 갱신용 (선택)
  * @param {string} label - 표시 문구
- * @param {boolean} showBadge - 우측 상단 분홍 ! 배지
+ * @param {boolean} showBadge - 분홍 ! 배지 (기본 끔)
  * @param {number} yPad - 바운딩 박스 위 추가 오프셋 (월드 단위)
  * @param {'light' | 'dark'} variant - dark: 네이비 배경·흰 글씨·빨간 배지 (호버 등)
  * @param {() => void} onBubbleActivate - 모바일 등: Html 말풍선 직접 탭 시 구역 포커스(캔버스 레이캐스트와 위치가 어긋나는 문제 방지)
@@ -20,7 +20,7 @@ export function NodeSpeechBubble({
   anchor,
   clonedScene,
   label = 'WATER',
-  showBadge = true,
+  showBadge = false,
   yPad = 4,
   variant = 'light',
   onBubbleActivate,
@@ -91,7 +91,14 @@ export function NodeSpeechBubble({
         >
           <div className="node-speech-bubble__body">
             {showBadge ? <span className="node-speech-bubble__badge">!</span> : null}
-            <p className="node-speech-bubble__text">{label}</p>
+            <p className="node-speech-bubble__text">
+              {label.split('\n').map((line, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 ? <br /> : null}
+                  {line}
+                </React.Fragment>
+              ))}
+            </p>
           </div>
           <div className="node-speech-bubble__tail" aria-hidden />
         </div>

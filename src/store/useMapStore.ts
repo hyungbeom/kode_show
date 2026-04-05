@@ -2,8 +2,9 @@ import { create } from 'zustand'
 import {
   getMapDefaultOrthoPositionForWidth,
   getMapDefaultOrbitTargetForWidth,
+  getMapInitialOrthoZoomForWidth,
 } from '../utils/mapCameraLayout'
-import { computeMapOrthoZoomForWidth, readLayoutBrowserWidthPx } from '../utils/mapViewport'
+import { readLayoutBrowserWidthPx } from '../utils/mapViewport'
 
 /**
  * KODE Clubs 지도 상태 관리 스토어
@@ -19,6 +20,10 @@ interface MapStore {
   // world.glb 노드별 포커스 좌표 (바운딩 박스 중심)
   glbFocusPositions: Record<string, [number, number, number]>
   setGlbFocusPositions: (positions: Record<string, [number, number, number]>) => void
+
+  /** world.glb 전체 클론 씬 AABB 중심 — 브라우저 가로 중앙에 맵을 두는 데 사용 */
+  worldGlbBoundsCenter: [number, number, number] | null
+  setWorldGlbBoundsCenter: (p: [number, number, number] | null) => void
 
   // 마커 표시 상태 (초기 진입 시 전체 맵이 보이므로 마커도 표시)
   markersVisible: boolean
@@ -39,7 +44,10 @@ interface MapStore {
   // 카메라 타겟 초기화
   clearCameraTarget: () => void
   
-  // 맵 전체 보기 모드 (줌 아웃)
+  /**
+   * true → CameraController가 Navigate 모드 pose로 GSAP 전환을 시작합니다.
+   * (Navigate 모드: NAVIGATE 클릭 후의 맵 전체 보기 카메라 구도 — `mapNavigateReset`)
+   */
   resetToFullMap: boolean
   setResetToFullMap: (value: boolean) => void
   
@@ -87,14 +95,16 @@ interface MapStore {
   cameraTransitionComplete: boolean
   setCameraTransitionComplete: (complete: boolean) => void
 
-  /** NAVIGATE 등: 최초 맵 진입과 동일한 스토어 상태로 맞춤(카메라는 setResetToFullMap 으로 별도) */
+  /**
+   * NAVIGATE 등: 존/마커/추적 등 상호작용만 초기화.
+   * `mapHeroCopyDismissed`는 건드리지 않음 — 블러 인트로를 다시 띄우지 않음.
+   * 카메라는 Navigate 모드로 맞추려면 `setResetToFullMap(true)` + CameraController.
+   */
   resetMapToInitialInteractionState: () => void
 
-  /** SEE BRAND FILM 클릭 후 왼쪽 히어로 숨김 */
+  /** 인트로 EXPLORE 후 왼쪽 히어로 숨김 — 카메라는 Navigate 모드와 동일하게 `resetToFullMap` 경로 */
   mapHeroCopyDismissed: boolean
-  brandFilmCameraRecenterPending: boolean
   triggerBrandFilmCenterView: () => void
-  clearBrandFilmCameraRecenterPending: () => void
 
   /** 뷰포트 너비 기반 맵 OrthographicCamera 논리 줌 (PC/태블릿/모바일) */
   mapViewportOrthoZoom: number
@@ -111,9 +121,16 @@ interface MapStore {
   /** readLayoutBrowserWidthPx — ZONE 말풍선·Html 오버레이가 카메라와 동일 기준 사용 */
   mapLayoutBrowserWidthPx: number
   setMapLayoutBrowserWidthPx: (w: number) => void
+
+  /**
+   * 개발용(Leva): true면 뷰포트 리사이즈 시 `resolveMapCameraLayoutForViewport`가
+   * ortho 위치·타깃·줌을 덮어쓰지 않음 — 슬라이더로 맞춘 값을 유지.
+   */
+  devMapCameraLayoutLocked: boolean
+  setDevMapCameraLayoutLocked: (locked: boolean) => void
 }
 
-export const useMapStore = create<MapStore>((set) => ({
+export const useMapStore = create<MapStore>((set, get) => ({
   // 현재 선택된 구역 정보
   selectedArea: null,
   
@@ -123,6 +140,11 @@ export const useMapStore = create<MapStore>((set) => ({
   glbFocusPositions: {},
   setGlbFocusPositions: (positions: Record<string, [number, number, number]>) => {
     set({ glbFocusPositions: positions })
+  },
+
+  worldGlbBoundsCenter: null,
+  setWorldGlbBoundsCenter: (p) => {
+    set({ worldGlbBoundsCenter: p })
   },
 
   // 마커 표시 상태 (초기 진입 시 전체 맵이 보이므로 마커도 표시)
@@ -284,15 +306,12 @@ export const useMapStore = create<MapStore>((set) => ({
   },
 
   mapHeroCopyDismissed: false,
-  brandFilmCameraRecenterPending: false,
   triggerBrandFilmCenterView: () => {
-    set({ mapHeroCopyDismissed: true, brandFilmCameraRecenterPending: true })
-  },
-  clearBrandFilmCameraRecenterPending: () => {
-    set({ brandFilmCameraRecenterPending: false })
+    get().resetMapToInitialInteractionState()
+    set({ mapHeroCopyDismissed: true, resetToFullMap: true })
   },
 
-  mapViewportOrthoZoom: computeMapOrthoZoomForWidth(readLayoutBrowserWidthPx()),
+  mapViewportOrthoZoom: getMapInitialOrthoZoomForWidth(readLayoutBrowserWidthPx()),
   setMapViewportOrthoZoom: (zoom: number) => {
     set({ mapViewportOrthoZoom: zoom })
   },
@@ -309,6 +328,11 @@ export const useMapStore = create<MapStore>((set) => ({
   mapLayoutBrowserWidthPx: readLayoutBrowserWidthPx(),
   setMapLayoutBrowserWidthPx: (w: number) => {
     set({ mapLayoutBrowserWidthPx: w })
+  },
+
+  devMapCameraLayoutLocked: false,
+  setDevMapCameraLayoutLocked: (locked: boolean) => {
+    set({ devMapCameraLayoutLocked: locked })
   },
 
   resetMapToInitialInteractionState: () => {
@@ -329,8 +353,6 @@ export const useMapStore = create<MapStore>((set) => ({
       physicsBoxTargetPosition: null,
       physicsBoxPath: [],
       cameraTransitionComplete: true,
-      mapHeroCopyDismissed: false,
-      brandFilmCameraRecenterPending: false,
     })
   },
 }))

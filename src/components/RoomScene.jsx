@@ -206,7 +206,7 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     () =>
       prefersDark
         ? 'linear-gradient(to bottom, #0d1117 0%, #161b22 35%, #21262d 70%, #30363d 100%)'
-        : 'linear-gradient(to bottom, #CCFFCC 0%, #B8E6CC 20%, #87CEEB 45%, #5F9EA0 70%, #4682B4 100%)',
+        : 'var(--map-app-backdrop)',
     [prefersDark]
   )
   
@@ -977,7 +977,7 @@ function RoomDarkModeSwitch() {
         background: dark ? 'rgba(15, 23, 42, 0.82)' : 'rgba(255, 255, 255, 0.9)',
         border: dark ? '1px solid rgba(148, 163, 184, 0.35)' : '1px solid rgba(15, 23, 42, 0.12)',
         boxShadow: dark ? '0 6px 24px rgba(0,0,0,0.35)' : '0 6px 20px rgba(15,23,42,0.12)',
-        fontFamily: 'system-ui, sans-serif',
+        fontFamily: 'var(--font-sans)',
         pointerEvents: 'auto',
       }}
     >

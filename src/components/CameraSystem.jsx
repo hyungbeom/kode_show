@@ -1,4 +1,4 @@
-import { memo, useRef, useEffect } from 'react'
+import { memo, useRef, useEffect, useLayoutEffect } from 'react'
 import { OrthographicCamera, OrbitControls } from '@react-three/drei'
 import { useThree, useFrame } from '@react-three/fiber'
 import CameraController from './CameraController'
@@ -13,15 +13,51 @@ import * as THREE from 'three'
 const CameraSystem = memo(() => {
   const controlsRef = useRef()
   const followPhysicsBox = useMapStore((state) => state.followPhysicsBox)
+  const mapHeroCopyDismissed = useMapStore((state) => state.mapHeroCopyDismissed)
+  const resetToFullMap = useMapStore((state) => state.resetToFullMap)
   const { camera } = useThree()
   const setCameraTransitionComplete = useMapStore((state) => state.setCameraTransitionComplete)
-  const isFullMapRotating = useMapStore((state) => state.isFullMapRotating)
-  const cameraTarget = useMapStore((state) => state.cameraTarget)
-  const selectedZone = useMapStore((state) => state.selectedZone)
   const mapViewportOrthoZoom = useMapStore((state) => state.mapViewportOrthoZoom)
   const mapDefaultOrthoPosition = useMapStore((state) => state.mapDefaultOrthoPosition)
   const mapDefaultOrbitTarget = useMapStore((state) => state.mapDefaultOrbitTarget)
-  
+
+  /**
+   * 스토어 기본 레이아웃이 바뀔 때만(리사이즈·world AABB 반영 등) 카메라·오빗을 적용.
+   * 매 렌더마다 position/target prop을 주면 Navigate 모드 GSAP 직후 리렌더 때 자세가 덮여서 확 튀는 현상 발생.
+   */
+  const mapLayoutKeyRef = useRef(null)
+  useLayoutEffect(() => {
+    if (followPhysicsBox) return
+    // 블러 인트로 동안: world AABB 반영 등으로 mapDefault*만 바뀌어도 카메라는 고정(첫 진입 자세 유지)
+    if (!mapHeroCopyDismissed) return
+    // Navigate 모드(또는 EXPLORE) GSAP이 카메라를 제어하는 동안 스토어 레이아웃으로 덮어쓰지 않음
+    if (resetToFullMap) return
+    if (!(camera instanceof THREE.OrthographicCamera)) return
+    const key = `${mapDefaultOrthoPosition.join(',')}|${mapDefaultOrbitTarget.join(',')}|${mapViewportOrthoZoom}`
+    if (mapLayoutKeyRef.current === key) return
+    mapLayoutKeyRef.current = key
+    camera.position.set(
+      mapDefaultOrthoPosition[0],
+      mapDefaultOrthoPosition[1],
+      mapDefaultOrthoPosition[2],
+    )
+    camera.zoom = mapViewportOrthoZoom
+    camera.updateProjectionMatrix()
+    const c = controlsRef.current
+    if (c) {
+      c.target.set(mapDefaultOrbitTarget[0], mapDefaultOrbitTarget[1], mapDefaultOrbitTarget[2])
+      c.update()
+    }
+  }, [
+    followPhysicsBox,
+    mapHeroCopyDismissed,
+    resetToFullMap,
+    camera,
+    mapDefaultOrthoPosition,
+    mapDefaultOrbitTarget,
+    mapViewportOrthoZoom,
+  ])
+
   // 카메라 전환 애니메이션용 ref
   const transitionStartRef = useRef(null)
   const transitionTargetRef = useRef(null)
@@ -95,10 +131,6 @@ const CameraSystem = memo(() => {
     mapDefaultOrthoPosition,
     mapDefaultOrbitTarget,
   ])
-  
-  // 맵 전체 보기 모드에서 카메라 회전 애니메이션
-  const rotationAngleRef = useRef(0)
-  const rotationSpeed = 0.15 // 회전 속도 (라디안/초) - 느리게 조정
   
   // useFrame에서 부드러운 카메라 전환 처리 및 회전 애니메이션
   // 추적 모드일 때는 전환 애니메이션만 처리하고, 완료 후에는 ecctrl가 제어
@@ -178,29 +210,23 @@ const CameraSystem = memo(() => {
   return (
     <>
       {/* 맵 뷰일 때만 OrthographicCamera 렌더링 */}
-      <OrthographicCamera
-        makeDefault
-        position={mapDefaultOrthoPosition}
-        zoom={mapViewportOrthoZoom}
-        near={0.1}
-        far={500000}
-      />
+      <OrthographicCamera makeDefault near={0.1} far={500000} />
 
       <OrthographicZoomCompensation />
 
       {/* 카메라 컨트롤러 (GSAP 애니메이션) */}
       <CameraController controlsRef={controlsRef} />
-      
+
+      {/* 유저 조작 비활성 — 카메라는 GSAP·스토어 레이아웃만 적용 */}
       <OrbitControls
         ref={controlsRef}
-        enablePan={!isFullMapRotating}
-        enableRotate={!isFullMapRotating}
-        enableZoom={!isFullMapRotating}
+        enablePan={false}
+        enableRotate={false}
+        enableZoom={false}
         minZoom={0.5}
         maxZoom={50}
-        minPolarAngle={Math.PI / 6}
+        minPolarAngle={0.06}
         maxPolarAngle={Math.PI / 2}
-        target={mapDefaultOrbitTarget}
       />
     </>
   )
