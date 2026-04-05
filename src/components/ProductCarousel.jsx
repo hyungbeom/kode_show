@@ -411,8 +411,6 @@ function CarouselCaptionBar({
 }
 
 const PITCH_LIMIT = Math.PI / 2 - 0.15
-/** 상세 뷰 자동 회전 (라디안/초) — 프레임당 고정값 대신 delta 사용 */
-const DETAIL_AUTO_ROTATE_RAD_PER_SEC = 0.34
 /** NDC 오차 저역 통과 — 트림 적분과 함께 쓰여 떨림 억제 */
 const DETAIL_NDC_SMOOTH_TAU_SEC = 0.42
 /** NDC 오차 → 월드 트림 적분 게인 (rad/s 스케일 느낌으로 완만하게) */
@@ -525,9 +523,7 @@ function ProductDetailStage({
     )
     root.current.scale.setScalar(targetScale)
 
-    if (!dragging.current && !motionDisabled && t > 0.2) {
-      rotY.current += DETAIL_AUTO_ROTATE_RAD_PER_SEC * dt
-    }
+    /* 확대(말풍선·상세) 구간에서는 자동 회전 없음 — 사용자 드래그만 적용 */
     root.current.rotation.y = rotY.current
     root.current.rotation.x = rotX.current
 

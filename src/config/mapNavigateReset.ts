@@ -5,7 +5,8 @@
  *
  * 구현상 `resetToFullMap`이 true가 되면 CameraController가 이 pose로 애니메이션합니다.
  *
- * `isNavigateModeWorldSpinActive`가 true일 때 world.glb 루트는 `NAVIGATE_MODE_WORLD_YAW_RAD_PER_S`로 Y 회전합니다.
+ * world.glb 루트 Yaw·장식 회전은 스토어 `mapNavigateWorldDecorSpinActive`(Navigate GSAP 완료 후 true)와
+ * `isNavigateModeWorldSpinActive`(존 줌·전체화면 등 아닐 때)가 모두 true일 때만 동작합니다.
  *
  * 우선순위 (`getNavigateResetCamera`):
  * 1. 모바일 — 뷰포트 너비 ≤ `MAP_NAVIGATE_MOBILE_TOP_DOWN.maxWidthPx` 이고 `enabled`일 때
@@ -136,7 +137,7 @@ export type NavigateModeWorldSpinSnapshot = {
 
 /**
  * 맵 전체 탐색 뷰(Zone 줌·전체화면·건물 타깃 이동·물리 추적이 아닐 때).
- * WorldModel에서 world.glb 루트 저속 회전에 사용합니다.
+ * WorldModel은 여기에 더해 `mapNavigateWorldDecorSpinActive`를 AND 해야 Navigate 모드에서만 회전합니다.
  */
 export function isNavigateModeWorldSpinActive(s: NavigateModeWorldSpinSnapshot): boolean {
   return (

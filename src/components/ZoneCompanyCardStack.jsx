@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useDrag } from '@use-gesture/react'
 import gsap from 'gsap'
 import './ZoneCompanyCardStack.css'
@@ -10,11 +10,6 @@ const DRAG_CLICK_THRESHOLD = 14
 function exitDistancePx() {
   if (typeof window === 'undefined') return 320
   return Math.min(420, Math.max(280, window.innerWidth * 0.5))
-}
-
-function entryOffsetPx() {
-  if (typeof window === 'undefined') return 160
-  return Math.min(220, Math.max(120, window.innerWidth * 0.28))
 }
 
 /**
@@ -80,7 +75,6 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '' }
         }
 
         const exit = exitDistancePx()
-        const entry = entryOffsetPx()
 
         const runSnapBack = () => {
           dragXProxy.current.x = mx
@@ -108,19 +102,9 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '' }
             onUpdate: () => setDragX(dragXProxy.current.x),
             onComplete: () => {
               goNextRef.current()
-              dragXProxy.current.x = entry
-              setDragX(entry)
-              gsap.to(dragXProxy.current, {
-                x: 0,
-                duration: 0.45,
-                ease: 'power3.out',
-                onUpdate: () => setDragX(dragXProxy.current.x),
-                onComplete: () => {
-                  setDragX(0)
-                  dragXProxy.current.x = 0
-                  setGestureAnimating(false)
-                },
-              })
+              dragXProxy.current.x = 0
+              setDragX(0)
+              setGestureAnimating(false)
             },
           })
           return
@@ -136,19 +120,9 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '' }
             onUpdate: () => setDragX(dragXProxy.current.x),
             onComplete: () => {
               goPrevRef.current()
-              dragXProxy.current.x = -entry
-              setDragX(-entry)
-              gsap.to(dragXProxy.current, {
-                x: 0,
-                duration: 0.45,
-                ease: 'power3.out',
-                onUpdate: () => setDragX(dragXProxy.current.x),
-                onComplete: () => {
-                  setDragX(0)
-                  dragXProxy.current.x = 0
-                  setGestureAnimating(false)
-                },
-              })
+              dragXProxy.current.x = 0
+              setDragX(0)
+              setGestureAnimating(false)
             },
           })
           return
@@ -176,26 +150,33 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '' }
 
   if (!n) return null
 
-  const depths = n >= 3 ? [2, 1, 0] : n === 2 ? [1, 0] : [0]
+  /**
+   * DOM 순서: 뒤 → 앞 (맨 위 그리기). key=company.id 로 같은 카드 요소가
+   * 가운데 → 앞면으로 승격될 때 transform transition이 이어짐 (옆에서 끼워 넣는 느낌 방지).
+   */
+  const visibleLayers = useMemo(() => {
+    if (n === 1) return [companies[index]]
+    if (n === 2) return [companies[(index + 1) % n], companies[index]]
+    return [companies[(index + 2) % n], companies[(index + 1) % n], companies[index]]
+  }, [companies, index, n])
 
   return (
     <div className={`zone-company-stack${n > 1 ? ' zone-company-stack--interactive' : ''}`}>
       <div className="zone-company-stack__swipe" {...(n > 1 ? bind() : {})}>
-        {depths.map((depth) => {
-          const ci = (index + depth) % n
-          const company = companies[ci]
-          const isFront = depth === 0
-          const offsetX = depth * 16 + (isFront ? dragX : 0)
-          const offsetY = depth * 8
-          const scale = 1 - depth * 0.045
-          const opacity = 1 - depth * 0.12
+        {visibleLayers.map((company, i) => {
+          const depthFromFront = visibleLayers.length - 1 - i
+          const isFront = depthFromFront === 0
+          const offsetX = depthFromFront * 16 + (isFront ? dragX : 0)
+          const offsetY = depthFromFront * 8
+          const scale = 1 - depthFromFront * 0.045
+          const opacity = 1 - depthFromFront * 0.12
 
           return (
             <div
-              key={`slot-${depth}`}
+              key={company.id}
               className={`zone-company-stack__layer${isFront ? ' zone-company-stack__layer--front' : ''}${dragging && isFront ? ' zone-company-stack__layer--dragging' : ''}${gestureAnimating && isFront ? ' zone-company-stack__layer--gesture-anim' : ''}`}
               style={{
-                zIndex: 5 - depth,
+                zIndex: 3 + i,
                 transform: `translateX(${offsetX}px) translateY(${offsetY}px) scale(${scale})`,
                 opacity,
               }}
@@ -222,7 +203,7 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '' }
               }
               aria-hidden={!isFront}
             >
-              <article className="zone-company-stack-card" key={company.id}>
+              <article className="zone-company-stack-card">
                 <div className="zone-company-stack-card__media">
                   <img
                     src={company.imageUrl}

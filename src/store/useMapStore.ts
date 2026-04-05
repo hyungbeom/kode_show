@@ -50,7 +50,13 @@ interface MapStore {
    */
   resetToFullMap: boolean
   setResetToFullMap: (value: boolean) => void
-  
+
+  /**
+   * Navigate(또는 인트로 EXPLORE) GSAP가 Navigate pose에 도달한 뒤에만 true.
+   * WorldModel 장식·루트 Yaw는 이 값이 true일 때만 돌며, 존 줌/모달 닫기만으로는 다시 켜지지 않음.
+   */
+  mapNavigateWorldDecorSpinActive: boolean
+
   // 맵 전체 보기 모드에서 카메라 회전 활성화 여부
   isFullMapRotating: boolean
   setIsFullMapRotating: (value: boolean) => void
@@ -164,6 +170,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
       markersVisible: false,
       pendingZone: areaId,
       pendingZonePosition: position,
+      mapNavigateWorldDecorSpinActive: false,
     })
   },
   
@@ -177,7 +184,10 @@ export const useMapStore = create<MapStore>((set, get) => ({
   
   // 카메라 타겟만 설정 (애니메이션용)
   setCameraTarget: (position: [number, number, number] | null) => {
-    set({ cameraTarget: position })
+    set({
+      cameraTarget: position,
+      ...(position !== null ? { mapNavigateWorldDecorSpinActive: false } : {}),
+    })
   },
   
   // 카메라 타겟 초기화
@@ -187,6 +197,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
   
   // 맵 전체 보기 모드 (줌 아웃)
   resetToFullMap: false,
+  mapNavigateWorldDecorSpinActive: false,
   setResetToFullMap: (value: boolean) => {
     set({ 
       resetToFullMap: value,
@@ -215,7 +226,10 @@ export const useMapStore = create<MapStore>((set, get) => ({
   // 전체 화면 캔버스 모드
   isFullscreenCanvas: false,
   setFullscreenCanvas: (value: boolean) => {
-    set({ isFullscreenCanvas: value })
+    set({
+      isFullscreenCanvas: value,
+      ...(value ? { mapNavigateWorldDecorSpinActive: false } : {}),
+    })
   },
   closeFullscreenCanvas: () => {
     set({
@@ -237,6 +251,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
         isMarkerClick: fromMarker,  // 마커 클릭 여부 저장
         // 마커는 업체 리스트가 표시되므로 숨김
         markersVisible: false,
+        mapNavigateWorldDecorSpinActive: false,
       }
     })
   },
@@ -296,7 +311,10 @@ export const useMapStore = create<MapStore>((set, get) => ({
   },
   followPhysicsBox: false,  // 카메라가 상자를 따라다니는 모드
   setFollowPhysicsBox: (value: boolean) => {
-    set({ followPhysicsBox: value })
+    set({
+      followPhysicsBox: value,
+      ...(value ? { mapNavigateWorldDecorSpinActive: false } : {}),
+    })
   },
   
   // 카메라 전환 완료 상태 (Player의 카메라 팔로우 시작 시점 제어)
@@ -347,6 +365,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
       isFullscreenCanvas: false,
       markersVisible: true,
       isFullMapRotating: false,
+      mapNavigateWorldDecorSpinActive: false,
       followPhysicsBox: false,
       selectedCompanyId: null,
       selectedCompanyName: null,

@@ -6,16 +6,11 @@ const LEEBIO_HOMEPAGE_URL = 'https://leebio.co.kr/'
 const LEEBIO_MAIL_TO = 'mailto:info@leebio.co.kr'
 
 /**
- * /room/1 캐러셀 최초 진입 시 — 투명 배경 영역 + 왼쪽 상단 카피 + HOMEPAGE
+ * /room/1 캐러셀 최초 진입 시 — 왼쪽 상단 카피 + 추가 메뉴(⋯)
  */
-export default function RoomCarouselIntro({ onExplore }) {
+export default function RoomCarouselIntro() {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuWrapRef = useRef(/** @type {HTMLDivElement | null} */ (null))
-
-  const handleHomepageClick = () => {
-    window.open(LEEBIO_HOMEPAGE_URL, '_blank', 'noopener,noreferrer')
-    onExplore?.()
-  }
 
   useEffect(() => {
     if (!menuOpen) return
@@ -67,9 +62,6 @@ export default function RoomCarouselIntro({ onExplore }) {
         혁신창업대전 장려상 및 2026년 CES 혁신상을 수상하며 기술력과 시장성을 인정받았습니다.
       </p>
       <div className="room-carousel-intro__actions" ref={menuWrapRef}>
-        <button type="button" className="room-carousel-intro__explorer" onClick={handleHomepageClick}>
-          HOMEPAGE
-        </button>
         <div className="room-carousel-intro__more-wrap">
           <button
             type="button"

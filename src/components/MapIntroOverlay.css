@@ -5,8 +5,8 @@
   z-index: 1004;
   pointer-events: auto;
   touch-action: none;
-  -webkit-backdrop-filter: blur(7.5px);
-  backdrop-filter: blur(7.5px);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   background: rgba(12, 24, 40, 0.18);
   opacity: 1;
   transition:

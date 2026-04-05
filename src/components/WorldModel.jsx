@@ -8,7 +8,7 @@ world.glb 맵 모델
 - 구역별 LandHover: *_Land 합 히트, 말풍선은 CH_* / Earth / Institution_Builidng 등 마커 노드 위
 - Carbon_Land+CH_Leaf_Body — 말풍선은 CH_Leaf_Body·CARBON NATURAL
 - NeonScreen — world.glb의 cube001 앵커 + screen.glb 지오 + /neon.png (WorldModel에서 마운트 필요)
-- Navigate 모드(`isNavigateModeWorldSpinActive`)일 때 루트 group이 Y로 저속 회전
+- Navigate GSAP 완료 후(`mapNavigateWorldDecorSpinActive`) + idle일 때 루트 group이 Y로 저속 회전
 - Water_all — `WaterAllWaves` 버텍스 파동(geometry clone)
 */
 
@@ -233,17 +233,21 @@ export const WorldModel = memo(function WorldModel(props) {
 
   useFrame((_, delta) => {
     const st = useMapStore.getState()
-    if (
+    const navigateSpin =
+      st.mapNavigateWorldDecorSpinActive &&
       isNavigateModeWorldSpinActive({
         followPhysicsBox: st.followPhysicsBox,
         cameraTarget: st.cameraTarget,
         selectedZone: st.selectedZone,
         isFullscreenCanvas: st.isFullscreenCanvas,
-      }) &&
-      worldYawRootRef.current
-    ) {
+      })
+
+    if (navigateSpin && worldYawRootRef.current) {
       worldYawRootRef.current.rotation.y += delta * NAVIGATE_MODE_WORLD_YAW_RAD_PER_S
     }
+
+    /* 말풍선·구역 클릭으로 줌인 중이거나 패널 포커스일 때는 맵 장식 회전도 멈춤 */
+    if (!navigateSpin) return
 
     const angleGear = delta * ROTATION_SPEED
     const angleFan = angleGear * FAN_ROTATION_MULTIPLIER

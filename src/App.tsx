@@ -1,12 +1,12 @@
 import {
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
   lazy,
   Suspense,
   useRef,
   useMemo,
-  type MutableRefObject,
 } from 'react'
 import { gsap } from 'gsap'
 import LoadingScreen from './components/LoadingScreen'
@@ -17,23 +17,33 @@ import { useMapStore } from './store/useMapStore'
 import { COMPANY_NAMES } from './utils/constants'
 import { fadeInLoadingScreen } from './utils/fadeLoadingScreen'
 import { prepareMapViewEntry } from './utils/prepareMapViewEntry'
+import { prepareRoomViewEntry } from './utils/prepareRoomViewEntry'
 import './App.css'
 
 const RoomScene = lazy(() => import('./components/RoomScene'))
 
 const MAP_INTRO_EXIT_MS = 720
 
-type View = 'loading' | 'map' | 'room'
+type View = 'loading' | 'map' | 'room' | 'roomPrepare'
+
+function readInitialViewFromPath(): View {
+  if (typeof window === 'undefined') return 'loading'
+  const path = window.location.pathname
+  const roomMatch = path.match(/^\/room\/(\d+)/)
+  if (roomMatch) {
+    const companyId = parseInt(roomMatch[1], 10)
+    if (companyId && COMPANY_NAMES[companyId]) return 'roomPrepare'
+  }
+  if (path === '/map') return 'map'
+  return 'loading'
+}
 
 function App() {
   useVisualViewportCssVars()
 
-  const [currentView, setCurrentView] = useState<View>('loading')
-  const [showLoading, setShowLoading] = useState(false)
+  const [currentView, setCurrentView] = useState<View>(readInitialViewFromPath)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const mapContainerRef = useRef<HTMLDivElement>(null)
-  const showLoadingRef: MutableRefObject<boolean> = useRef(showLoading)
-  showLoadingRef.current = showLoading
 
   const {
     setInitialEntry,
@@ -49,9 +59,22 @@ function App() {
   const mapIntroExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mapIntroExitingRef = useRef(false)
 
-  const isLandingPhase = currentView === 'loading' && !showLoading
+  const isLandingPhase = currentView === 'loading'
   const [landingAssetsReady, setLandingAssetsReady] = useState(false)
+  const [roomEntryReady, setRoomEntryReady] = useState(false)
+
   const showMapLayer = currentView === 'map' || (isLandingPhase && landingAssetsReady)
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return
+    const roomMatch = window.location.pathname.match(/^\/room\/(\d+)/)
+    if (roomMatch) {
+      const companyId = parseInt(roomMatch[1], 10)
+      if (companyId && COMPANY_NAMES[companyId]) {
+        setSelectedCompany(companyId, COMPANY_NAMES[companyId])
+      }
+    }
+  }, [setSelectedCompany])
 
   useEffect(() => {
     if (!isLandingPhase) {
@@ -71,6 +94,25 @@ function App() {
       cancelled = true
     }
   }, [isLandingPhase])
+
+  useEffect(() => {
+    if (currentView !== 'roomPrepare') {
+      setRoomEntryReady(false)
+      return
+    }
+    let cancelled = false
+    setRoomEntryReady(false)
+    prepareRoomViewEntry()
+      .then(() => {
+        if (!cancelled) setRoomEntryReady(true)
+      })
+      .catch(() => {
+        if (!cancelled) setRoomEntryReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [currentView])
 
   useEffect(() => {
     if (mapHeroCopyDismissed) return
@@ -106,11 +148,12 @@ function App() {
       const companyId = parseInt(roomMatch[1], 10)
       if (companyId && COMPANY_NAMES[companyId]) {
         setSelectedCompany(companyId, COMPANY_NAMES[companyId])
-        setCurrentView('loading')
-        setShowLoading(true)
+        setCurrentView('roomPrepare')
         fadeInLoadingScreen()
       }
-    } else if (path === '/map') {
+      return
+    }
+    if (path === '/map') {
       setCurrentView('map')
     }
   }, [setSelectedCompany])
@@ -137,78 +180,21 @@ function App() {
         duration: 0.5,
         ease: 'power2.in',
         onComplete: () => {
-          setShowLoading(true)
+          setCurrentView('roomPrepare')
           setIsTransitioning(false)
           fadeInLoadingScreen()
         },
       })
     } else {
-      setShowLoading(true)
+      setCurrentView('roomPrepare')
       setIsTransitioning(false)
     }
   }, [selectedCompanyId, currentView])
 
-  const handleLoadingComplete = useCallback(() => {
-    const path = typeof window !== 'undefined' ? window.location.pathname : ''
-    const roomMatch = path.match(/^\/room\/(\d+)/)
-    let companyId: number | null = useMapStore.getState().selectedCompanyId
-
-    if (roomMatch) {
-      const id = parseInt(roomMatch[1], 10)
-      if (id && COMPANY_NAMES[id]) {
-        useMapStore.getState().setSelectedCompany(id, COMPANY_NAMES[id])
-        companyId = id
-      }
-    }
-
-    const isValidRoom =
-      path.startsWith('/room/') &&
-      companyId != null &&
-      COMPANY_NAMES[companyId as number] !== undefined
-
-    const fromRoomFlow = showLoadingRef.current
-
-    if (!isValidRoom) {
-      setShowLoading(false)
-      setCurrentView('map')
-      return
-    }
-
-    const goRoom = () => {
-      setCurrentView('room')
-      setShowLoading(false)
-    }
-
-    if (fromRoomFlow) {
-      setIsTransitioning(true)
-      const loadingElement = document.querySelector('.loading-screen')
-      if (loadingElement) {
-        gsap.to(loadingElement, {
-          opacity: 0,
-          duration: 0.5,
-          ease: 'power2.in',
-          onComplete: () => {
-            goRoom()
-            setIsTransitioning(false)
-          },
-        })
-      } else {
-        goRoom()
-        setIsTransitioning(false)
-      }
-    } else {
-      goRoom()
-      setIsTransitioning(false)
-    }
-  }, [])
-
-  const handleEnter = useCallback(() => {
-    useMapStore.setState({
-      mapHeroCopyDismissed: false,
-    })
-    setInitialEntry(true)
+  const runCurtainReveal = useCallback((onRevealed: () => void) => {
     const curtain =
-      document.querySelector('.loading-screen--curtain') ?? document.querySelector('.loading-screen.initial-loading')
+      (document.querySelector('.loading-screen--curtain') as HTMLElement | null) ??
+      (document.querySelector('.loading-screen.initial-loading') as HTMLElement | null)
     if (curtain) {
       gsap.fromTo(
         curtain,
@@ -219,14 +205,26 @@ function App() {
           ease: 'power3.inOut',
           onComplete: () => {
             gsap.set(curtain, { visibility: 'hidden', pointerEvents: 'none' })
-            setCurrentView('map')
+            onRevealed()
           },
-        }
+        },
       )
     } else {
-      setCurrentView('map')
+      onRevealed()
     }
-  }, [setInitialEntry])
+  }, [])
+
+  const handleEnter = useCallback(() => {
+    useMapStore.setState({
+      mapHeroCopyDismissed: false,
+    })
+    setInitialEntry(true)
+    runCurtainReveal(() => setCurrentView('map'))
+  }, [setInitialEntry, runCurtainReveal])
+
+  const handleRoomEnter = useCallback(() => {
+    runCurtainReveal(() => setCurrentView('room'))
+  }, [runCurtainReveal])
 
   const handleBackFromRoom = useCallback(() => {
     setIsTransitioning(true)
@@ -251,7 +249,7 @@ function App() {
                   duration: 0.8,
                   ease: 'power2.out',
                   onComplete: () => setIsTransitioning(false),
-                }
+                },
               )
             } else {
               setIsTransitioning(false)
@@ -276,27 +274,41 @@ function App() {
       ]
         .filter(Boolean)
         .join(' '),
-    [isLandingPhase, landingAssetsReady, isTransitioning, currentView]
+    [isLandingPhase, landingAssetsReady, isTransitioning, currentView],
   )
 
-  if (showLoading) {
-    return <LoadingScreen mode="room" onComplete={handleLoadingComplete} isInitial={false} />
-  }
-
-  if (currentView === 'room') {
-    return (
-      <Suspense fallback={<div>Loading room...</div>}>
-        <RoomScene
-          key={selectedCompanyId ?? 0}
-          companyId={selectedCompanyId ?? undefined}
-          onBack={handleBackFromRoom}
-        />
-      </Suspense>
-    )
-  }
+  const roomBehindCurtain = currentView === 'roomPrepare' && roomEntryReady
+  const showRoomScene = currentView === 'room' || roomBehindCurtain
 
   return (
     <>
+      {showRoomScene ? (
+        <Suspense fallback={<div>Loading room...</div>}>
+          <div
+            className={
+              currentView === 'roomPrepare' && roomEntryReady
+                ? 'app-container app-container--behind-curtain'
+                : 'app-container'
+            }
+            style={{ width: '100%', height: '100%', minHeight: '100dvh' }}
+          >
+            <RoomScene
+              key={selectedCompanyId ?? 0}
+              companyId={selectedCompanyId ?? undefined}
+              onBack={handleBackFromRoom}
+            />
+          </div>
+        </Suspense>
+      ) : null}
+
+      {currentView === 'roomPrepare' ? (
+        <LoadingScreen
+          mapEntryReady={roomEntryReady}
+          onEnter={handleRoomEnter}
+          prepLabel="전시 룸 준비 중…"
+        />
+      ) : null}
+
       {showMapLayer ? (
         <div ref={mapContainerRef} className={mapAppClassName}>
           <MapViewChrome
@@ -311,11 +323,9 @@ function App() {
 
       {isLandingPhase ? (
         <LoadingScreen
-          mode="landing"
           mapEntryReady={landingAssetsReady}
           onEnter={handleEnter}
-          onComplete={handleLoadingComplete}
-          isInitial
+          prepLabel="3D 맵 로딩 중…"
         />
       ) : null}
     </>

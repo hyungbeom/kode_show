@@ -49,34 +49,6 @@
   flex-wrap: wrap;
 }
 
-.room-carousel-intro__explorer {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 28px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #fff;
-  background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 10px;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: background 0.2s, border-color 0.2s, transform 0.15s;
-}
-
-.room-carousel-intro__explorer:hover {
-  background: rgba(15, 23, 42, 0.75);
-  border-color: rgba(255, 255, 255, 0.55);
-}
-
-.room-carousel-intro__explorer:active {
-  transform: scale(0.98);
-}
-
 .room-carousel-intro__more-wrap {
   position: relative;
 }

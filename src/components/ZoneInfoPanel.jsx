@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, memo, useMemo, useState, useEffect } from 'react'
+import { useLayoutEffect, useRef, memo, useMemo, useState, useEffect, useCallback } from 'react'
 import { gsap } from 'gsap'
 import { useMapStore } from '../store/useMapStore'
 import { ZONE_GLB_FOCUS_LIST } from '../utils/constants'
@@ -6,24 +6,6 @@ import { getZoneRichPanel } from '../data/zoneRichPanels'
 import { getZoneIntroPlain } from '../data/zoneIntroPlain'
 import { ZoneCompanyCardStack } from './ZoneCompanyCardStack'
 import './ZoneInfoPanel.css'
-
-function openCompanySpotlightMail(subject, bodyIntro, companyName) {
-  const q = new URLSearchParams()
-  q.set('subject', `${subject} — ${companyName}`)
-  q.set('body', `${bodyIntro}\n\n`)
-  window.location.href = `mailto:?${q.toString()}`
-}
-
-function openCompanySpotlightBrochure(preview) {
-  if (preview.homepageUrl) {
-    window.open(preview.homepageUrl, '_blank', 'noopener,noreferrer')
-    return
-  }
-  const q = new URLSearchParams()
-  q.set('subject', `브로슈어 요청 — ${preview.name}`)
-  q.set('body', '안녕하세요. 브로슈어를 요청드립니다.\n\n')
-  window.location.href = `mailto:?${q.toString()}`
-}
 
 /** 모바일 시트 — 검정 라운드 스퀘어 + 흰 플라스크 아이콘 */
 function ZoneMobileBrandIcon() {
@@ -149,13 +131,6 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
     []
   )
 
-  /** 업체 행 클릭 시 — 헤더 위 원형 이미지 + 카드(문구·버튼). '다음'에서만 룸 이동 */
-  const [companyPreview, setCompanyPreview] = useState(null)
-
-  useEffect(() => {
-    setCompanyPreview(null)
-  }, [zoneId, activeTab])
-
   const setSelectedCompany = useMapStore((state) => state.setSelectedCompany)
   const closeFullscreenCanvas = useMapStore((state) => state.closeFullscreenCanvas)
   const mapLayoutBrowserWidthPx = useMapStore((state) => state.mapLayoutBrowserWidthPx)
@@ -169,6 +144,16 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
     closeFullscreenCanvas()
     onClose()
   }
+
+  /** 업체 카드/행 클릭 — 기존 스포트라이트「다음」과 동일: /room/{id} */
+  const navigateToCompanyRoom = useCallback(
+    (company) => {
+      setSelectedCompany(company.id, company.name)
+      handleClose()
+      window.history.pushState({}, '', `/room/${company.id}`)
+    },
+    [setSelectedCompany, handleClose],
+  )
 
   const zoneInfo = zoneDescriptions[zoneId] || {
     title: zoneLabel || `Zone ${zoneId?.replace('zone-', '')}`,
@@ -272,86 +257,9 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
     <div ref={overlayRef} className={overlayClass}>
       <div
         ref={panelRef}
-        className={`zone-info-panel zone-info-panel--wide${isMobileSheet ? ' zone-info-panel--mobile-sheet' : ''}${companyPreview ? ' zone-info-panel--company-spotlight' : ''}`}
+        className={`zone-info-panel zone-info-panel--wide${isMobileSheet ? ' zone-info-panel--mobile-sheet' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {companyPreview ? (
-          <div
-            className="zone-company-spotlight"
-            role="region"
-            aria-label={`${companyPreview.name} 소개`}
-          >
-            <div className="zone-company-spotlight__figure">
-              <img
-                src={companyPreview.imageUrl}
-                alt={`${companyPreview.name} 소개 이미지`}
-                className="zone-company-spotlight__img"
-                loading="lazy"
-                width={240}
-                height={240}
-                decoding="async"
-              />
-            </div>
-            <div className="zone-company-spotlight__card">
-              <p className="zone-company-spotlight__lead">
-                <span className="zone-company-spotlight__category">{companyPreview.category}</span>{' '}
-                <span className="zone-company-spotlight__copy">{companyPreview.description}</span>
-              </p>
-              <div className="zone-company-spotlight__actions">
-                <button
-                  type="button"
-                  className="zone-company-spotlight__btn zone-company-spotlight__btn--ghost"
-                  onClick={() => setCompanyPreview(null)}
-                >
-                  닫기
-                </button>
-                <button
-                  type="button"
-                  className="zone-company-spotlight__btn zone-company-spotlight__btn--primary"
-                  onClick={() => {
-                    setSelectedCompany(companyPreview.id, companyPreview.name)
-                    setCompanyPreview(null)
-                    handleClose()
-                    window.history.pushState({}, '', `/room/${companyPreview.id}`)
-                  }}
-                >
-                  다음
-                </button>
-              </div>
-              <div className="zone-company-spotlight__secondary-actions">
-                <button
-                  type="button"
-                  className="zone-company-spotlight__btn-secondary"
-                  onClick={() =>
-                    openCompanySpotlightMail(
-                      '미팅 신청',
-                      '안녕하세요. 미팅을 신청드립니다.',
-                      companyPreview.name,
-                    )
-                  }
-                >
-                  미팅신청
-                </button>
-                <button
-                  type="button"
-                  className="zone-company-spotlight__btn-secondary"
-                  onClick={() =>
-                    openCompanySpotlightMail('메세지', '안녕하세요.', companyPreview.name)
-                  }
-                >
-                  메세지 보내기
-                </button>
-                <button
-                  type="button"
-                  className="zone-company-spotlight__btn-secondary"
-                  onClick={() => openCompanySpotlightBrochure(companyPreview)}
-                >
-                  브로슈어
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
         <div ref={boxRef} className={`zone-info-box ${richPanel ? 'zone-info-box--rich' : ''}`}>
           <div className="zone-info-sheet-header">
             {isMobileSheet ? (
@@ -444,7 +352,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
                 {isMobileSheet ? (
                   <ZoneCompanyCardStack
                     companies={companies}
-                    onOpenCompany={setCompanyPreview}
+                    onOpenCompany={navigateToCompanyRoom}
                     stackKey={zoneId ?? ''}
                   />
                 ) : (
@@ -453,7 +361,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
                       <div
                         key={company.id}
                         className="company-item"
-                        onClick={() => setCompanyPreview(company)}
+                        onClick={() => navigateToCompanyRoom(company)}
                       >
                         <div className="company-icon">{company.name.charAt(0)}</div>
                         <div className="company-info">

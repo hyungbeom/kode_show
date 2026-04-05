@@ -2,7 +2,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { PerspectiveCamera, OrbitControls, Environment, Sky as SkyImpl, Outlines, useGLTF, Lightformer, Grid } from '@react-three/drei'
 import {
   A11yAnnouncer,
-  A11yUserPreferences,
+  A11yUserPreferencesContext,
   useUserPreferences,
 } from '@react-three/a11y'
 import {
@@ -156,8 +156,6 @@ function RoomSceneTopBar({
           </button>
         </>
       ) : null}
-
-      <RoomDarkModeSwitch />
     </>
   )
 }
@@ -166,7 +164,7 @@ function RoomSceneTopBar({
  * 방 씬 컴포넌트
  * 업체 클릭 시 표시되는 3D 방
  *
- * @react-three/a11y: A11yUserPreferences + A11yAnnouncer (다크 모드는 우측 상단 스위치).
+ * @react-three/a11y: 룸 전용 Provider(prefersDarkScheme 고정) + A11yAnnouncer.
  * 주의: 라이브러리의 <A11y>/<A11ySection> 은 내부 Html(createRoot)가 React 18/19 Strict Mode에서
  * 언마운트 후 render를 호출해 크래시가 납니다. 전시 오브젝트는 HoverableObject만 쓰고,
  * 구역 안내는 Canvas 밖 스크린리더 전용 div로 제공합니다.
@@ -182,10 +180,9 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   const [showModal, setShowModal] = useState(false)
   /** 제품 GLB 클릭 시 오른쪽 패널 + 캐러셀 상세 동기화 */
   const [productDetail, setProductDetail] = useState(null)
-  /** /room/1 캐러셀 인트로 — EXPLORER 클릭 시 닫음 */
-  const [carouselIntroDismissed, setCarouselIntroDismissed] = useState(false)
   const { a11yPrefersState } = useUserPreferences()
-  const prefersDark = a11yPrefersState.prefersDarkScheme
+  /** /room/* 는 Provider에서 다크 고정 — OS 라이트여도 라이트 테마 없음 */
+  const prefersDark = true
   const prefersReducedMotion = a11yPrefersState.prefersReducedMotion
   const browserWidthPx = useBrowserWidthPx()
   const isProductDetailPanelMobileLayout =
@@ -203,11 +200,8 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   }, [prefersReducedMotion])
 
   const sceneBackgroundGradient = useMemo(
-    () =>
-      prefersDark
-        ? 'linear-gradient(to bottom, #0d1117 0%, #161b22 35%, #21262d 70%, #30363d 100%)'
-        : 'var(--map-app-backdrop)',
-    [prefersDark]
+    () => 'linear-gradient(to bottom, #0d1117 0%, #161b22 35%, #21262d 70%, #30363d 100%)',
+    [],
   )
   
   // 객체 정보 데이터 (예시) - useMemo로 메모이제이션하여 불필요한 재생성 방지
@@ -503,8 +497,8 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   /** 모바일: 첫 화면에서 아래 랜딩 유도 문구 (스크롤하면 숨김) — RoomDetailLanding.css */
   const [showMobileLandingHint, setShowMobileLandingHint] = useState(true)
 
-  const showCarouselIntro =
-    companyId === 1 && !productDetail && !carouselIntroDismissed
+  /** /room/1 — 제품 상세 열리면 인트로 숨김 */
+  const showCarouselIntro = companyId === 1 && !productDetail
 
   /** 제품 상세 스크롤 시: 첫 뷰포트 구간에서 캔버스 → 검은색으로 어둡게 */
   const [canvasDarken, setCanvasDarken] = useState(0)
@@ -608,6 +602,7 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
         position: 'relative',
         opacity: 0,
         overflow: 'hidden',
+        colorScheme: 'dark',
       }}
     >
       {/* 3D·UI는 뷰포트에 고정 — 제품 상세 스크롤 시에도 화면에서 움직이지 않음 */}
@@ -636,7 +631,7 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
       ) : null}
 
       {showCarouselIntro ? (
-        <RoomCarouselIntro onExplore={() => setCarouselIntroDismissed(true)} />
+        <RoomCarouselIntro />
       ) : null}
 
       {/* 캔버스보다 먼저 두어 ref가 ProductAnnotationCallouts 마운트 시 채워지게 */}
@@ -919,114 +914,59 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
 
 RoomSceneInner.displayName = 'RoomScene'
 
-/** 공식 데모와 같이 Provider 를 Canvas 상위에 둠 → Announcer·선호도 HUD·씬이 동일 컨텍스트 */
+/**
+ * 룸(/room/*) 전용 A11y 컨텍스트 — 다크 스킴 고정(OS prefers-color-scheme 무시).
+ * 리듀스드 모션만 미디어쿼리와 동기화.
+ */
 function RoomScene(props) {
+  const [a11yPrefersState, setA11yPrefersState] = useState({
+    prefersReducedMotion: false,
+    prefersDarkScheme: true,
+  })
+
+  const setRoomA11yPrefersState = useCallback((update) => {
+    setA11yPrefersState((prev) => {
+      const next = typeof update === 'function' ? update(prev) : { ...prev, ...update }
+      return { ...next, prefersDarkScheme: true }
+    })
+  }, [])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const sync = () => {
+      setA11yPrefersState((prev) => ({
+        ...prev,
+        prefersReducedMotion: mq.matches,
+        prefersDarkScheme: true,
+      }))
+    }
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
   return (
-    <A11yUserPreferences>
+    <A11yUserPreferencesContext.Provider
+      value={{ a11yPrefersState, setA11yPrefersState: setRoomA11yPrefersState }}
+    >
       <RoomSceneInner {...props} />
-    </A11yUserPreferences>
+    </A11yUserPreferencesContext.Provider>
   )
 }
 
 export default RoomScene
 
-/** prefers-color-scheme / 수동 토글에 맞춰 Environment 프리셋 전환 */
+/** 룸은 항상 다크 — Environment 야간 프리셋 고정 */
 function AdaptiveEnvironment({ children }) {
-  const { a11yPrefersState } = useUserPreferences()
-  const dark = a11yPrefersState.prefersDarkScheme
   return (
-    <Environment preset={dark ? 'night' : 'sunset'} key={dark ? 'env-night' : 'env-sunset'}>
+    <Environment preset="night" key="env-night">
       {children}
     </Environment>
   )
 }
 
 function AdaptiveAmbient() {
-  const { a11yPrefersState } = useUserPreferences()
-  const dark = a11yPrefersState.prefersDarkScheme
-  return <ambientLight intensity={dark ? 0.12 : 0.3} />
-}
-
-/** 룸 우측 상단 — A11y 컨텍스트의 다크 모드만 전환 (모션 감소 등은 시스템/기본값 유지) */
-function RoomDarkModeSwitch() {
-  const { a11yPrefersState, setA11yPrefersState } = useUserPreferences()
-  const dark = a11yPrefersState.prefersDarkScheme
-  const reducedMotion = a11yPrefersState.prefersReducedMotion
-
-  const toggle = useCallback(() => {
-    setA11yPrefersState({
-      prefersDarkScheme: !dark,
-      prefersReducedMotion: reducedMotion,
-    })
-  }, [dark, reducedMotion, setA11yPrefersState])
-
-  const motion = !reducedMotion
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 20,
-        right: 20,
-        zIndex: 1001,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '6px 12px 6px 14px',
-        borderRadius: 999,
-        background: dark ? 'rgba(15, 23, 42, 0.82)' : 'rgba(255, 255, 255, 0.9)',
-        border: dark ? '1px solid rgba(148, 163, 184, 0.35)' : '1px solid rgba(15, 23, 42, 0.12)',
-        boxShadow: dark ? '0 6px 24px rgba(0,0,0,0.35)' : '0 6px 20px rgba(15,23,42,0.12)',
-        fontFamily: 'var(--font-sans)',
-        pointerEvents: 'auto',
-      }}
-    >
-      <span
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: dark ? '#e2e8f0' : '#0f172a',
-          userSelect: 'none',
-        }}
-      >
-        다크 모드
-      </span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={dark}
-        aria-label={dark ? '다크 모드 끄기' : '다크 모드 켜기'}
-        onClick={toggle}
-        style={{
-          position: 'relative',
-          width: 48,
-          height: 28,
-          borderRadius: 999,
-          border: 'none',
-          padding: 0,
-          cursor: 'pointer',
-          background: dark ? 'rgba(56, 189, 248, 0.95)' : 'rgba(148, 163, 184, 0.55)',
-          flexShrink: 0,
-          transition: motion ? 'background 0.2s ease' : 'none',
-        }}
-      >
-        <span
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: 3,
-            left: dark ? 23 : 3,
-            width: 22,
-            height: 22,
-            borderRadius: '50%',
-            background: '#fff',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.28)',
-            transition: motion ? 'left 0.2s ease' : 'none',
-          }}
-        />
-      </button>
-    </div>
-  )
+  return <ambientLight intensity={0.12} />
 }
 
 /**

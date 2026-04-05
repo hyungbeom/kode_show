@@ -100,6 +100,7 @@ function CameraController({ controlsRef }) {
 
     orbitSuspendedRef.current = true
     setIsFullMapRotating(false)
+    useMapStore.setState({ mapNavigateWorldDecorSpinActive: false })
 
     // Zone이 선택된 상태에서는 줌아웃 애니메이션 실행 후 업체 리스트 표시
     // (selectedZone 체크 제거 - Zone 클릭 시 줌아웃 후 리스트 표시)
@@ -140,6 +141,7 @@ function CameraController({ controlsRef }) {
           mapDefaultOrbitTarget: [endTarget.x, endTarget.y, endTarget.z],
           mapViewportOrthoZoom: endZoom,
           resetToFullMap: false,
+          mapNavigateWorldDecorSpinActive: true,
         })
         setMarkersVisible(true)
         orbitSuspendedRef.current = false

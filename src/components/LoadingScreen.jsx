@@ -1,4 +1,4 @@
-import { Suspense, useRef, useEffect, useState } from 'react'
+import { Suspense, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import {
   Center,
@@ -123,44 +123,13 @@ function LoadingScene3D() {
 
 /**
  * 로딩 화면 — ENVEX 3D 글래스 타포 + 그리드 / 접촉 그림자 (drei Text3D + MeshTransmissionMaterial)
- * - landing: 부모가 mapEntryReady 줄 때 ENTER (맵은 커튼 뒤에서 이미 마운트)
- * - room: 업체 룸 전환 시 프로그레스 링 + onComplete
+ * - 부모가 mapEntryReady(에셋 준비)일 때 ENTER — 맵·룸 모두 커튼 뒤에서 씬 마운트 후 동일 UX
  */
-export default function LoadingScreen({
-  onComplete,
-  isInitial = false,
-  mode = 'room',
-  onEnter,
-  mapEntryReady = false,
-}) {
-  const [progress, setProgress] = useState(0)
-  const onCompleteRef = useRef(onComplete)
-  onCompleteRef.current = onComplete
-  const isLanding = mode === 'landing'
-
-  useEffect(() => {
-    if (isLanding) return
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setTimeout(() => {
-            onCompleteRef.current()
-          }, 500)
-          return 100
-        }
-        return prev + 2
-      })
-    }, 30)
-
-    return () => clearInterval(interval)
-  }, [isLanding])
+export default function LoadingScreen({ onEnter, mapEntryReady = false, prepLabel }) {
+  const prepText = prepLabel ?? '3D 맵 로딩 중…'
 
   return (
-    <div
-      className={`loading-screen ${isInitial ? 'initial-loading' : ''}${isLanding ? ' loading-screen--curtain' : ''}`}
-    >
+    <div className="loading-screen initial-loading loading-screen--curtain">
       <div className="loading-canvas-wrap" aria-hidden>
         <Canvas
           className="loading-canvas"
@@ -183,53 +152,19 @@ export default function LoadingScreen({
       </div>
 
       <div className="loading-content loading-content--overlay">
-        <h2 className={`loading-subtitle${isLanding ? ' loading-subtitle--landing' : ''}`}>
+        <h2 className="loading-subtitle loading-subtitle--landing">
           2026 ENVEX · Environmental Technology &amp; Green Energy
         </h2>
 
-        {isLanding ? (
-          mapEntryReady ? (
-            <button
-              type="button"
-              className="loading-enter"
-              onClick={() => onEnter?.()}
-            >
-              <span className="loading-enter__ring" aria-hidden />
-              <span className="loading-enter__label">ENTER</span>
-            </button>
-          ) : (
-            <div className="loading-map-prep" role="status" aria-live="polite">
-              <div className="loading-map-prep__spinner" aria-hidden />
-              <span className="loading-map-prep__label">3D 맵 로딩 중…</span>
-            </div>
-          )
+        {mapEntryReady ? (
+          <button type="button" className="loading-enter" onClick={() => onEnter?.()}>
+            <span className="loading-enter__ring" aria-hidden />
+            <span className="loading-enter__label">ENTER</span>
+          </button>
         ) : (
-          <div className="loading-circle">
-            <svg className="loading-circle-svg" viewBox="0 0 100 100">
-              <circle
-                className="loading-circle-bg"
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="#1a1a2e"
-                strokeWidth="2"
-              />
-              <circle
-                className="loading-circle-progress"
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="#0284c7"
-                strokeWidth="2"
-                strokeDasharray={`${2 * Math.PI * 45}`}
-                strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-                strokeLinecap="round"
-                transform="rotate(-90 50 50)"
-              />
-            </svg>
-            <span className="loading-percentage">{progress}%</span>
+          <div className="loading-map-prep" role="status" aria-live="polite">
+            <div className="loading-map-prep__spinner" aria-hidden />
+            <span className="loading-map-prep__label">{prepText}</span>
           </div>
         )}
       </div>
