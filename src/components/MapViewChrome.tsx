@@ -2,6 +2,7 @@ import { memo, Suspense, lazy, useState } from 'react'
 import MapMegaphoneNotification, { MAP_NOTIFICATION_BADGE_COUNT } from './MapMegaphoneNotification'
 import { MapNotificationModal } from './MapNotificationModal'
 import NavigationUI from './NavigationUI'
+import { NavigateMyPage } from './NavigateMyPage'
 import { MapIntroOverlay } from './MapIntroOverlay'
 import { MapTopToolbar } from './MapTopToolbar'
 
@@ -51,6 +52,9 @@ function MapViewChromeInner({
       ) : null}
       {mapReady ? (
         <NavigationUI mapNotificationModalOpen={mapNotificationOpen} />
+      ) : null}
+      {mapReady ? (
+        <NavigateMyPage navigateModeActive={selectedZone == null && !mapNotificationOpen} />
       ) : null}
       {mapReady && selectedZone ? (
         <Suspense fallback={null}>

@@ -1,6 +1,8 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react'
 import { useDrag } from '@use-gesture/react'
 import gsap from 'gsap'
+import { ExhibitionFloorMapModal } from './ExhibitionFloorMapModal'
+import { CompanyQuickActionsModal } from './CompanyQuickActionsModal'
 import './ZoneCompanyCardStack.css'
 
 const SWIPE_PX = 64
@@ -12,6 +14,12 @@ function exitDistancePx() {
   return Math.min(420, Math.max(280, window.innerWidth * 0.5))
 }
 
+/** 스와이프·도트 공통 — 마지막 다음은 0, 0 이전은 마지막 */
+function wrapIndex(i, delta, len) {
+  if (len <= 0) return 0
+  return ((i + delta) % len + len) % len
+}
+
 /**
  * 모바일 업체 리스트 — 스택 카드 + useDrag + GSAP 스와이프 연출
  */
@@ -21,12 +29,23 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
   const [dragging, setDragging] = useState(false)
   /** GSAP이 dragX를 움직이는 동안 — CSS transition과 충돌 방지 */
   const [gestureAnimating, setGestureAnimating] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
+  /** 위치찾기로 연 배치도 초점 (원본 이미지 natural 좌표) */
+  const [mapFocus, setMapFocus] = useState(null)
+  const [quickActionsCompany, setQuickActionsCompany] = useState(null)
+  /** 앞면 카드 높이 — 절대 배치 레이어가 패널까지 포함하도록 */
+  const [swipeMinHeight, setSwipeMinHeight] = useState(400)
+  const frontCardRef = useRef(null)
   const suppressClickRef = useRef(false)
   const dragXProxy = useRef({ x: 0 })
   const n = companies.length
   const nRef = useRef(n)
   nRef.current = n
 
+  /** 배열 참조만 바뀌면 인덱스를 리셋하지 않도록 (순환 스와이프 유지) */
+  const companyIdsKey = useMemo(() => companies.map((c) => c.id).join('\u001f'), [companies])
+
+  /* 초기 인덱스: zone/포커스/목록(id 순서) 변경 시만. companies 참조만 바뀌면 리셋하지 않음 → 순환 스와이프 유지 */
   useEffect(() => {
     gsap.killTweensOf(dragXProxy.current)
     let nextIndex = 0
@@ -39,18 +58,40 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
     dragXProxy.current.x = 0
     suppressClickRef.current = false
     setGestureAnimating(false)
-  }, [stackKey, initialCompanyId, companies])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- companies는 companyIdsKey와 함께 갱신됨
+  }, [stackKey, initialCompanyId, companyIdsKey])
+
+  const frontCompanyId = companies[index]?.id
+
+  useLayoutEffect(() => {
+    const el = frontCardRef.current
+    if (!el || typeof ResizeObserver === 'undefined') {
+      if (el) setSwipeMinHeight(Math.max(320, Math.ceil(el.getBoundingClientRect().height)))
+      return
+    }
+    const measure = () => {
+      const h = el.getBoundingClientRect().height
+      setSwipeMinHeight((prev) => {
+        const next = Math.max(320, Math.ceil(h))
+        return next === prev ? prev : next
+      })
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [frontCompanyId, index, stackKey, n])
 
   const goNext = useCallback(() => {
     const len = nRef.current
     if (len <= 1) return
-    setIndex((i) => (i + 1) % len)
+    setIndex((i) => wrapIndex(i, 1, len))
   }, [])
 
   const goPrev = useCallback(() => {
     const len = nRef.current
     if (len <= 1) return
-    setIndex((i) => (i - 1 + len) % len)
+    setIndex((i) => wrapIndex(i, -1, len))
   }, [])
 
   const goNextRef = useRef(goNext)
@@ -167,7 +208,27 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
 
   return (
     <div className={`zone-company-stack${n > 1 ? ' zone-company-stack--interactive' : ''}`}>
-      <div className="zone-company-stack__swipe" {...(n > 1 ? bind() : {})}>
+      <ExhibitionFloorMapModal
+        isOpen={mapOpen}
+        onClose={() => {
+          setMapOpen(false)
+          setMapFocus(null)
+        }}
+        focusNaturalX={mapFocus?.nx}
+        focusNaturalY={mapFocus?.ny}
+      />
+
+      <CompanyQuickActionsModal
+        isOpen={quickActionsCompany != null}
+        company={quickActionsCompany}
+        onClose={() => setQuickActionsCompany(null)}
+      />
+
+      <div
+        className="zone-company-stack__swipe"
+        style={{ minHeight: swipeMinHeight }}
+        {...(n > 1 ? bind() : {})}
+      >
         {visibleLayers.map((company, i) => {
           const depthFromFront = visibleLayers.length - 1 - i
           const isFront = depthFromFront === 0
@@ -208,7 +269,7 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
               }
               aria-hidden={!isFront}
             >
-              <article className="zone-company-stack-card">
+              <article ref={isFront ? frontCardRef : undefined} className="zone-company-stack-card">
                 <div className="zone-company-stack-card__media">
                   <img
                     src={company.imageUrl}
@@ -218,12 +279,56 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
                     draggable={false}
                     onDragStart={(e) => e.preventDefault()}
                   />
-                  <div className="zone-company-stack-card__logo-badge">{company.name}</div>
+                  {company.has3dRoom ? (
+                    <span className="zone-company-stack-card__3d-badge" aria-label="3D 전시 룸 제공">
+                      3D
+                    </span>
+                  ) : null}
+                  {company.keywords.length ? (
+                    <div className="zone-company-stack-card__keyword-tags" aria-label="키워드">
+                      {company.keywords.map((kw) => (
+                        <span key={kw} className="zone-company-stack-card__keyword-tag">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="zone-company-stack-card__more-btn"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setQuickActionsCompany(company)
+                    }}
+                    aria-label={`${company.name} 더보기 메뉴`}
+                    aria-haspopup="dialog"
+                    aria-expanded={quickActionsCompany?.id === company.id}
+                  >
+                    <span className="zone-company-stack-card__more-icon" aria-hidden>
+                      <span className="zone-company-stack-card__more-dot" />
+                      <span className="zone-company-stack-card__more-dot" />
+                      <span className="zone-company-stack-card__more-dot" />
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="zone-company-stack-card__logo-badge"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMapFocus({ nx: company.mapFocusX, ny: company.mapFocusY })
+                      setMapOpen(true)
+                    }}
+                    aria-haspopup="dialog"
+                    aria-expanded={mapOpen}
+                  >
+                    위치찾기
+                  </button>
                 </div>
                 <div className="zone-company-stack-card__panel">
                   <h3 className="zone-company-stack-card__title">{company.name}</h3>
-                  <p className="zone-company-stack-card__category">{company.category}</p>
-                  <p className="zone-company-stack-card__desc">{company.description}</p>
+                  <p className="zone-company-stack-card__desc" title={company.description}>
+                    {company.description}
+                  </p>
                 </div>
               </article>
             </div>
@@ -253,7 +358,6 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
           ))}
         </div>
       ) : null}
-      {n > 1 ? <p className="zone-company-stack__hint">좌우로 밀어 다른 업체를 볼 수 있어요</p> : null}
     </div>
   )
 }

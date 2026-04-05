@@ -133,7 +133,7 @@ function MapTopToolbarInner() {
                 >
                   <span className="map-top-toolbar__result-name">{hit.company.name}</span>
                   <span className="map-top-toolbar__result-meta">
-                    {hit.zoneLabel} · {hit.company.category}
+                    {hit.zoneLabel} · {hit.company.keywords.slice(0, 3).join(' · ')}
                   </span>
                 </button>
               ))

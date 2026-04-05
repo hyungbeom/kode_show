@@ -4,11 +4,27 @@ import raw from './exhibitorsByZone.json'
 export type ZoneExhibitor = {
   id: number
   name: string
-  category: string
+  /** 전시장 부스 번호 (예: A14, F21) */
+  booth: string
+  /** 배치도 원본 이미지 기준 초점 X (100~3500 권장) */
+  mapFocusX: number
+  /** 배치도 원본 이미지 기준 초점 Y (100~2000 권장) */
+  mapFocusY: number
+  /** 회사 홈페이지 (선택) */
+  websiteUrl?: string
+  /** 브로슈어 PDF 등 다운로드 URL (선택) */
+  brochureUrl?: string
+  /** 표시·검색용 키워드 태그 */
+  keywords: string[]
+  /** 3D 전시 룸(페이지) 제공 여부 */
+  has3dRoom: boolean
+  /**
+   * has3dRoom이 false일 때 카드 클릭 시 열 ENVEX 온라인 전시관 업체 페이지 URL
+   * (미지정 시 공통 기본 URL 사용)
+   */
+  envexOnlineUrl?: string
   description: string
   imageUrl: string
-  /** 검색용 별칭·제품명 등 (선택) */
-  keywords?: string[]
 }
 
 type ExhibitorsByZoneFile = Record<string, ZoneExhibitor[]>

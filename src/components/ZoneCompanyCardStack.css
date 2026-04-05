@@ -1,8 +1,8 @@
 .zone-company-stack {
   position: relative;
   width: 100%;
-  min-height: 448px;
-  padding: 12px 8px 52px;
+  min-height: 0;
+  padding: 12px 8px 16px;
   box-sizing: border-box;
   touch-action: pan-y;
   user-select: none;
@@ -16,7 +16,7 @@
 .zone-company-stack__swipe {
   position: relative;
   width: 100%;
-  min-height: 400px;
+  /* min-height: 앞면 카드 실측(인라인) */
 }
 
 .zone-company-stack__layer {
@@ -61,9 +61,10 @@
   overflow: hidden;
 }
 
+/* 상단 220px → 150px 로 줄어든 70px은 패널 min-height 로 보전 */
 .zone-company-stack-card__media {
   position: relative;
-  height: 220px;
+  height: 150px;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -83,12 +84,106 @@
   display: block;
 }
 
+.zone-company-stack-card__3d-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 2;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  font-family: var(--font-sans);
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 55%, #8b5cf6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 2px 10px rgba(99, 102, 241, 0.45),
+    0 0 0 1px rgba(15, 23, 42, 0.15);
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.zone-company-stack-card__keyword-tags {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: calc(100% - 56px - 52px);
+  pointer-events: none;
+}
+
+.zone-company-stack-card__keyword-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.zone-company-stack-card__more-btn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.zone-company-stack-card__more-btn:active {
+  transform: scale(0.96);
+}
+
+.zone-company-stack-card__more-icon {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.zone-company-stack-card__more-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #334155;
+  flex-shrink: 0;
+}
+
 .zone-company-stack-card__logo-badge {
   position: absolute;
   top: 14px;
   right: 14px;
+  z-index: 2;
   max-width: calc(100% - 28px);
   padding: 7px 14px;
+  border: none;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.96);
   color: #166534;
@@ -100,10 +195,19 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.zone-company-stack-card__logo-badge:active {
+  transform: scale(0.98);
 }
 
 .zone-company-stack-card__panel {
   flex: 1;
+  min-height: 230px;
+  min-width: 0;
   padding: 22px 20px 24px;
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(24px);
@@ -112,7 +216,7 @@
 }
 
 .zone-company-stack-card__title {
-  margin: 0 0 6px;
+  margin: 0 0 10px;
   font-size: 1.5rem;
   font-weight: 800;
   color: #ffffff;
@@ -121,20 +225,20 @@
   line-height: 1.15;
 }
 
-.zone-company-stack-card__category {
-  margin: 0 0 14px;
-  font-size: 1rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.92);
-  font-family: var(--font-sans);
-}
-
 .zone-company-stack-card__desc {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.88);
   font-family: var(--font-sans);
+  white-space: pre-line;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 10;
+  line-clamp: 10;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .zone-company-stack__dots {
@@ -142,11 +246,11 @@
   justify-content: center;
   align-items: center;
   gap: 8px;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 36px;
+  position: relative;
   z-index: 10;
+  margin-top: 14px;
+  width: 100%;
+  flex-shrink: 0;
 }
 
 .zone-company-stack__dot {
@@ -165,17 +269,4 @@
 .zone-company-stack__dot--active {
   background: rgba(96, 165, 250, 0.95);
   transform: scale(1.15);
-}
-
-.zone-company-stack__hint {
-  margin: 0;
-  text-align: center;
-  font-size: 0.72rem;
-  color: rgba(15, 23, 42, 0.45);
-  font-family: var(--font-sans);
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 10px;
-  z-index: 10;
 }

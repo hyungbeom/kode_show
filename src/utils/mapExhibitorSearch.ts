@@ -16,10 +16,10 @@ function companyMatchesQuery(q: string, company: ZoneExhibitor, zoneLabel: strin
   if (!q) return false
   const haystacks = [
     company.name,
-    company.category,
+    company.booth,
     company.description,
     zoneLabel,
-    ...(company.keywords ?? []),
+    ...company.keywords,
   ]
     .map((t) => normalize(String(t)))
     .filter(Boolean)

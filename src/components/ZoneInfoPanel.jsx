@@ -8,6 +8,10 @@ import { getZoneIntroPlain } from '../data/zoneIntroPlain'
 import { ZoneCompanyCardStack } from './ZoneCompanyCardStack'
 import './ZoneInfoPanel.css'
 
+/** 3D 룸 미제공 업체 카드 클릭 시 — ENVEX 온라인 전시관 기본 업체 페이지 */
+const ENVEX_ONLINE_ENTERPRISE_DEFAULT =
+  'https://envex.or.kr/online/kor/enterprise.asp?cd=3426'
+
 /** 모바일 시트 — 검정 라운드 스퀘어 + 흰 플라스크 아이콘 */
 function ZoneMobileBrandIcon() {
   return (
@@ -140,12 +144,18 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
     onClose()
   }
 
-  /** 업체 카드/행 클릭 — 기존 스포트라이트「다음」과 동일: /room/{id} */
+  /** 업체 카드/행 클릭 — 3D 룸 있음: /room/{id}, 없음: ENVEX 온라인 전시관 */
   const navigateToCompanyRoom = useCallback(
     (company) => {
-      setSelectedCompany(company.id, company.name)
+      if (company.has3dRoom) {
+        setSelectedCompany(company.id, company.name)
+        handleClose()
+        window.history.pushState({}, '', `/room/${company.id}`)
+        return
+      }
+      const url = company.envexOnlineUrl?.trim() || ENVEX_ONLINE_ENTERPRISE_DEFAULT
       handleClose()
-      window.history.pushState({}, '', `/room/${company.id}`)
+      window.open(url, '_blank', 'noopener,noreferrer')
     },
     [setSelectedCompany, handleClose],
   )
@@ -258,15 +268,15 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
         <div ref={boxRef} className={`zone-info-box ${richPanel ? 'zone-info-box--rich' : ''}`}>
           <div className="zone-info-sheet-header">
             {isMobileSheet ? (
-              <>
-                <div className="zone-info-sheet-header__top">
+              <div className="zone-info-sheet-header__top">
+                <div className="zone-info-sheet-header__title-row">
                   <ZoneMobileBrandIcon />
-                  <button type="button" className="zone-info-close" onClick={handleClose} aria-label="닫기">
-                    ×
-                  </button>
+                  <h2 className="zone-info-title">{zoneLabel || zoneInfo.title}</h2>
                 </div>
-                <h2 className="zone-info-title">{zoneLabel || zoneInfo.title}</h2>
-              </>
+                <button type="button" className="zone-info-close" onClick={handleClose} aria-label="닫기">
+                  ×
+                </button>
+              </div>
             ) : (
               <div className="zone-info-header">
                 <h2 className="zone-info-title">{zoneLabel || zoneInfo.title}</h2>
@@ -363,7 +373,13 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
                         <div className="company-icon">{company.name.charAt(0)}</div>
                         <div className="company-info">
                           <div className="company-name">{company.name}</div>
-                          <div className="company-category">{company.category}</div>
+                          <div className="company-keywords" role="list" aria-label="키워드">
+                            {company.keywords.map((kw) => (
+                              <span key={kw} className="company-keyword-tag" role="listitem">
+                                {kw}
+                              </span>
+                            ))}
+                          </div>
                           <div className="company-description">{company.description}</div>
                         </div>
                       </div>

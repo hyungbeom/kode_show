@@ -31,9 +31,8 @@ const Modal = memo(function Modal({
 
   useEffect(() => {
     if (isOpen && modalRef.current) {
-      modalRef.current.style.display = 'block'
-    } else if (!isOpen && modalRef.current) {
-      modalRef.current.style.display = 'none'
+      /* 인라인 display를 두면 class의 display:flex 등이 깨짐 → 스타일시트가 적용되도록 제거 */
+      modalRef.current.style.removeProperty('display')
     }
   }, [isOpen])
 
