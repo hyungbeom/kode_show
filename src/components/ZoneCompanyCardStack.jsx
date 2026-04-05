@@ -15,7 +15,7 @@ function exitDistancePx() {
 /**
  * 모바일 업체 리스트 — 스택 카드 + useDrag + GSAP 스와이프 연출
  */
-export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '' }) {
+export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', initialCompanyId = null }) {
   const [index, setIndex] = useState(0)
   const [dragX, setDragX] = useState(0)
   const [dragging, setDragging] = useState(false)
@@ -29,12 +29,17 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '' }
 
   useEffect(() => {
     gsap.killTweensOf(dragXProxy.current)
-    setIndex(0)
+    let nextIndex = 0
+    if (initialCompanyId != null && companies.length > 0) {
+      const idx = companies.findIndex((c) => c.id === initialCompanyId)
+      if (idx >= 0) nextIndex = idx
+    }
+    setIndex(nextIndex)
     setDragX(0)
     dragXProxy.current.x = 0
     suppressClickRef.current = false
     setGestureAnimating(false)
-  }, [stackKey])
+  }, [stackKey, initialCompanyId, companies])
 
   const goNext = useCallback(() => {
     const len = nRef.current

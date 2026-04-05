@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, memo, useMemo, useState, useEffect, useCallbac
 import { gsap } from 'gsap'
 import { useMapStore } from '../store/useMapStore'
 import { ZONE_GLB_FOCUS_LIST } from '../utils/constants'
+import { getCompaniesForZone } from '../data/exhibitorsByZone'
 import { getZoneRichPanel } from '../data/zoneRichPanels'
 import { getZoneIntroPlain } from '../data/zoneIntroPlain'
 import { ZoneCompanyCardStack } from './ZoneCompanyCardStack'
@@ -39,10 +40,45 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
   const isVisibleRef = useRef(false)
   /** 모든 관 공통: 소개 | 업체 리스트 */
   const [activeTab, setActiveTab] = useState('intro')
+  /** 검색 진입 시 카드 스택·PC 리스트 초기 포커스 (패널 언마운트 시 초기화됨) */
+  const [stackFocusCompanyId, setStackFocusCompanyId] = useState(null)
+  const companyListRef = useRef(null)
+  const setZonePanelSearchDeepLink = useMapStore((state) => state.setZonePanelSearchDeepLink)
+
+  const companies = useMemo(() => getCompaniesForZone(zoneId), [zoneId])
+
+  useLayoutEffect(() => {
+    if (!zoneId) return
+    const link = useMapStore.getState().zonePanelSearchDeepLink
+    if (link?.focusCompanyId != null && companies.some((c) => c.id === link.focusCompanyId)) {
+      setStackFocusCompanyId(link.focusCompanyId)
+      setActiveTab('companies')
+    } else {
+      setStackFocusCompanyId(null)
+      setActiveTab('intro')
+    }
+  }, [zoneId, companies])
 
   useEffect(() => {
-    setActiveTab('intro')
-  }, [zoneId])
+    const link = useMapStore.getState().zonePanelSearchDeepLink
+    if (!zoneId || link?.focusCompanyId == null) return
+    if (!companies.some((c) => c.id === link.focusCompanyId)) {
+      setZonePanelSearchDeepLink(null)
+      return
+    }
+    const id = requestAnimationFrame(() => {
+      setZonePanelSearchDeepLink(null)
+    })
+    return () => cancelAnimationFrame(id)
+  }, [zoneId, companies, setZonePanelSearchDeepLink])
+
+  useEffect(() => {
+    if (activeTab !== 'companies' || stackFocusCompanyId == null) return
+    const root = companyListRef.current
+    if (!root) return
+    const el = root.querySelector(`[data-company-id="${stackFocusCompanyId}"]`)
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [activeTab, stackFocusCompanyId, zoneId])
 
   const zoneDescriptions = useMemo(
     () => ({
@@ -87,47 +123,6 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
           'A space dedicated to automation and efficiency. This zone showcases our technical infrastructure and scalable systems.',
       },
     }),
-    []
-  )
-
-  const companies = useMemo(
-    () => [
-      {
-        id: 1,
-        name: 'GreenFi',
-        category: 'Fintech',
-        description: 'Talk with GreenFi and water a tree.',
-        imageUrl: 'https://picsum.photos/seed/greenfi-kode/480/480',
-      },
-      {
-        id: 2,
-        name: 'Aven',
-        category: 'Real Estate',
-        description: 'Talk with Aven to renovate a house.',
-        imageUrl: 'https://picsum.photos/seed/aven-kode/480/480',
-      },
-      {
-        id: 3,
-        name: 'TechCorp',
-        category: 'Technology',
-        description: 'Complete 6 fintech quests.',
-        imageUrl: 'https://picsum.photos/seed/techcorp-kode/480/480',
-      },
-      {
-        id: 4,
-        name: 'DesignStudio',
-        category: 'Design',
-        description: 'Create amazing designs.',
-        imageUrl: 'https://picsum.photos/seed/designstudio-kode/480/480',
-      },
-      {
-        id: 5,
-        name: 'DataLab',
-        category: 'Data',
-        description: 'Analyze data insights.',
-        imageUrl: 'https://picsum.photos/seed/datalab-kode/480/480',
-      },
-    ],
     []
   )
 
@@ -354,13 +349,15 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
                     companies={companies}
                     onOpenCompany={navigateToCompanyRoom}
                     stackKey={zoneId ?? ''}
+                    initialCompanyId={stackFocusCompanyId}
                   />
                 ) : (
-                  <div className="company-list">
+                  <div className="company-list" ref={companyListRef}>
                     {companies.map((company) => (
                       <div
                         key={company.id}
-                        className="company-item"
+                        data-company-id={company.id}
+                        className={`company-item${stackFocusCompanyId === company.id ? ' company-item--focus' : ''}`}
                         onClick={() => navigateToCompanyRoom(company)}
                       >
                         <div className="company-icon">{company.name.charAt(0)}</div>

@@ -1,11 +1,16 @@
 .navigation-ui {
   position: absolute;
-  bottom: env(safe-area-inset-bottom, 0px);
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
+  z-index: 2000;
+  pointer-events: none;
+}
+
+.navigation-ui__ticker {
+  display: none;
+}
+
+.navigation-ui__desktop {
+  display: block;
   pointer-events: auto;
-  cursor: pointer;
 }
 
 .navigate-text {
@@ -27,4 +32,155 @@
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   pointer-events: none;
   user-select: none;
+}
+
+/* 데스크톱·태블릿 넓은 화면: 하단 NAVIGATE만 (기존과 동일) */
+@media (min-width: 769px) {
+  .navigation-ui {
+    bottom: env(safe-area-inset-bottom, 0px);
+    left: 50%;
+    transform: translateX(-50%);
+    top: auto;
+    right: auto;
+    width: auto;
+    height: auto;
+    pointer-events: auto;
+  }
+
+  .navigation-ui__ticker {
+    display: none !important;
+  }
+}
+
+/* 모바일: 하단에 NAVIGATE 버튼, 그 바로 위(2px)에 전광판 */
+@media (max-width: 768px) {
+  .navigation-ui {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    transform: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    pointer-events: none;
+  }
+
+  .navigation-ui__ticker {
+    display: block;
+    flex: 0 0 auto;
+    width: 100%;
+    pointer-events: auto;
+    box-sizing: border-box;
+    margin-bottom: 2px;
+    padding: 4px 0 6px;
+    min-height: 0;
+    overflow: hidden;
+    background: linear-gradient(180deg, #020308 0%, #0a1628 55%, #050a12 100%);
+    border-bottom: 1px solid rgba(0, 255, 153, 0.5);
+    box-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.6),
+      0 0 14px rgba(0, 255, 140, 0.15);
+  }
+
+  .navigation-ui__marquee-track {
+    display: flex;
+    width: max-content;
+    align-items: center;
+    min-height: 16px;
+    padding: 2px 0;
+    animation: navigation-ui-marquee 18s linear infinite;
+    will-change: transform;
+  }
+
+  .navigation-ui__marquee-group {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 16px;
+    padding-right: 2.5rem;
+    gap: 0.25rem;
+  }
+
+  .navigation-ui__marquee-text {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #9effc9;
+    text-shadow:
+      0 0 8px rgba(0, 255, 170, 0.9),
+      0 0 2px rgba(0, 0, 0, 0.95);
+    white-space: nowrap;
+  }
+
+  .navigation-ui__sep {
+    font-size: 9px;
+    line-height: 1.2;
+    color: rgba(0, 255, 153, 0.55);
+    padding: 0 0.15rem;
+  }
+
+  .navigation-ui__dot {
+    width: 4px;
+    height: 4px;
+    margin-right: 0.35rem;
+    border-radius: 50%;
+    background: #ff3355;
+    box-shadow: 0 0 5px #ff3355;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .navigation-ui__desktop {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    /* 좌측은 MapMegaphone이 탭되도록 — 실제 SVG만 히트 */
+    pointer-events: none;
+    margin-top: 0;
+    margin-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    width: 100%;
+  }
+
+  .navigation-ui__desktop .navigate-text {
+    margin-bottom: 0;
+    pointer-events: auto;
+  }
+
+  .navigation-ui__desktop .navigate-text__img {
+    max-height: 64px;
+    max-width: min(200px, 70vw);
+  }
+}
+
+@media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+  .navigation-ui__marquee-track {
+    animation: none;
+    justify-content: center;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .navigation-ui__marquee-group:last-child {
+    display: none;
+  }
+}
+
+@keyframes navigation-ui-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }

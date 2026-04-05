@@ -10,6 +10,9 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  /* 터치 타깃 확대 (말풍선 꼬리·가장자리 탭) */
+  padding: 12px 16px 20px;
+  margin: -12px -16px -20px;
 }
 
 .node-speech-bubble__body {

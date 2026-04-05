@@ -293,6 +293,12 @@
   transform: translateX(4px);
 }
 
+.company-item--focus {
+  border-color: #667eea;
+  background: #eef0ff;
+  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.35);
+}
+
 .company-icon {
   width: 48px;
   height: 48px;

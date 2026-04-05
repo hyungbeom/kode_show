@@ -80,6 +80,10 @@ interface MapStore {
   // 줌인 완료 후 Zone 모달 열기
   openPendingZone: () => void
   clearSelectedZone: () => void
+
+  /** 맵 검색으로 존 열 때: 업체 탭 + 해당 카드부터 보이게 */
+  zonePanelSearchDeepLink: { focusCompanyId: number } | null
+  setZonePanelSearchDeepLink: (value: { focusCompanyId: number } | null) => void
   
   // 선택된 업체 정보 (업체 클릭 시)
   selectedCompanyId: number | null
@@ -170,6 +174,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
       markersVisible: false,
       pendingZone: areaId,
       pendingZonePosition: position,
+      isMarkerClick: false,
       mapNavigateWorldDecorSpinActive: false,
     })
   },
@@ -237,6 +242,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
       selectedZone: null,
       selectedZonePosition: null,
       isMarkerClick: false,
+      zonePanelSearchDeepLink: null,
     })
   },
   setSelectedZone: (zoneId: string, position: [number, number, number], fromMarker = false) => {
@@ -278,6 +284,11 @@ export const useMapStore = create<MapStore>((set, get) => ({
       selectedZonePosition: null,
       isMarkerClick: false,
     })
+  },
+
+  zonePanelSearchDeepLink: null,
+  setZonePanelSearchDeepLink: (value) => {
+    set({ zonePanelSearchDeepLink: value })
   },
   
   // 선택된 업체 정보 (업체 클릭 시)
@@ -372,6 +383,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
       physicsBoxTargetPosition: null,
       physicsBoxPath: [],
       cameraTransitionComplete: true,
+      zonePanelSearchDeepLink: null,
     })
   },
 }))

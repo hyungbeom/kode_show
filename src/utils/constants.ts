@@ -12,14 +12,8 @@ export const MAP_DEFAULT_ORTHO_POSITION: [number, number, number] = [200, 160, 2
 /** 맵 전체 뷰 — CameraSystem OrbitControls target 과 동일 (왼쪽 히어로 카피 여백) */
 export const MAP_DEFAULT_ORBIT_TARGET: [number, number, number] = [-150, 0, 0]
 
-// 업체 정보
-export const COMPANY_NAMES: Record<number, string> = {
-  1: 'LEEBIO',
-  2: 'Aven',
-  3: 'TechCorp',
-  4: 'DesignStudio',
-  5: 'DataLab',
-}
+// 업체 정보 — `src/data/exhibitorsByZone.json` 과 동기화 (id → 이름)
+export { COMPANY_NAMES } from '../data/exhibitorsByZone'
 
 /** Zone 리스트 — world.glb 노드 중심으로 아이소메트릭 줌 (WorldModel이 좌표 채움) */
 export interface ZoneGlbFocus {

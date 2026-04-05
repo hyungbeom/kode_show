@@ -21,6 +21,7 @@ export default defineConfig({
           // "Cannot set properties of undefined (setting 'Activity'|'Children')" 발생
           if (id.includes('gsap')) return 'vendor-gsap'
           if (id.includes('zustand')) return 'vendor-zustand'
+          if (id.includes('@dimforge/rapier3d-compat')) return 'vendor-rapier'
         },
       },
     },

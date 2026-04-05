@@ -2,6 +2,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, memo, lazy } from 'react'
 import { Cloud, Clouds, Environment, Lightformer } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
+import { suspend } from 'suspend-react'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
 import { useMapStore } from '../store/useMapStore'
@@ -30,6 +31,19 @@ const MapCameraDevControlsLazy = ENABLE_MAP_DEV_ONLY_UI
 const MapR3fPerfLazy = ENABLE_MAP_DEV_ONLY_UI
   ? lazy(() => import('./MapR3fPerf').then((mod) => ({ default: mod.MapR3fPerf })))
   : null
+
+/**
+ * rapier3d-compat 기본 init 경로는 WASM을 Uint8Array로 넘겨
+ * "pass a single object instead" 콘솔 경고가 난다.
+ * 빈 설정 객체로 먼저 초기화하면 이후 R3F Rapier의 init()가 즉시 반환된다.
+ */
+function RapierCompatPrewarm() {
+  suspend(
+    () => import('@dimforge/rapier3d-compat').then((R) => R.init({})),
+    ['rapier-compat-prewarm'],
+  )
+  return null
+}
 
 /** Canvas 뒤 레이어 — index.css :root --map-app-backdrop 과 동일 */
 const MAP_BACKDROP_GRADIENT = 'var(--map-app-backdrop)'
@@ -204,6 +218,7 @@ const MapScene = memo(function MapScene() {
           syncTransparentWebGLCanvas(gl, scene)
         }}
       >
+        <RapierCompatPrewarm />
         <Physics gravity={[0, -9.81, 0]} debug={false}>
           {MapR3fPerfLazy && (
             <Suspense fallback={null}>

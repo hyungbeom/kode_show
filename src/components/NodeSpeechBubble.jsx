@@ -1,10 +1,12 @@
-import React, { useRef, useMemo } from 'react'
+import React, { useRef, useMemo, useCallback } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
 import { useMapStore } from '../store/useMapStore'
 import { getSpeechBubbleScaleForWidth } from '../utils/mapViewportLayout'
 import './NodeSpeechBubble.css'
+
+const _worldAnchorTop = new THREE.Vector3()
 
 /**
  * GLB 노드 월드 AABB 상단 중앙 위에 2D 말풍선 (drei Html).
@@ -27,7 +29,7 @@ export function NodeSpeechBubble({
 }) {
   const groupRef = useRef(null)
   const box = useRef(new THREE.Box3())
-  const pos = useRef(new THREE.Vector3())
+  const gestureConsumedRef = useRef(false)
   const layoutWidthPx = useMapStore((s) => s.mapLayoutBrowserWidthPx)
   const bubbleScale = useMemo(() => getSpeechBubbleScaleForWidth(layoutWidthPx), [layoutWidthPx])
 
@@ -37,20 +39,60 @@ export function NodeSpeechBubble({
     if (clonedScene) clonedScene.updateMatrixWorld(true)
     anchor.updateWorldMatrix(true, true)
 
+    const w = _worldAnchorTop
     box.current.setFromObject(anchor)
     if (box.current.isEmpty()) {
-      anchor.getWorldPosition(pos.current)
-      pos.current.y += yPad
+      anchor.getWorldPosition(w)
+      w.y += yPad
     } else {
       const b = box.current
-      pos.current.set((b.min.x + b.max.x) / 2, b.max.y + yPad, (b.min.z + b.max.z) / 2)
+      w.set((b.min.x + b.max.x) / 2, b.max.y + yPad, (b.min.z + b.max.z) / 2)
     }
-    g.position.copy(pos.current)
+
+    // 월드 좌표를 그대로 넣으면 MapTerrain scale/position 부모 아래에서 말풍선이 어긋남 (모바일)
+    const parent = g.parent
+    if (parent) {
+      parent.updateWorldMatrix(true, true)
+      parent.worldToLocal(w)
+    }
+    g.position.copy(w)
   })
 
   if (!anchor) return null
 
   const bubbleInteractive = Boolean(onBubbleActivate)
+
+  const onBubblePointerDown = useCallback(
+    (e) => {
+      if (!bubbleInteractive) return
+      e.stopPropagation()
+      gestureConsumedRef.current = false
+    },
+    [bubbleInteractive],
+  )
+
+  const onBubblePointerUp = useCallback(
+    (e) => {
+      if (!bubbleInteractive) return
+      e.stopPropagation()
+      if (typeof e.button === 'number' && e.button !== 0) return
+      if (gestureConsumedRef.current) return
+      gestureConsumedRef.current = true
+      onBubbleActivate?.()
+    },
+    [bubbleInteractive, onBubbleActivate],
+  )
+
+  const onBubbleClick = useCallback(
+    (e) => {
+      if (!bubbleInteractive) return
+      e.stopPropagation()
+      if (gestureConsumedRef.current) return
+      gestureConsumedRef.current = true
+      onBubbleActivate?.()
+    },
+    [bubbleInteractive, onBubbleActivate],
+  )
 
   return (
     <group ref={groupRef}>
@@ -59,7 +101,7 @@ export function NodeSpeechBubble({
         position={[0, 0, 0]}
         transform={false}
         style={{ pointerEvents: bubbleInteractive ? 'auto' : 'none' }}
-        zIndexRange={[100, 0]}
+        zIndexRange={[2000, 1000]}
       >
         <div
           role={bubbleInteractive ? 'button' : undefined}
@@ -79,15 +121,12 @@ export function NodeSpeechBubble({
             transform: `scale(${bubbleScale})`,
             transformOrigin: 'center center',
           }}
-          onPointerDown={(e) => {
-            if (!bubbleInteractive) return
-            e.stopPropagation()
+          onPointerDown={onBubblePointerDown}
+          onPointerUp={onBubblePointerUp}
+          onPointerCancel={() => {
+            gestureConsumedRef.current = false
           }}
-          onClick={(e) => {
-            if (!bubbleInteractive) return
-            e.stopPropagation()
-            onBubbleActivate()
-          }}
+          onClick={onBubbleClick}
         >
           <div className="node-speech-bubble__body">
             {showBadge ? <span className="node-speech-bubble__badge">!</span> : null}

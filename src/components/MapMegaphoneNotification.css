@@ -62,3 +62,15 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   pointer-events: none;
 }
+
+/*
+ * 모바일: navigation-ui__desktop 행(최대 64px)과 세로 중앙 맞춤, 좌측 고정.
+ * desktop 하단 여백 = max(16px, safe-bottom), 52px 아이콘 중심 = 여백 + 32px → bottom = 여백 + 6px.
+ */
+@media (max-width: 768px) {
+  .map-megaphone-notification {
+    left: max(16px, env(safe-area-inset-left, 0px));
+    bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 6px);
+    z-index: 2100;
+  }
+}
