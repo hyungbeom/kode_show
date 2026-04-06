@@ -5,7 +5,7 @@
 import { useGLTF } from '@react-three/drei'
 import { peek } from 'suspend-react'
 import { GLTFLoader } from 'three-stdlib'
-import { PRODUCT_GLB_URLS } from '../components/ProductCarousel'
+import { PRODUCT_GLB_URLS } from '../data/productGlbUrls'
 
 function waitForLoaderPeek(keys: readonly unknown[], timeoutMs = 120_000): Promise<void> {
   return new Promise((resolve, reject) => {

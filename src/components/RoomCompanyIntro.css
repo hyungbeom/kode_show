@@ -1,0 +1,266 @@
+.room-company-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  max-height: 100dvh;
+  background: #ffffff;
+  color: #111827;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  box-sizing: border-box;
+}
+
+/* 스크롤 진입: 부모 시트 안에서 문서처럼 쌓임 */
+.room-company-intro--scroll {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  max-height: none;
+  min-height: 100%;
+}
+
+.room-company-intro--empty {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 16px;
+}
+
+.room-company-intro__empty-msg {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #4b5563;
+}
+
+.room-company-intro__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 16px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  box-sizing: border-box;
+}
+
+.room-company-intro--scroll .room-company-intro__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.room-company-intro__back {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: #111827;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.room-company-intro__back:active {
+  background: #f3f4f6;
+}
+
+.room-company-intro__header-spacer {
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.room-company-intro__brand {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.room-company-intro__logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.room-company-intro__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.room-company-intro__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px 20px 100px;
+  box-sizing: border-box;
+}
+
+.room-company-intro--scroll .room-company-intro__scroll {
+  flex: none;
+  min-height: 0;
+  overflow: visible;
+  padding: 20px 20px 28px;
+}
+
+.room-company-intro__scroll-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 28px 0 8px;
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.room-company-intro__scroll-hint-chev {
+  font-size: 1.25rem;
+  color: #94a3b8;
+  animation: room-intro-hint-bob 1.4s ease-in-out infinite;
+}
+
+@keyframes room-intro-hint-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-company-intro__scroll-hint-chev {
+    animation: none;
+  }
+}
+
+.room-company-intro__category {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.room-company-intro__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 24px;
+}
+
+.room-company-intro__tag {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.room-company-intro__specs {
+  margin: 0 0 28px;
+  padding: 0;
+}
+
+.room-company-intro__spec-row {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 10px 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.room-company-intro__spec-row:first-child {
+  padding-top: 0;
+}
+
+.room-company-intro__spec-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.room-company-intro__spec-value {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #374151;
+  text-align: right;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.room-company-intro__link {
+  color: #0369a1;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.room-company-intro__about-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.room-company-intro__about-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: #374151;
+  white-space: pre-line;
+}
+
+.room-company-intro__footer {
+  flex-shrink: 0;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 28%);
+  border-top: 1px solid #f3f4f6;
+  box-sizing: border-box;
+}
+
+.room-company-intro__cta {
+  width: 100%;
+  min-height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: #00366d;
+  color: #ffffff;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.room-company-intro__cta:active {
+  filter: brightness(1.06);
+  transform: scale(0.99);
+}

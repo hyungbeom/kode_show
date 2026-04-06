@@ -17,6 +17,9 @@ import {
   getRoomCarouselTier,
 } from '../utils/roomCarouselLayout'
 import { normalizeProductGlbToUnit } from '../utils/productGlbNormalize'
+import { PRODUCT_GLB_URLS } from '../data/productGlbUrls'
+
+export { PRODUCT_GLB_URLS }
 
 /** 모바일 제품 안내: Html transform off 시 스크린 좌표로 캔버스 하단 중앙에 고정 (scale=1) */
 const MOBILE_CAPTION_HEIGHT_PX = 258
@@ -27,14 +30,6 @@ const VISIBLE_SLOTS = 3
 /** 캐러셀: 선택 vs 비선택 스케일 (비선택은 더 작게) */
 const CAROUSEL_ITEM_SCALE_ACTIVE = 2.55
 const CAROUSEL_ITEM_SCALE_INACTIVE = 0.68
-
-export const PRODUCT_GLB_URLS = [
-  '/product/product1.glb',
-  '/product/product2.glb',
-  '/product/product3.glb',
-  '/product/product4.glb',
-  '/product/product5.glb',
-];
 
 function CarouselProductMesh({ url, active, onPick, pickingEnabled }) {
   const { scene } = useGLTF(url)
@@ -81,9 +76,11 @@ function CarouselStrip({ active, onPickProduct, pickingEnabled }) {
   const tier = getRoomCarouselTier(size.width)
   const slotSpacing = getCarouselStripSlotSpacing(tier)
   const windowStart = Math.max(0, Math.min(active - 1, COUNT - VISIBLE_SLOTS))
+  /** 맨 앞·맨 뒤에서도 활성 제품이 가운데 슬롯(x=0)에 오도록 스트립 평행이동 */
+  const stripOffsetX = -(active - windowStart - 1) * slotSpacing
 
   return (
-    <group name="carousel-strip">
+    <group name="carousel-strip" position={[stripOffsetX, 0, 0]}>
       {Array.from({ length: VISIBLE_SLOTS }, (_, slot) => {
         const idx = windowStart + slot
         if (idx >= COUNT) return null
@@ -606,6 +603,7 @@ function ProductDetailStage({
  * @param {number | null} openDetailIndex — 부모가 제어: null 이면 상세 닫힘
  * @param {number} [scrollDarken] — 제품 상세 스크롤 시 캔버스와 동일 0~1 (콜아웃 포털 어두움)
  * @param {React.RefObject<HTMLElement | null>} [annotationPortalHostRef] — 콜아웃 ReactDOM 루트 (없으면 document.body)
+ * @param {boolean} [browseUiInDom] — true면 캐러셀·캡션은 DOM(`ProductImageCarouselUI`)에서만 — 3D 스트립 비표시
  */
 export default function ProductCarousel({
   position = [0, 0, 0],
@@ -614,6 +612,7 @@ export default function ProductCarousel({
   openDetailIndex,
   scrollDarken = 0,
   annotationPortalHostRef,
+  browseUiInDom = false,
 }) {
   const [active, setActive] = useState(0)
   const { a11yPrefersState } = useUserPreferences()
@@ -623,17 +622,17 @@ export default function ProductCarousel({
   const tier = getRoomCarouselTier(size.width)
   const yOffset = getCarouselGroupYOffset(tier)
   const carouselScale = getCarouselGroupScale(tier)
-  const windowStart = useMemo(
-    () => Math.max(0, Math.min(active - 1, COUNT - VISIBLE_SLOTS)),
-    [active],
-  )
 
   const detailProgress = useRef({ value: 0 })
   const carouselVis = useRef({ value: 1 })
   const carouselGroupRef = useRef(null)
+  const browseUiInDomRef = useRef(false)
+  browseUiInDomRef.current = browseUiInDom
 
   /** 상세 GLB는 닫힘 애니메이션 끝까지 유지 */
   const [displayIdx, setDisplayIdx] = useState(null)
+  const displayIdxForBrowseRef = useRef(displayIdx)
+  displayIdxForBrowseRef.current = displayIdx
   /** 이미 상세가 열린 상태에서 제품만 바꿀 때는 줌 인 애니를 다시 켜지 않음 */
   const prevOpenDetailRef = useRef(
     /** @type {number | null | undefined} */ (undefined),
@@ -694,11 +693,11 @@ export default function ProductCarousel({
   }, [openDetailIndex, displayIdx])
 
   useFrame(() => {
-    if (carouselGroupRef.current) {
-      const v = carouselVis.current.value
-      carouselGroupRef.current.visible = v > 0.02
-      carouselGroupRef.current.scale.setScalar(Math.max(0.001, v))
-    }
+    if (!carouselGroupRef.current) return
+    const hideBrowse3d = browseUiInDomRef.current && displayIdxForBrowseRef.current === null
+    const v = carouselVis.current.value
+    carouselGroupRef.current.visible = !hideBrowse3d && v > 0.02
+    carouselGroupRef.current.scale.setScalar(Math.max(0.001, v))
   })
 
   const onNavigate = useCallback((left) => {
@@ -777,12 +776,14 @@ export default function ProductCarousel({
   return (
     <group position={[position[0], position[1] + yOffset, position[2]]}>
       <group ref={carouselGroupRef} scale={carouselScale}>
-        <CarouselStrip
-          active={active}
-          onPickProduct={handlePickProduct}
-          pickingEnabled={pickingEnabled}
-        />
-        {pickingEnabled ? (
+        {!browseUiInDom ? (
+          <CarouselStrip
+            active={active}
+            onPickProduct={handlePickProduct}
+            pickingEnabled={pickingEnabled}
+          />
+        ) : null}
+        {pickingEnabled && !browseUiInDom ? (
           <>
             <CarouselSideArrow
               side="left"

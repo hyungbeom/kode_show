@@ -16,6 +16,20 @@ export type ZoneExhibitor = {
   brochureUrl?: string
   /** 표시·검색용 키워드 태그 */
   keywords: string[]
+  /** 소개 페이지 상단 카테고리 한 줄 (미지정 시 키워드·구역으로 대체) */
+  categoryLabel?: string
+  /** 대표자 */
+  ceoName?: string
+  /** 본사·사무실 주소 */
+  address?: string
+  /** 대표 전화 */
+  phone?: string
+  /** 설립연도 */
+  foundedYear?: string | number
+  /** 직원 수 표기 (예: 32명) */
+  employeeCount?: string
+  /** 매출액 등 표기 */
+  revenue?: string
   /** 3D 전시 룸(페이지) 제공 여부 */
   has3dRoom: boolean
   /**
@@ -35,6 +49,17 @@ export function getCompaniesForZone(zoneId: string | null | undefined): ZoneExhi
   if (!zoneId) return []
   const list = exhibitorsByZone[zoneId]
   return Array.isArray(list) ? list : []
+}
+
+/** 전 구역에서 업체 id로 단일 레코드 조회 */
+export function getCompanyById(companyId: number | null | undefined): ZoneExhibitor | null {
+  if (companyId == null || !Number.isFinite(companyId)) return null
+  for (const list of Object.values(exhibitorsByZone)) {
+    if (!Array.isArray(list)) continue
+    const found = list.find((c) => c.id === companyId)
+    if (found) return found
+  }
+  return null
 }
 
 /** `/room/{id}`·앱 라우팅용 — JSON 전체에서 id → 이름 (id는 전 구역에서 유일해야 함) */

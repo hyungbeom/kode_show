@@ -1,0 +1,81 @@
+.room-entry-with-intro {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.room-entry-with-intro__scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.room-entry-with-intro__scene-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d1117;
+  color: #e2e8f0;
+  font-size: 0.9375rem;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+/* 소개 시트 + 투명 꼬리 — 스크롤로 3D 고정층이 드러남 */
+.room-entry-with-intro__intro-scroll {
+  position: absolute;
+  inset: 0;
+  z-index: 10050;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.room-entry-with-intro__intro-sheet {
+  background: #ffffff;
+  min-height: 100dvh;
+  box-sizing: border-box;
+}
+
+.room-entry-with-intro__intro-tail {
+  width: 100%;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* 오버레이를 스크롤로 걷은 뒤 — RoomCompanyIntro 뒤로와 동일 역할로 회사소개 복귀 */
+.room-entry-with-intro__reopen-intro {
+  position: fixed;
+  z-index: 10060;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: 16px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  color: #111827;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  font-family: var(--font-sans, system-ui, sans-serif);
+}
+
+.room-entry-with-intro__reopen-intro:active {
+  background: #f3f4f6;
+}

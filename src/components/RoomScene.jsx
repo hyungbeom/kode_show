@@ -1,50 +1,28 @@
-import { Canvas, useFrame } from '@react-three/fiber'
-import {
-  PerspectiveCamera,
-  OrbitControls,
-  Environment,
-  Outlines,
-  useGLTF,
-  Lightformer,
-  Grid,
-  Box,
-} from '@react-three/drei'
 import {
   A11yAnnouncer,
   A11yUserPreferencesContext,
   useUserPreferences,
 } from '@react-three/a11y'
 import {
-  Suspense,
+  forwardRef,
   useRef,
   useEffect,
   useLayoutEffect,
   useState,
   memo,
-  createContext,
-  useContext,
   useCallback,
   useMemo,
+  useImperativeHandle,
 } from 'react'
-import { useThree } from '@react-three/fiber'
 import { gsap } from 'gsap'
-import * as THREE from 'three'
-import {
-  maintainTransparentSceneBackground,
-  syncTransparentWebGLCanvas,
-} from '../utils/syncTransparentWebGLCanvas'
-import {
-  computeCarouselRoomCameraSettings,
-  getCarouselOrbitTargetY,
-} from '../utils/roomCarouselLayout'
 import ObjectInfoPanel from './ObjectInfoPanel'
 import ObjectViewer from './ObjectViewer'
-import ObjectDetailButton from './ObjectDetailButton'
-import ProductCarousel, { PRODUCT_GLB_URLS } from './ProductCarousel'
+import ProductImageCarouselUI from './ProductImageCarouselUI'
 import ProductDetailPanel from './ProductDetailPanel'
 import { ProductGlbViewerModal } from './ProductGlbViewerModal'
 import RoomDetailLanding from './RoomDetailLanding'
-import RoomCarouselIntro from './RoomCarouselIntro'
+import { PRODUCT_GLB_URLS } from '../data/productGlbUrls'
+import { getCompanyById } from '../data/exhibitorsByZone'
 import { PRODUCT_DETAIL_LIST } from '../data/productDetailCopy'
 import { useBrowserWidthPx } from '../hooks/useBrowserWidthPx'
 
@@ -71,15 +49,6 @@ const ROOM_SCENE_BACK_BUTTON_STYLE = {
   fontWeight: 'bold',
   pointerEvents: 'auto',
 }
-
-/** 캐러셀만 보일 때 — 상단은 BACK만 (제품 상세 시에는 RoomSceneTopBar 사용) */
-const RoomBackButton = memo(function RoomBackButton({ onBack }) {
-  return (
-    <button type="button" onClick={onBack} style={ROOM_SCENE_BACK_BUTTON_STYLE}>
-      {'< BACK'}
-    </button>
-  )
-})
 
 /** 룸 상단 크롬 — 제품 상세 시 스크롤 레이어(z-index:1)보다 위에 두기 위해 분리 */
 function RoomSceneTopBar({
@@ -205,25 +174,39 @@ function RoomSceneTopBar({
 }
 
 /**
- * 방 씬 컴포넌트
- * 업체 클릭 시 표시되는 3D 방
+ * 방 씬 컴포넌트 — 업체 클릭 시 표시되는 전시 룸(2D 제품 캐러셀 + 상세).
  *
  * @react-three/a11y: 룸 전용 Provider(prefersDarkScheme 고정) + A11yAnnouncer.
- * 주의: 라이브러리의 <A11y>/<A11ySection> 은 내부 Html(createRoot)가 React 18/19 Strict Mode에서
- * 언마운트 후 render를 호출해 크래시가 납니다. 전시 오브젝트는 HoverableObject만 쓰고,
- * 구역 안내는 Canvas 밖 스크린리더 전용 div로 제공합니다.
  */
-const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
+const RoomSceneInner = memo(
+  forwardRef(function RoomSceneInner({ companyId, onBack }, ref) {
   const roomSceneRootRef = useRef(null)
   const scrollRootRef = useRef(null)
   const fixedLayerRef = useRef(null)
-  /** 제품 콜아웃 DOM — body가 아니라 고정 레이어에 두어 스크롤 랜딩(z-index 1)보다 아래에 쌓임 */
-  const annotationPortalHostRef = useRef(null)
-  const resetCameraRef = useRef(null)
+  const productCarouselRef = useRef(null)
+  const productDetailRef = useRef(null)
   const [selectedObject, setSelectedObject] = useState(null)
   const [showModal, setShowModal] = useState(false)
   /** 제품 GLB 클릭 시 오른쪽 패널 + 캐러셀 상세 동기화 */
   const [productDetail, setProductDetail] = useState(null)
+  productDetailRef.current = productDetail
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      resetProductCarouselOverview: () => {
+        let consumed = productCarouselRef.current?.resetToOverview?.() ?? false
+        if (productDetailRef.current) {
+          setProductDetail(null)
+          consumed = true
+        }
+        return consumed
+      },
+    }),
+    [],
+  )
+
+  const exhibitor = useMemo(() => getCompanyById(companyId ?? null), [companyId])
   const [productGlbViewerOpen, setProductGlbViewerOpen] = useState(false)
   const { a11yPrefersState } = useUserPreferences()
 
@@ -479,12 +462,11 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
     setShowModal(false)
   }, [])
 
-  /** 전체보기: 제품 확대/정보창·레거시 객체 패널·모달 해제 후 카메라 초기화 → 캐러셀 전체 뷰 */
+  /** 전체보기: 제품 확대/정보창·레거시 객체 패널·모달 해제 → 캐러셀 전체 뷰 */
   const handleViewAll = useCallback(() => {
     setProductDetail(null)
     setSelectedObject(null)
     setShowModal(false)
-    resetCameraRef.current?.()
   }, [])
 
   /**
@@ -550,32 +532,9 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   /** 모바일: 첫 화면에서 아래 랜딩 유도 문구 (스크롤하면 숨김) — RoomDetailLanding.css */
   const [showMobileLandingHint, setShowMobileLandingHint] = useState(true)
 
-  /** /room/1 — 제품 상세 열리면 인트로 숨김 */
-  const showCarouselIntro = companyId === 1 && !productDetail
-
-  /** 제품 상세 스크롤 시: 첫 뷰포트 구간에서 캔버스 → 검은색으로 어둡게 */
-  const [canvasDarken, setCanvasDarken] = useState(0)
-  const updateCanvasDarkenFromScroll = useCallback(() => {
-    const root = scrollRootRef.current
-    if (!root) return
-    const range = Math.max(1, typeof window !== 'undefined' ? window.innerHeight : 800)
-    setCanvasDarken(Math.min(1, root.scrollTop / range))
-  }, [])
-
   useEffect(() => {
     if (!productDetail) setProductGlbViewerOpen(false)
   }, [productDetail])
-
-  useEffect(() => {
-    if (!detailPageScroll) {
-      setCanvasDarken(0)
-      return
-    }
-    const root = scrollRootRef.current
-    updateCanvasDarkenFromScroll()
-    root?.addEventListener('scroll', updateCanvasDarkenFromScroll, { passive: true })
-    return () => root?.removeEventListener('scroll', updateCanvasDarkenFromScroll)
-  }, [detailPageScroll, updateCanvasDarkenFromScroll])
 
   useEffect(() => {
     if (!detailPageScroll || !isProductDetailPanelMobileLayout) {
@@ -593,7 +552,7 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
   }, [detailPageScroll, isProductDetailPanelMobileLayout, productDetail?.index])
 
   /**
-   * 제품 상세: 캔버스·고정 레이어 위 스와이프만 스크롤 루트로 연결.
+   * 제품 상세: 고정 레이어 위 스와이프만 스크롤 루트로 연결.
    * data-room-scroll 안(랜딩·스페이서)은 터치 리스너를 거치지 않고 브라우저 네이티브 스크롤(관성) 사용 — 수동 scrollTop 조작과 겹치면 덜컹거림.
    */
   useEffect(() => {
@@ -662,7 +621,7 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
         colorScheme: 'dark',
       }}
     >
-      {/* 3D·UI는 뷰포트에 고정 — 제품 상세 스크롤 시에도 화면에서 움직이지 않음 */}
+      {/* UI는 뷰포트에 고정 — 제품 상세 스크롤 시에도 화면에서 움직이지 않음 */}
       <div
         ref={fixedLayerRef}
         style={{
@@ -672,31 +631,15 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
           width: '100%',
           height: '100%',
           zIndex: 0,
-          background: sceneBackgroundGradient,
+          background: productDetail ? sceneBackgroundGradient : '#000000',
+          transition: 'background 0.35s ease',
         }}
       >
-      {/* 상단 크롬: 제품 상세 스크롤 시 scroll 레이어(z-index:1)에 가려지지 않게 별도 고정 레이어로 띄움 */}
-      {!detailPageScroll ? <RoomBackButton onBack={handleBackButtonClick} /> : null}
-
-      {showCarouselIntro ? (
-        <RoomCarouselIntro />
-      ) : null}
-
-      {/* 캔버스보다 먼저 두어 ref가 ProductAnnotationCallouts 마운트 시 채워지게 */}
-      <div
-        ref={annotationPortalHostRef}
-        aria-hidden
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          zIndex: 100,
-        }}
-      />
+      {/* 뒤로: 제품 목록은 ProductImageCarouselUI 헤더 — 상세는 RoomSceneTopBar */}
 
       <div
         role="region"
-        aria-label="전시 부스 3D 뷰"
+        aria-label="제품 전시"
         style={{
           position: 'absolute',
           width: 1,
@@ -709,151 +652,18 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
           border: 0,
         }}
       >
-        3D 전시 공간입니다. 마우스로 전시 물체를 클릭하면 카메라가 이동하고 정보를 볼 수 있습니다. 왼쪽
-        아래 패널에서 다크 모드·모션 감소 선호를 바꿀 수 있습니다.
+        제품 이미지 캐러셀에서 항목을 선택하면 상세 정보를 볼 수 있습니다. 왼쪽 아래 패널에서 다크
+        모드·모션 감소 선호를 바꿀 수 있습니다.
       </div>
 
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 2,
-        }}
-      >
-      <Canvas
-        shadows
-        style={{ width: '100%', height: '100%', display: 'block', position: 'absolute', top: 0, left: 0 }}
-        gl={{ antialias: true, alpha: true, premultipliedAlpha: false }}
-        dpr={[1, 2]}
-        onCreated={({ gl, scene }) => {
-          syncTransparentWebGLCanvas(gl, scene)
-        }}
-      >
-          <CameraControlProvider resetCameraRef={resetCameraRef}>
-            <Suspense fallback={null}>
-                {/* 배경을 투명하게 설정하여 div의 그라데이션이 보이도록 */}
-                <BackgroundKeeper />
-            
-            {/* 카메라 설정 - PerspectiveCamera로 원근감 있는 아이소메트릭 뷰 */}
-            <CameraSetup />
-            
-            {/* 조명 - 그림자가 잘 보이도록 강화 (선호 다크 모드 시 환경·환경광 적응) */}
-          <AdaptiveEnvironment>
-            <Lightformer
-              form="rect"
-              intensity={1}
-              color="white"
-              scale={[10, 5]}
-              target={[0, 0, 0]}
-            />
-          </AdaptiveEnvironment>
-          
-          {/* 바닥 그리드 — 촘촘한 셀 + 굵은 선은 sectionSize 간격 */}
-          <Grid
-            renderOrder={-1}
-            position={[0, 0, 0]}
-            infiniteGrid
-            cellSize={0.45}
-            cellThickness={0.65}
-            cellColor="#c8ccd8"
-            sectionSize={2.25}
-            sectionThickness={1.25}
-            sectionColor="#9ca8bc"
-            fadeDistance={48}
-            fadeStrength={0.85}
-          />
-          
-          <AdaptiveAmbient />
-          
-          {/* 메인 태양광 (사선으로 비추는 빛) - 그림자 생성 */}
-          <directionalLight
-            position={[15, 12, 10]}
-            intensity={2.5}
-            castShadow
-            shadow-mapSize-width={4096}
-            shadow-mapSize-height={4096}
-            shadow-camera-far={50}
-            shadow-camera-left={-20}
-            shadow-camera-right={20}
-            shadow-camera-top={20}
-            shadow-camera-bottom={-20}
-            shadow-bias={-0.0005}
-          />
-          
-          {/* 보조 태양광 (반대편 사선에서) - 그림자 없이 채우기용 */}
-          <directionalLight
-            position={[-10, 10, -8]}
-            intensity={0.8}
-            color="#FFE5B4"
-          />
-          
-          {/* 포인트 라이트 1 - 따뜻한 빛 */}
-          <pointLight
-            position={[-5, 8, -5]}
-            intensity={1.5}
-            color="#FFE5B4"
-            distance={30}
-            decay={1.5}
-            castShadow
-          />
-          
-          {/* 포인트 라이트 2 - 차가운 빛 */}
-          <pointLight
-            position={[5, 8, 5]}
-            intensity={1.2}
-            color="#B8E6FF"
-            distance={30}
-            decay={1.5}
-          />
-          
-          {/* 포인트 라이트 3 - 중앙 위쪽 */}
-          <pointLight
-            position={[0, 10, 0]}
-            intensity={1.8}
-            color="#FFFFFF"
-            distance={40}
-            decay={1.5}
-            castShadow
-          />
-          
-          {/* 스팟 라이트 - 특정 영역 강조 */}
-          <spotLight
-            position={[0, 15, 0]}
-            angle={0.4}
-            penumbra={0.3}
-            intensity={2.0}
-            castShadow
-            color="#FFFFFF"
-            distance={40}
-            decay={1.5}
-          />
-          
-                {/* 방 구조 (부스·전시 박스) — SHOW_LEGACY_BOOTH_AND_EXHIBITS 가 true 일 때만 */}
-                <RoomContent
-                  onObjectClick={handleRoomObjectClick}
-                  skipCameraAnimation={false}
-                />
-
-                {/* 제품 GLB 캐러셀 (public/product/product1~5.glb) — 좌우 다이아몬드로 회전 */}
-                <Suspense fallback={null}>
-                  <ProductCarousel
-                    position={[0, 4, 0]}
-                    showLightToggle={false}
-                    openDetailIndex={productDetail?.index ?? null}
-                    onProductSelect={setProductDetail}
-                    scrollDarken={canvasDarken}
-                    annotationPortalHostRef={annotationPortalHostRef}
-                  />
-                </Suspense>
-
-                {/* 오빗 컨트롤 */}
-                <OrbitControlsWrapper />
-            </Suspense>
-          </CameraControlProvider>
-      </Canvas>
+      {!productDetail ? (
+        <ProductImageCarouselUI
+          ref={productCarouselRef}
+          companyName={exhibitor?.name ?? '전시 업체'}
+          companyLogoUrl={exhibitor?.imageUrl}
+          onBack={handleBackButtonClick}
+        />
+      ) : null}
 
       <A11yAnnouncer />
 
@@ -863,10 +673,9 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
         onClose={() => setProductDetail(null)}
         embedded={detailPageScroll}
       />
-      </div>
 
       {/* 객체 정보 패널 (오른쪽) - 객체 클릭 시 바로 표시, 모달·제품 상세 열리면 숨김 */}
-      {!showModal && !productDetail && (
+      {!showModal && !productDetail && SHOW_LEGACY_BOOTH_AND_EXHIBITS && (
         <ObjectInfoPanel
           objectInfo={objectInfoForPanel}
           onClose={handleCloseObjectInfo}
@@ -878,21 +687,6 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
       {showModal && (
         <ObjectViewer objectInfo={objectInfoForPanel} onClose={handleCloseObjectModal} />
       )}
-
-      {/* 제품 상세 스크롤 시: 고정 레이어 전체(캔버스·HUD·버튼·패널 등) 동일 비율로 어둡게 — pointer-events 없음 */}
-      {detailPageScroll ? (
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: 10040,
-            pointerEvents: 'none',
-            background: '#000',
-            opacity: canvasDarken,
-          }}
-        />
-      ) : null}
       </div>
 
       {detailPageScroll ? (
@@ -965,7 +759,8 @@ const RoomSceneInner = memo(function RoomSceneInner({ companyId, onBack }) {
       />
     </div>
   )
-})
+}),
+)
 
 RoomSceneInner.displayName = 'RoomScene'
 
@@ -973,7 +768,7 @@ RoomSceneInner.displayName = 'RoomScene'
  * 룸(/room/*) 전용 A11y 컨텍스트 — 다크 스킴 고정(OS prefers-color-scheme 무시).
  * 리듀스드 모션만 미디어쿼리와 동기화.
  */
-function RoomScene(props) {
+const RoomScene = forwardRef(function RoomScene(props, ref) {
   const [a11yPrefersState, setA11yPrefersState] = useState({
     prefersReducedMotion: false,
     prefersDarkScheme: true,
@@ -1004,1064 +799,11 @@ function RoomScene(props) {
     <A11yUserPreferencesContext.Provider
       value={{ a11yPrefersState, setA11yPrefersState: setRoomA11yPrefersState }}
     >
-      <RoomSceneInner {...props} />
+      <RoomSceneInner {...props} ref={ref} />
     </A11yUserPreferencesContext.Provider>
   )
-}
+})
+
+RoomScene.displayName = 'RoomScene'
 
 export default RoomScene
-
-/** 룸은 항상 다크 — Environment 야간 프리셋 고정 */
-function AdaptiveEnvironment({ children }) {
-  return (
-    <Environment preset="night" key="env-night">
-      {children}
-    </Environment>
-  )
-}
-
-function AdaptiveAmbient() {
-  return <ambientLight intensity={0.12} />
-}
-
-/**
- * 배경을 투명하게 유지하는 컴포넌트
- */
-function BackgroundKeeper() {
-  const { scene, gl } = useThree()
-
-  useEffect(() => {
-    syncTransparentWebGLCanvas(gl, scene)
-  }, [scene, gl])
-
-  useFrame(() => {
-    maintainTransparentSceneBackground(gl, scene)
-  })
-
-  return null
-}
-
-/**
- * 카메라 설정 컴포넌트
- * 캐러셀 룸: X=0 정면(+Z)에서 타겟을 보면 링·그리드가 화면 기준 좌우 대칭에 가깝다.
- * (대각선 (x,z)=(d,d) 배치는 시야가 돌아간 듯 보이고 그리드 소실점이 한쪽으로 쏠린다.)
- */
-/**
- * 카메라 설정 컴포넌트 (메모이제이션됨)
- * 초기 마운트 시에만 카메라를 설정하고, 이후에는 카메라 위치를 변경하지 않음
- */
-const CameraSetup = memo(function CameraSetup() {
-  const { camera, size, gl } = useThree()
-  const isInitializedRef = useRef(false)
-  const initialSizeRef = useRef(null)
-  
-  const calculateCameraSettings = (currentSize) => {
-    const targetSize = currentSize || size
-    const w = targetSize?.width ?? 0
-    const h = targetSize?.height ?? 0
-    return computeCarouselRoomCameraSettings(w, h)
-  }
-  
-  // 초기 카메라 설정만 수행 (한 번만 실행)
-  useEffect(() => {
-    if (camera instanceof THREE.PerspectiveCamera && !isInitializedRef.current && size.width > 0 && size.height > 0) {
-      const settings = calculateCameraSettings(size)
-      if (settings) {
-        camera.position.set(...settings.position)
-        camera.lookAt(...settings.lookAt)
-        camera.fov = settings.fov
-        camera.aspect = size.width / size.height
-        camera.near = 0.1
-        camera.far = 500000
-        camera.updateProjectionMatrix()
-        isInitializedRef.current = true
-        initialSizeRef.current = { width: size.width, height: size.height }
-      }
-    }
-  }, [camera, size])
-  
-  // 화면 크기 변경 시에만 aspect 업데이트 (위치는 유지)
-  useEffect(() => {
-    if (!isInitializedRef.current) return
-    
-    const handleResize = () => {
-      if (camera instanceof THREE.PerspectiveCamera && gl.domElement) {
-        // 화면 크기 변경 시에는 aspect만 업데이트 (카메라 위치는 유지)
-        camera.aspect = gl.domElement.width / gl.domElement.height
-        camera.updateProjectionMatrix()
-      }
-    }
-    
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [camera, gl])
-  
-  // 초기 카메라 설정
-  const initialSettings = calculateCameraSettings(size)
-  
-  return (
-    <PerspectiveCamera
-      makeDefault
-      position={initialSettings.position}
-      fov={initialSettings.fov}
-      near={0.1}
-      far={500000}
-    />
-  )
-})
-
-// 카메라 컨트롤 컨텍스트
-const CameraControlContext = createContext(null)
-
-// OrbitControls 래퍼 컴포넌트 (ref를 Context에 전달) - 메모이제이션
-// 마우스로 직접 카메라 조작 비활성화 (객체 클릭 시에만 카메라 이동)
-const OrbitControlsWrapper = memo(function OrbitControlsWrapper() {
-  const { controlsRef } = useContext(CameraControlContext) || {}
-  const { size, camera } = useThree()
-  const { a11yPrefersState } = useUserPreferences()
-  const reduceMotion = a11yPrefersState.prefersReducedMotion
-  const targetY = getCarouselOrbitTargetY(size.width || 0)
-
-  useEffect(() => {
-    const ctrl = controlsRef?.current
-    if (!ctrl) return
-    ctrl.target.set(0, targetY, 0)
-    ctrl.update()
-    if (camera && 'updateProjectionMatrix' in camera) {
-      camera.updateProjectionMatrix()
-    }
-  }, [controlsRef, targetY, camera])
-
-  return (
-    <OrbitControls
-      ref={controlsRef}
-      enablePan={false}
-      enableRotate={false}
-      enableZoom={false}
-      target={[0, targetY, 0]}
-      minDistance={5}
-      maxDistance={50}
-      minPolarAngle={0}
-      maxPolarAngle={Math.PI}
-      enableDamping={!reduceMotion}
-      dampingFactor={reduceMotion ? 1 : 0.05}
-    />
-  )
-})
-
-// Context Provider 컴포넌트
-function CameraControlProvider({ children, resetCameraRef }) {
-  const { camera, size } = useThree()
-  const controlsRef = useRef(null)
-  const moveToTargetRef = useRef(null)
-  
-  const resetCameraToInitial = useCallback(() => {
-    if (!camera || !(camera instanceof THREE.PerspectiveCamera)) return
-    if (!controlsRef?.current) return
-    
-    // 기존 애니메이션 취소
-    if (moveToTargetRef.current) {
-      moveToTargetRef.current.kill()
-    }
-    
-    const controls = controlsRef.current
-    
-    const calculateInitialSettings = () =>
-      computeCarouselRoomCameraSettings(size.width || 0, size.height || 0)
-    
-    const initialSettings = calculateInitialSettings()
-    const initialPosition = new THREE.Vector3(...initialSettings.position)
-    const initialTarget = new THREE.Vector3(...initialSettings.lookAt)
-    
-    // GSAP 애니메이션
-    moveToTargetRef.current = gsap.timeline({
-      onComplete: () => {
-        moveToTargetRef.current = null
-      },
-    })
-      .to(camera.position, {
-        x: initialPosition.x,
-        y: initialPosition.y,
-        z: initialPosition.z,
-        duration: 1.2,
-        ease: 'power2.inOut',
-      })
-      .to(
-        controls.target,
-        {
-          x: initialTarget.x,
-          y: initialTarget.y,
-          z: initialTarget.z,
-          duration: 1.2,
-          ease: 'power2.inOut',
-          onUpdate: () => {
-            controls.update()
-            camera.updateProjectionMatrix()
-          },
-        },
-        0 // 동시에 시작
-      )
-      .to(
-        camera,
-        {
-          fov: initialSettings.fov,
-          duration: 1.2,
-          ease: 'power2.inOut',
-          onUpdate: () => {
-            camera.updateProjectionMatrix()
-          },
-        },
-        0 // 동시에 시작
-      )
-  }, [camera, controlsRef, size])
-  
-  const moveCameraToTarget = (targetPosition, skipAnimation = false) => {
-    if (!camera || !(camera instanceof THREE.PerspectiveCamera)) return
-    if (!controlsRef?.current) return
-    
-    // 기존 애니메이션 취소
-    if (moveToTargetRef.current) {
-      moveToTargetRef.current.kill()
-    }
-    
-    const controls = controlsRef.current
-    
-    // 정면 뷰: 타겟 대비 카메라 오프셋(X≈0)을 유지해 제품 줌인 시에도 좌우 대칭 유지
-    const currentPosition = new THREE.Vector3(
-      camera.position.x,
-      camera.position.y,
-      camera.position.z
-    )
-    
-    const currentTarget = new THREE.Vector3(
-      controls.target.x,
-      controls.target.y,
-      controls.target.z
-    )
-    
-    const currentOffset = new THREE.Vector3().subVectors(currentPosition, currentTarget)
-    
-    let offsetToUse = currentOffset
-    if (currentOffset.length() < 0.1) {
-      const defaultDistance = 15
-      const defaultHeight = 0.5
-      offsetToUse = new THREE.Vector3(0, defaultHeight, defaultDistance * 0.7 * Math.SQRT2)
-    }
-    
-    // 아이소메트릭 각도 비율 유지하면서 거리만 조정 (줌인)
-    const zoomRatio = 0.4 // 40% 거리로 줌인
-    const newOffset = offsetToUse.clone().multiplyScalar(zoomRatio)
-    
-    // 새로운 카메라 위치: 객체 위치 + 조정된 오프셋
-    const newPosition = new THREE.Vector3(...targetPosition).add(newOffset)
-    
-    // OrbitControls의 target을 객체 위치로 설정 (센터로 오게)
-    const targetControlsTarget = {
-      x: targetPosition[0],
-      y: targetPosition[1],
-      z: targetPosition[2],
-    }
-    
-    // 애니메이션 스킵 옵션이 있으면 즉시 이동
-    if (skipAnimation) {
-      camera.position.set(newPosition.x, newPosition.y, newPosition.z)
-      controls.target.set(targetControlsTarget.x, targetControlsTarget.y, targetControlsTarget.z)
-      controls.update()
-      camera.updateProjectionMatrix()
-      return
-    }
-    
-    // GSAP 애니메이션
-    moveToTargetRef.current = gsap.timeline({
-      onComplete: () => {
-        moveToTargetRef.current = null
-      },
-    })
-      .to(camera.position, {
-        x: newPosition.x,
-        y: newPosition.y,
-        z: newPosition.z,
-        duration: 1.2,
-        ease: 'power2.inOut',
-      })
-      .to(
-        controls.target,
-        {
-          x: targetControlsTarget.x,
-          y: targetControlsTarget.y,
-          z: targetControlsTarget.z,
-          duration: 1.2,
-          ease: 'power2.inOut',
-          onUpdate: () => {
-            controls.update()
-            camera.updateProjectionMatrix()
-          },
-        },
-        0 // 동시에 시작
-      )
-  }
-  
-  // resetCameraRef에 함수 할당
-  useEffect(() => {
-    if (resetCameraRef) {
-      resetCameraRef.current = resetCameraToInitial
-    }
-    return () => {
-      if (resetCameraRef) {
-        resetCameraRef.current = null
-      }
-    }
-  }, [resetCameraRef, resetCameraToInitial])
-  
-  return (
-    <CameraControlContext.Provider value={{ moveCameraToTarget, controlsRef, resetCameraToInitial }}>
-      {children}
-    </CameraControlContext.Provider>
-  )
-}
-
-/**
- * 호버 가능한 Box 컴포넌트 (outline 효과 포함)
- */
-const HoverableBox = memo(function HoverableBox({ args, position, color, opacity, transparent, children, objectId, onObjectClick, skipCameraAnimation, ...props }) {
-  const [hovered, setHovered] = useState(false)
-  const { moveCameraToTarget, controlsRef } = useContext(CameraControlContext) || {}
-  
-  const handleClick = (e) => {
-    e.stopPropagation()
-    if (moveCameraToTarget && position) {
-      // 객체의 중심 위치 계산 (Box의 position이 중심이므로 그대로 사용)
-      const objectCenter = Array.isArray(position) ? position : [position.x || 0, position.y || 0, position.z || 0]
-      moveCameraToTarget(objectCenter, skipCameraAnimation)
-    }
-    // 객체 정보 패널 표시
-    if (onObjectClick && objectId) {
-      onObjectClick(objectId)
-    }
-  }
-  
-  return (
-    <Box 
-      args={args} 
-      position={position}
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
-      onClick={handleClick}
-      {...props}
-    >
-      <meshStandardMaterial color={color} opacity={opacity} transparent={transparent} />
-      {hovered && (
-        <Outlines 
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-      {children}
-    </Box>
-  )
-})
-
-/**
- * 개별 메시 컴포넌트 (outline 효과 포함)
- */
-const MeshWithOutline = memo(function MeshWithOutline({ mesh, isHovered, onPointerEnter, onPointerLeave, onClick }) {
-  const meshRef = useRef()
-  
-  useEffect(() => {
-    if (!meshRef.current) return
-    
-    const currentMesh = meshRef.current
-    
-    // 이벤트 리스너 추가
-    currentMesh.addEventListener('pointerenter', onPointerEnter)
-    currentMesh.addEventListener('pointerleave', onPointerLeave)
-    currentMesh.addEventListener('click', onClick)
-    
-    return () => {
-      currentMesh.removeEventListener('pointerenter', onPointerEnter)
-      currentMesh.removeEventListener('pointerleave', onPointerLeave)
-      currentMesh.removeEventListener('click', onClick)
-    }
-  }, [onPointerEnter, onPointerLeave, onClick])
-  
-  // 메시의 위치, 회전, 스케일을 부모로부터 가져옴
-  const position = useMemo(() => {
-    const pos = new THREE.Vector3()
-    mesh.getWorldPosition(pos)
-    return [pos.x, pos.y, pos.z]
-  }, [mesh])
-  
-  const rotation = useMemo(() => {
-    const quat = new THREE.Quaternion()
-    mesh.getWorldQuaternion(quat)
-    const euler = new THREE.Euler().setFromQuaternion(quat)
-    return [euler.x, euler.y, euler.z]
-  }, [mesh])
-  
-  const scale = useMemo(() => {
-    const scl = new THREE.Vector3()
-    mesh.getWorldScale(scl)
-    return [scl.x, scl.y, scl.z]
-  }, [mesh])
-  
-  return (
-    <mesh
-      ref={meshRef}
-      geometry={mesh.geometry}
-      material={mesh.material}
-      position={position}
-      rotation={rotation}
-      scale={scale}
-      castShadow
-      receiveShadow
-    >
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </mesh>
-  )
-})
-
-/**
- * 호버 가능한 3D 객체 컴포넌트 (outline 효과 포함)
- */
-const HoverableObject = memo(function HoverableObject({
-  position,
-  rotation,
-  scale,
-  renderFunction,
-  isHovered,
-  onPointerEnter,
-  onPointerLeave,
-  onClick,
-}) {
-  const groupRef = useRef()
-  const highlight = isHovered
-
-  return (
-    <group
-      ref={groupRef}
-      position={position}
-      rotation={rotation}
-      scale={scale}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
-      onClick={onClick}
-    >
-      {renderFunction(highlight)}
-    </group>
-  )
-})
-
-/**
- * 3D 객체 렌더링 함수들 (isHovered prop 추가)
- */
-const renderDesk = (isHovered = false) => (
-  <group position={[0, 0.05, 0]}>
-    <Box args={[3, 0.1, 1.5]} position={[0, 0, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="white" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[3, 0.1, 0.05]} position={[0, -0.05, 0.2]} castShadow receiveShadow>
-      <meshStandardMaterial color="#E8D5B7" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-  </group>
-)
-
-const renderMonitor = (isHovered = false) => (
-  <Box args={[0.8, 0.6, 0.1]} position={[0, 0.3, 0]} castShadow receiveShadow>
-    <meshStandardMaterial color="#2C2C2C" />
-    {isHovered && (
-      <Outlines
-        thickness={10}
-        color="white"
-        screenspace={false}
-        opacity={1}
-        transparent={false}
-      />
-    )}
-  </Box>
-)
-
-const renderArcade = (isHovered = false) => (
-  <group position={[0, 1, 0]}>
-    <Box args={[1, 2, 0.8]} position={[0, 0, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#FF8C42" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[1.2, 0.3, 0.9]} position={[0, 1.15, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#FF8C42" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.3, 0.3, 0.3]} position={[-0.3, 0.5, 0.45]} castShadow receiveShadow>
-      <meshStandardMaterial color="#4ECDC4" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-  </group>
-)
-
-const renderChair = (isHovered = false) => (
-  <group position={[0, 0.5, 0]}>
-    <Box args={[0.6, 1, 0.6]} position={[0, 0, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#FF8C42" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.6, 0.1, 0.6]} position={[0, 0.55, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="white" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-  </group>
-)
-
-const renderBookshelf = (isHovered = false) => (
-  <group position={[0, 1.5, 0]}>
-    <Box args={[0.8, 2, 0.4]} position={[0, 0, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#8B4513" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.8, 0.05, 0.4]} position={[0, 0.6, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#654321" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.8, 0.05, 0.4]} position={[0, -0.6, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#654321" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-  </group>
-)
-
-const renderLamp = (isHovered = false) => (
-  <group position={[0, 0.8, 0]}>
-    <Box args={[0.1, 0.8, 0.1]} position={[0, 0, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#2C2C2C" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.4, 0.1, 0.4]} position={[0, 0.45, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#FFD700" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-  </group>
-)
-
-const renderTable = (isHovered = false) => (
-  <group position={[0, 0.4, 0]}>
-    <Box args={[1.5, 0.1, 1]} position={[0, 0, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#D2691E" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.05, 0.4, 0.05]} position={[-0.7, -0.25, -0.45]} castShadow receiveShadow>
-      <meshStandardMaterial color="#8B4513" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.05, 0.4, 0.05]} position={[0.7, -0.25, -0.45]} castShadow receiveShadow>
-      <meshStandardMaterial color="#8B4513" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.05, 0.4, 0.05]} position={[-0.7, -0.25, 0.45]} castShadow receiveShadow>
-      <meshStandardMaterial color="#8B4513" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.05, 0.4, 0.05]} position={[0.7, -0.25, 0.45]} castShadow receiveShadow>
-      <meshStandardMaterial color="#8B4513" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-  </group>
-)
-
-const renderShelf = (isHovered = false) => (
-  <group position={[0, 1, 0]}>
-    <Box args={[1.2, 0.05, 0.5]} position={[0, 0.5, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#A0522D" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[1.2, 0.05, 0.5]} position={[0, -0.5, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#A0522D" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.05, 1, 0.5]} position={[-0.575, 0, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#8B4513" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-    <Box args={[0.05, 1, 0.5]} position={[0.575, 0, 0]} castShadow receiveShadow>
-      <meshStandardMaterial color="#8B4513" />
-      {isHovered && (
-        <Outlines
-          thickness={10}
-          color="white"
-          screenspace={false}
-          opacity={1}
-          transparent={false}
-        />
-      )}
-    </Box>
-  </group>
-)
-
-/** Html(createRoot) 없이 호버·클릭만 처리 (라이브러리 A11y 래퍼는 Strict Mode에서 크래시 유발) */
-const AccessibleExhibitObject = memo(function AccessibleExhibitObject({ objectId: _id, ...rest }) {
-  return <HoverableObject {...rest} />
-})
-AccessibleExhibitObject.displayName = 'AccessibleExhibitObject'
-
-/**
- * GLB 모델 로더 컴포넌트
- * hover 시 아웃라인, 클릭 시 줌인 및 모달 표시
- */
-const ShowRoomModel = memo(function ShowRoomModel({ onObjectClick }) {
-  const [hoveredMeshUuid, setHoveredMeshUuid] = useState(null)
-  const [hoveredObjectId, setHoveredObjectId] = useState(null)
-  const { moveCameraToTarget } = useContext(CameraControlContext) || {}
-  const meshesRef = useRef([])
-  
-  // useGLTF Hook은 항상 같은 순서로 호출되어야 합니다 (Hook 규칙 준수)
-  // useGLTF는 Suspense를 사용하므로 로딩 중일 때 컴포넌트가 일시 중단될 수 있습니다
-  // 하지만 모든 Hook은 일시 중단 전에 호출되어야 합니다
-  // useGLTF가 로딩 중이면 Promise를 던져 Suspense가 처리하므로, 여기서는 항상 scene이 있습니다
-  const { scene: roomScene } = useGLTF('/models/show_room2.glb')
-  
-  // 모델을 복제하여 사용 (원본을 수정하지 않도록)
-  const clonedScene = useMemo(() => {
-    if (!roomScene) {
-      console.warn('방 모델이 로드되지 않았습니다.')
-      return null
-    }
-
-    // 부스 모델 복제
-    const roomClone = roomScene.clone(true) // 깊은 복사로 매터리얼/텍스처도 복사
-    
-    // 부스 모델의 바운딩 박스 계산
-    const roomBox = new THREE.Box3().setFromObject(roomClone)
-    const roomCenter = roomBox.getCenter(new THREE.Vector3())
-
-    // 부스 모델을 원점으로 이동
-    roomClone.position.sub(roomCenter)
-    
-    // 부스 모델을 위로 올림
-    roomClone.position.y += 2
-    
-    // 부스 모델 스케일 설정
-    roomClone.scale.setScalar(1.5)
-
-    // 모든 메시 추출 및 원본 메시 숨기기
-    meshesRef.current = []
-    roomClone.traverse((child) => {
-      if (child.isMesh) {
-        meshesRef.current.push(child)
-        // 원본 메시는 숨김 (개별 메시로 렌더링할 예정)
-        child.visible = false
-        // 그림자 속성 추가
-        child.castShadow = true
-        child.receiveShadow = true
-      }
-    })
-    
-    return roomClone
-  }, [roomScene])
-  
-  // 호버 이벤트 핸들러 (GLB 메시용)
-  const handlePointerEnter = useCallback((e) => {
-    e.stopPropagation()
-    if (e.object && e.object.isMesh) {
-      setHoveredMeshUuid(e.object.uuid)
-      // 마우스 커서 변경
-      document.body.style.cursor = 'pointer'
-    }
-  }, [])
-  
-  const handlePointerLeave = useCallback((e) => {
-    if (e.object && e.object.isMesh) {
-      setHoveredMeshUuid(null)
-      document.body.style.cursor = 'default'
-    }
-  }, [])
-  
-  const handleClick = useCallback((e) => {
-    e.stopPropagation()
-    if (e.object && e.object.isMesh) {
-      // 클릭한 메시의 월드 위치 계산
-      const worldPosition = new THREE.Vector3()
-      e.object.getWorldPosition(worldPosition)
-
-      // 카메라 줌인
-      if (moveCameraToTarget) {
-        moveCameraToTarget([worldPosition.x, worldPosition.y, worldPosition.z], false)
-      }
-      
-      // 정보 모달 표시
-      if (onObjectClick) {
-        // 메시 이름을 기반으로 objectId 결정
-        const meshName = e.object.name?.toLowerCase() || 'unknown'
-        let objectId = 'desk' // 기본값
-        
-        if (meshName.includes('desk') || meshName.includes('table')) {
-          objectId = 'desk'
-        } else if (meshName.includes('monitor') || meshName.includes('screen') || meshName.includes('tv')) {
-          objectId = 'monitor'
-        } else if (meshName.includes('arcade') || meshName.includes('game')) {
-          objectId = 'arcade'
-        } else if (meshName.includes('chair') || meshName.includes('seat')) {
-          objectId = 'chair'
-        }
-        
-        onObjectClick(objectId)
-      }
-    }
-  }, [moveCameraToTarget, onObjectClick])
-  
-  // 3D 객체용 호버/클릭 핸들러
-  const handleObjectPointerEnter = useCallback((objectId) => (e) => {
-    e.stopPropagation()
-    setHoveredObjectId(objectId)
-    document.body.style.cursor = 'pointer'
-  }, [])
-  
-  const handleObjectPointerLeave = useCallback((objectId) => (e) => {
-    e.stopPropagation()
-    setHoveredObjectId(null)
-    document.body.style.cursor = 'default'
-  }, [])
-  
-  const handleObjectClick = useCallback((objectId, position) => (e) => {
-    e.stopPropagation()
-
-    // 카메라 줌인
-    if (moveCameraToTarget && position) {
-      moveCameraToTarget(position, false)
-    }
-    
-    // 정보 모달 표시
-    if (onObjectClick) {
-      onObjectClick(objectId)
-    }
-  }, [moveCameraToTarget, onObjectClick])
-  
-  useEffect(() => {
-    return () => {
-      document.body.style.cursor = 'default'
-    }
-  }, [])
-  
-  // 모든 Hook을 호출한 후 조건부 렌더링
-  if (!clonedScene) {
-    console.warn('GLB 모델 복제 실패')
-    return null
-  }
-  
-  // 메시가 없는 경우 primitive로 렌더링
-  if (meshesRef.current.length === 0) {
-    return <primitive object={clonedScene} />
-  }
-  
-  // 각 메시를 개별적으로 렌더링하여 outline 효과 적용
-  return (
-    <>
-      {/* 메시가 아닌 다른 객체들 (Group, Light 등) 렌더링 */}
-      <primitive object={clonedScene} />
-        {/* 각 메시를 개별적으로 렌더링하여 outline 효과 적용 */}
-        {meshesRef.current.map((mesh) => (
-          <MeshWithOutline
-            key={mesh.uuid}
-            mesh={mesh}
-            isHovered={hoveredMeshUuid === mesh.uuid}
-            onPointerEnter={handlePointerEnter}
-            onPointerLeave={handlePointerLeave}
-            onClick={handleClick}
-          />
-        ))}
-        
-        {/* 기존 3D 객체들을 부스 안에 배치 - 높이를 더 위로 올림 */}
-        {/* 책상 - 중앙 앞쪽 */}
-        <AccessibleExhibitObject
-          objectId="desk"
-          position={[0, 2.5, -2]}
-          rotation={[0, 0, 0]}
-          scale={[0.5, 0.5, 0.5]}
-          renderFunction={renderDesk}
-          isHovered={hoveredObjectId === 'desk'}
-          onPointerEnter={handleObjectPointerEnter('desk')}
-          onPointerLeave={handleObjectPointerLeave('desk')}
-          onClick={handleObjectClick('desk', [0, 3, -2])}
-        />
-        
-        {/* 모니터 - 책상 위 */}
-        <AccessibleExhibitObject
-          objectId="monitor"
-          position={[0, 3.3, -2]}
-          rotation={[0, 0, 0]}
-          scale={[0.5, 0.5, 0.5]}
-          renderFunction={renderMonitor}
-          isHovered={hoveredObjectId === 'monitor'}
-          onPointerEnter={handleObjectPointerEnter('monitor')}
-          onPointerLeave={handleObjectPointerLeave('monitor')}
-          onClick={handleObjectClick('monitor', [0, 3.6, -2])}
-        />
-        
-        {/* 아케이드 기계 - 오른쪽 */}
-        <AccessibleExhibitObject
-          objectId="arcade"
-          position={[3, 2.5, 0]}
-          rotation={[0, -Math.PI / 4, 0]}
-          scale={[0.6, 0.6, 0.6]}
-          renderFunction={renderArcade}
-          isHovered={hoveredObjectId === 'arcade'}
-          onPointerEnter={handleObjectPointerEnter('arcade')}
-          onPointerLeave={handleObjectPointerLeave('arcade')}
-          onClick={handleObjectClick('arcade', [3, 4, 0])}
-        />
-        
-        {/* 의자 - 책상 앞 */}
-        <AccessibleExhibitObject
-          objectId="chair"
-          position={[0, 2.5, -4]}
-          rotation={[0, 0, 0]}
-          scale={[0.6, 0.6, 0.6]}
-          renderFunction={renderChair}
-          isHovered={hoveredObjectId === 'chair'}
-          onPointerEnter={handleObjectPointerEnter('chair')}
-          onPointerLeave={handleObjectPointerLeave('chair')}
-          onClick={handleObjectClick('chair', [0, 3, -4])}
-        />
-        
-        {/* 책장 - 왼쪽 벽 */}
-        <AccessibleExhibitObject
-          objectId="bookshelf"
-          position={[-3.5, 2.5, 0]}
-          rotation={[0, Math.PI / 2, 0]}
-          scale={[0.5, 0.5, 0.5]}
-          renderFunction={renderBookshelf}
-          isHovered={hoveredObjectId === 'bookshelf'}
-          onPointerEnter={handleObjectPointerEnter('bookshelf')}
-          onPointerLeave={handleObjectPointerLeave('bookshelf')}
-          onClick={handleObjectClick('bookshelf', [-3.5, 4, 0])}
-        />
-        
-        {/* 램프 - 책상 옆 */}
-        <AccessibleExhibitObject
-          objectId="lamp"
-          position={[1.5, 2.5, -2]}
-          rotation={[0, 0, 0]}
-          scale={[0.6, 0.6, 0.6]}
-          renderFunction={renderLamp}
-          isHovered={hoveredObjectId === 'lamp'}
-          onPointerEnter={handleObjectPointerEnter('lamp')}
-          onPointerLeave={handleObjectPointerLeave('lamp')}
-          onClick={handleObjectClick('lamp', [1.5, 3.3, -2])}
-        />
-        
-        {/* 테이블 - 왼쪽 */}
-        <AccessibleExhibitObject
-          objectId="table"
-          position={[-2, 2.5, 2]}
-          rotation={[0, Math.PI / 4, 0]}
-          scale={[0.5, 0.5, 0.5]}
-          renderFunction={renderTable}
-          isHovered={hoveredObjectId === 'table'}
-          onPointerEnter={handleObjectPointerEnter('table')}
-          onPointerLeave={handleObjectPointerLeave('table')}
-          onClick={handleObjectClick('table', [-2, 2.9, 2])}
-        />
-        
-        {/* 선반 - 뒤쪽 벽 */}
-        <AccessibleExhibitObject
-          objectId="shelf"
-          position={[0, 3.5, 3]}
-          rotation={[0, 0, 0]}
-          scale={[0.5, 0.5, 0.5]}
-          renderFunction={renderShelf}
-          isHovered={hoveredObjectId === 'shelf'}
-          onPointerEnter={handleObjectPointerEnter('shelf')}
-          onPointerLeave={handleObjectPointerLeave('shelf')}
-          onClick={handleObjectClick('shelf', [0, 4.5, 3])}
-        />
-      </>
-    )
-})
-
-ShowRoomModel.displayName = 'ShowRoomModel'
-
-if (SHOW_LEGACY_BOOTH_AND_EXHIBITS) {
-  useGLTF.preload('/models/show_room2.glb')
-}
-
-/**
- * 방 내부 컨텐츠 (메모이제이션됨)
- * show_room2.glb 모델 로드 (group 해제, car.glb 제거)
- */
-const RoomContent = memo(function RoomContent({ onObjectClick, skipCameraAnimation }) {
-  if (!SHOW_LEGACY_BOOTH_AND_EXHIBITS) return null
-  return (
-    <Suspense fallback={null}>
-      <ShowRoomModel onObjectClick={onObjectClick} />
-    </Suspense>
-  )
-})

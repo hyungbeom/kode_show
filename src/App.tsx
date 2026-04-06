@@ -3,29 +3,26 @@ import {
   useEffect,
   useLayoutEffect,
   useCallback,
-  lazy,
-  Suspense,
   useRef,
   useMemo,
 } from 'react'
 import { gsap } from 'gsap'
 import LoadingScreen from './components/LoadingScreen'
+import RoomEntryWithIntro from './components/RoomEntryWithIntro'
 import { MapViewChrome } from './components/MapViewChrome'
 import { useAppMapStore } from './hooks/useMapStore'
 import { useVisualViewportCssVars } from './hooks/useVisualViewportCssVars'
 import { useMapStore } from './store/useMapStore'
+import { getCompanyById } from './data/exhibitorsByZone'
 import { COMPANY_NAMES } from './utils/constants'
 import { fadeInLoadingScreen } from './utils/fadeLoadingScreen'
 import { prepareMapViewEntry } from './utils/prepareMapViewEntry'
 import { prepareRoomViewEntry } from './utils/prepareRoomViewEntry'
 import './App.css'
 
-const RoomScene = lazy(() => import('./components/RoomScene'))
-
 const MAP_INTRO_EXIT_MS = 720
 /** 에셋 준비 후 진행률 100%까지 채우는 구간 — 끝나면 곧바로 맵 진입 */
 const LANDING_FINISH_MS = 2000
-
 type View = 'loading' | 'map' | 'room' | 'roomPrepare'
 
 function readInitialViewFromPath(): View {
@@ -102,10 +99,7 @@ function App() {
   }, [isLandingPhase])
 
   useEffect(() => {
-    if (currentView !== 'roomPrepare') {
-      setRoomEntryReady(false)
-      return
-    }
+    if (currentView !== 'roomPrepare') return
     let cancelled = false
     setRoomEntryReady(false)
     prepareRoomViewEntry()
@@ -119,6 +113,12 @@ function App() {
       cancelled = true
     }
   }, [currentView])
+
+  /** 프리로드 완료 후 소개+3D(스크롤) 화면으로 전환 */
+  useEffect(() => {
+    if (currentView !== 'roomPrepare' || !roomEntryReady) return
+    setCurrentView('room')
+  }, [currentView, roomEntryReady])
 
   useEffect(() => {
     if (mapHeroCopyDismissed) return
@@ -260,9 +260,11 @@ function App() {
     }
   }, [isLandingPhase, landingAssetsReady, handleEnter])
 
-  const handleRoomEnter = useCallback(() => {
-    runCurtainReveal(() => setCurrentView('room'))
-  }, [runCurtainReveal])
+  const handleRoomIntroBack = useCallback(() => {
+    clearSelectedCompany()
+    window.history.pushState({}, '', '/')
+    setCurrentView('map')
+  }, [clearSelectedCompany])
 
   const handleBackFromRoom = useCallback(() => {
     setIsTransitioning(true)
@@ -315,34 +317,26 @@ function App() {
     [isLandingPhase, landingAssetsReady, isTransitioning, currentView],
   )
 
-  const roomBehindCurtain = currentView === 'roomPrepare' && roomEntryReady
-  const showRoomScene = currentView === 'room' || roomBehindCurtain
+  const showRoomScene = currentView === 'room'
 
   return (
     <>
-      {showRoomScene ? (
-        <Suspense fallback={<div>Loading room...</div>}>
-          <div
-            className={
-              currentView === 'roomPrepare' && roomEntryReady
-                ? 'app-container app-container--behind-curtain'
-                : 'app-container'
-            }
-            style={{ width: '100%', height: '100%', minHeight: '100dvh' }}
-          >
-            <RoomScene
-              key={selectedCompanyId ?? 0}
-              companyId={selectedCompanyId ?? undefined}
-              onBack={handleBackFromRoom}
-            />
-          </div>
-        </Suspense>
+      {showRoomScene && selectedCompanyId != null ? (
+        <div className="app-container" style={{ width: '100%', height: '100%', minHeight: '100dvh' }}>
+          <RoomEntryWithIntro
+            key={selectedCompanyId}
+            companyId={selectedCompanyId}
+            company={getCompanyById(selectedCompanyId)}
+            onIntroBack={handleRoomIntroBack}
+            onRoomBack={handleBackFromRoom}
+          />
+        </div>
       ) : null}
 
       {currentView === 'roomPrepare' ? (
         <LoadingScreen
           mapEntryReady={roomEntryReady}
-          onEnter={handleRoomEnter}
+          onEnter={() => {}}
           prepLabel="전시 룸 준비 중…"
         />
       ) : null}
