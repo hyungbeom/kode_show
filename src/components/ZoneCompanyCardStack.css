@@ -1,272 +1,258 @@
 .zone-company-stack {
   position: relative;
-  width: 100%;
-  min-height: 0;
-  padding: 12px 8px 16px;
-  box-sizing: border-box;
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.zone-company-stack--interactive .zone-company-stack__swipe {
-  touch-action: none;
-}
-
-.zone-company-stack__swipe {
-  position: relative;
-  width: 100%;
-  /* min-height: 앞면 카드 실측(인라인) */
-}
-
-.zone-company-stack__layer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  margin: 0 auto;
-  width: calc(100% - 8px);
-  max-width: 340px;
-  border-radius: 28px;
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
-  transition:
-    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.28s ease;
-  transform-origin: 50% 50%;
-  cursor: default;
-}
-
-.zone-company-stack__layer--front {
-  cursor: pointer;
-}
-
-.zone-company-stack__layer--dragging,
-.zone-company-stack__layer--gesture-anim {
-  transition: none;
-}
-
-/* 뒤 카드는 인덱스가 바뀔 때 살짝 더 부드럽게 따라옴 */
-.zone-company-stack__layer:not(.zone-company-stack__layer--front) {
-  transition:
-    transform 0.4s cubic-bezier(0.25, 0.9, 0.35, 1),
-    opacity 0.35s ease;
-}
-
-.zone-company-stack-card {
   display: flex;
   flex-direction: column;
-  background: #0f172a;
-  border-radius: inherit;
-  overflow: hidden;
-}
-
-/* 로고 박스 — 낮은 띠 형태 (로고는 contain, 없으면 텍스트) */
-.zone-company-stack-card__media {
-  position: relative;
-  height: 104px;
-  flex-shrink: 0;
-  overflow: hidden;
-  background: rgba(15, 23, 42, 0.65);
-}
-
-.zone-company-stack-card__media--no-logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-}
-
-.zone-company-stack--interactive .zone-company-stack-card__media,
-.zone-company-stack--interactive .zone-company-stack-card__logo-img {
-  touch-action: none;
-  -webkit-user-drag: none;
+  align-items: stretch;
+  width: 100%;
+  min-height: 0;
+  padding: 8px 0 12px;
+  box-sizing: border-box;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.zone-company-stack-card__logo-img {
+/* 카드(article) 영역과 페이지 도트를 분리 — 도트는 카드·뷰포트 밖 아래 */
+.zone-company-stack__carousel {
+  flex-shrink: 0;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-  display: block;
-  padding: 8px 14px;
   box-sizing: border-box;
 }
 
-.zone-company-stack-card__logo-text {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 800;
-  font-family: var(--font-sans);
-  letter-spacing: -0.03em;
-  line-height: 1.2;
-  color: #ffffff;
-  text-align: center;
-  max-width: 100%;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+.zone-company-stack--interactive .zone-company-stack__viewport {
+  touch-action: pan-y;
+}
+
+.zone-company-stack--interactive .zone-company-stack__track {
+  touch-action: none;
+}
+
+.zone-company-stack__viewport {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
-.zone-company-stack-card__3d-badge {
-  position: absolute;
-  left: 8px;
-  bottom: 8px;
-  z-index: 2;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 0.625rem;
-  font-weight: 800;
-  font-family: var(--font-sans);
-  letter-spacing: 0.06em;
-  line-height: 1.2;
-  color: #ffffff;
-  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 55%, #8b5cf6 100%);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow:
-    0 2px 10px rgba(99, 102, 241, 0.45),
-    0 0 0 1px rgba(15, 23, 42, 0.15);
-  pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.zone-company-stack-card__keyword-tags {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  z-index: 2;
+.zone-company-stack__track {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: flex-end;
-  gap: 4px;
-  max-width: calc(100% - 56px - 52px);
+  flex-direction: row;
+  align-items: stretch;
+  will-change: transform;
+}
+
+.zone-company-stack__slide {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.zone-company-stack--interactive .zone-company-stack__slide--center {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+/* ---------- 목업형 화이트 카드 ---------- */
+.zone-carousel-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 280px;
+  box-sizing: border-box;
+  padding: 18px 16px 16px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 4px 24px rgba(15, 23, 42, 0.08),
+    0 12px 40px rgba(15, 23, 42, 0.06);
+  text-align: left;
+}
+
+.zone-carousel-card__ribbon {
+  position: absolute;
+  top: 0;
+  left: 18px;
+  width: 20px;
+  height: 36px;
+  background: linear-gradient(180deg, #e11d48 0%, #be123c 100%);
+  border-radius: 0 0 4px 4px;
+  clip-path: polygon(0 0, 100% 0, 100% 78%, 50% 100%, 0 78%);
+  box-shadow: 0 2px 6px rgba(190, 18, 60, 0.35);
   pointer-events: none;
 }
 
-.zone-company-stack-card__keyword-tag {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.78);
-  color: rgba(255, 255, 255, 0.94);
-  font-size: 0.625rem;
-  font-weight: 700;
-  font-family: var(--font-sans);
-  letter-spacing: 0.02em;
-  line-height: 1.25;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+.zone-carousel-card__head {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding-top: 4px;
+  padding-right: 40px;
+  margin-bottom: 12px;
 }
 
-.zone-company-stack-card__more-btn {
+.zone-carousel-card__kebab {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 2;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   width: 36px;
   height: 36px;
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  background: #f1f5f9;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   -webkit-tap-highlight-color: transparent;
 }
 
-.zone-company-stack-card__more-btn:active {
-  transform: scale(0.96);
+.zone-carousel-card__kebab:active {
+  transform: scale(0.95);
 }
 
-.zone-company-stack-card__more-icon {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.zone-company-stack-card__more-dot {
-  width: 4px;
-  height: 4px;
+.zone-carousel-card__kebab-dot {
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
-  background: #334155;
+  background: #475569;
   flex-shrink: 0;
 }
 
-.zone-company-stack-card__logo-badge {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 2;
-  max-width: calc(100% - 28px);
-  padding: 7px 14px;
-  border: none;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #166534;
-  font-size: 0.7rem;
+.zone-carousel-card__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.zone-carousel-card__logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.zone-carousel-card__name {
+  margin: 0;
+  font-size: 0.9375rem;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  line-height: 1.35;
+  color: #0f172a;
+  letter-spacing: -0.02em;
   font-family: var(--font-sans);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.zone-carousel-card__badge-3d {
+  align-self: flex-start;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: linear-gradient(135deg, #0078e8, #0056b3);
+}
+
+.zone-carousel-card__desc {
+  margin: 0 0 14px;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: #334155;
+  font-family: var(--font-sans);
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 8;
+  line-clamp: 8;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  flex: 1;
+  min-height: 0;
+}
+
+.zone-carousel-card__hashtags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 16px;
+}
+
+.zone-carousel-card__hash {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  font-family: var(--font-sans);
+}
+
+.zone-carousel-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.zone-carousel-card__pin {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #e8f2fc;
+  color: #0078e8;
   cursor: pointer;
-  text-align: center;
   -webkit-tap-highlight-color: transparent;
 }
 
-.zone-company-stack-card__logo-badge:active {
-  transform: scale(0.98);
+.zone-carousel-card__pin:active {
+  transform: scale(0.96);
 }
 
-.zone-company-stack-card__panel {
+.zone-carousel-card__visit {
   flex: 1;
-  min-height: 240px;
-  min-width: 0;
-  padding: 20px 20px 24px;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.zone-company-stack-card__desc {
-  margin: 0;
-  font-size: 0.85rem;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.88);
+  min-height: 46px;
+  border: none;
+  border-radius: 999px;
+  background: #00366d;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   font-family: var(--font-sans);
-  white-space: pre-line;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 10;
-  line-clamp: 10;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
+.zone-carousel-card__visit:active {
+  transform: scale(0.99);
+  filter: brightness(1.05);
+}
+
+/* ---------- 페이지 도트 ---------- */
 .zone-company-stack__dots {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  position: relative;
-  z-index: 10;
-  margin-top: 14px;
+  margin-top: 16px;
+  padding-top: 4px;
   width: 100%;
   flex-shrink: 0;
 }
@@ -277,14 +263,22 @@
   border-radius: 50%;
   border: none;
   padding: 0;
-  background: rgba(255, 255, 255, 0.35);
+  background: #d1d5db;
   cursor: pointer;
   transition:
-    transform 0.15s ease,
-    background 0.15s ease;
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .zone-company-stack__dot--active {
-  background: rgba(96, 165, 250, 0.95);
-  transform: scale(1.15);
+  background: #111827;
+  transform: scale(1.2);
+}
+
+.zone-company-stack__dot:hover {
+  background: #9ca3af;
+}
+
+.zone-company-stack__dot--active:hover {
+  background: #111827;
 }

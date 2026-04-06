@@ -27,6 +27,10 @@
 }
 
 .zone-info-panel {
+  --zone-panel-primary: #0078e8;
+  --zone-panel-primary-hover: #0066cc;
+  --zone-panel-tab-track: #e9ecef;
+  --zone-panel-tab-muted: #868e96;
   perspective: 1000px;
   transform-style: preserve-3d;
   position: relative;
@@ -39,10 +43,10 @@
 }
 
 .zone-info-box {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #ffffff;
   border-radius: 20px;
   padding: 0;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.12);
   transform-style: preserve-3d;
   overflow: hidden;
 }
@@ -60,38 +64,44 @@
 .zone-info-tabs {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 0;
   align-self: stretch;
   width: 100%;
   box-sizing: border-box;
-  background: linear-gradient(180deg, rgba(102, 126, 234, 0.35) 0%, rgba(118, 75, 162, 0.2) 100%);
-  padding: 0 clamp(12px, 2vw, 20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--zone-panel-tab-track);
+  padding: 0;
+  border-bottom: none;
 }
 
 .zone-info-tab {
-  flex: 0 1 auto;
-  padding: 14px 16px;
+  display: flex;
+  padding: 12px;
+  justify-content: center;
+  align-items: center;
+  flex: 1 0 0;
+  min-width: 0;
   margin: 0;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+  color: var(--zone-panel-tab-muted);
+  font-size: clamp(0.9rem, 1.4vw, 1rem);
   font-weight: 600;
   cursor: pointer;
-  border-bottom: 3px solid transparent;
-  transition: color 0.2s, background 0.2s;
+  border-radius: 14px 14px 0 0;
+  transition:
+    color 0.2s,
+    background 0.2s;
 }
 
 .zone-info-tab:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: #495057;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .zone-info-tab--active {
-  color: #fff;
-  border-bottom-color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.12);
+  color: var(--zone-panel-primary);
+  background: #ffffff;
+  font-weight: 700;
 }
 
 .zone-intro-plain {
@@ -107,27 +117,29 @@
 }
 
 .zone-info-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px 24px;
+  background: var(--zone-panel-primary);
+  padding: 18px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
 }
 
 .zone-info-title {
   margin: 0;
-  color: white;
-  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
-  font-weight: bold;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  font-size: clamp(1.2rem, 2.1vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: none;
 }
 
 .zone-info-close {
-  background: rgba(255, 255, 255, 0.2);
+  background: transparent;
   border: none;
-  color: white;
-  font-size: 32px;
+  color: #ffffff;
+  font-size: 28px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -135,14 +147,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: background 0.2s;
   line-height: 1;
   padding: 0;
 }
 
 .zone-info-close:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.18);
+  transform: none;
 }
 
 .zone-info-content {
@@ -177,33 +189,21 @@
 }
 
 .zone-rich-section__index {
-  position: absolute;
-  top: 16px;
-  right: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: none;
 }
 
 .zone-rich-section__title {
-  margin: 0 36px 6px 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a1a2e;
+  margin: 0 0 6px;
+  font-size: clamp(1.15rem, 1.9vw, 1.4rem);
+  font-weight: 800;
+  color: #111827;
   line-height: 1.35;
 }
 
 .zone-rich-section__subtitle {
   margin: 0 0 12px;
-  font-size: 0.82rem;
-  color: #5c5c7a;
+  font-size: 0.8rem;
+  color: #adb5bd;
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -224,24 +224,38 @@
 }
 
 .zone-rich-block--importance {
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #f6f7ff 0%, #f0f2ff 100%);
-  border: 1px solid #e4e7ff;
+  padding: 0 0 0 14px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-left: 3px solid #ced4da;
+}
+
+.zone-rich-block:not(.zone-rich-block--importance) .zone-rich-label {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--zone-panel-primary);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 .zone-rich-label {
   display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #667eea;
-  margin-bottom: 6px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #111827;
+  margin-bottom: 8px;
 }
 
 .zone-rich-block--importance .zone-rich-label {
-  color: #764ba2;
+  color: #111827;
 }
 
 .zone-rich-text {
@@ -249,6 +263,14 @@
   font-size: 0.9rem;
   line-height: 1.65;
   color: #2d2d3d;
+}
+
+.zone-rich-block:not(.zone-rich-block--importance) .zone-rich-text {
+  color: #6c757d;
+}
+
+.zone-rich-block--importance .zone-rich-text {
+  color: #212529;
 }
 
 .zone-info-description-text {
@@ -289,21 +311,21 @@
 
 .company-item:hover {
   background: #e9ecef;
-  border-color: #667eea;
+  border-color: var(--zone-panel-primary);
   transform: translateX(4px);
 }
 
 .company-item--focus {
-  border-color: #667eea;
-  background: #eef0ff;
-  box-shadow: 0 0 0 1px rgba(102, 126, 234, 0.35);
+  border-color: var(--zone-panel-primary);
+  background: rgba(0, 120, 232, 0.06);
+  box-shadow: 0 0 0 1px rgba(0, 120, 232, 0.25);
 }
 
 .company-icon {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--zone-panel-primary);
   color: white;
   display: flex;
   align-items: center;
@@ -336,8 +358,8 @@
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(102, 126, 234, 0.14);
-  color: #5b6bc9;
+  background: rgba(0, 120, 232, 0.12);
+  color: #0060c0;
   letter-spacing: 0.02em;
 }
 
@@ -359,12 +381,12 @@
 }
 
 .zone-info-content::-webkit-scrollbar-thumb {
-  background: #667eea;
+  background: var(--zone-panel-primary);
   border-radius: 4px;
 }
 
 .zone-info-content::-webkit-scrollbar-thumb:hover {
-  background: #764ba2;
+  background: var(--zone-panel-primary-hover);
 }
 
 /* 업체 미리보기 — 플로우 밖: 패널 위로 띄워 시트 본문 높이에 영향 없음 */
@@ -637,9 +659,9 @@
   flex: 1;
   height: 100%;
   max-height: none;
-  background: transparent;
-  border-radius: 32px;
-  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.14), 0 8px 24px rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 56px rgba(15, 23, 42, 0.12);
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -649,18 +671,18 @@
   max-height: none;
 }
 
-/* 헤더: 흰 배경, 상단 아이콘+닫기, 제목, 피ll 탭 */
+/* 헤더: 블루 바 + 탭 트랙(회색) */
 .zone-info-overlay--mobile-sheet .zone-info-sheet-header {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 16px;
+  gap: 0;
   width: 100%;
-  padding: 20px 20px 18px;
+  padding: 0;
   box-sizing: border-box;
   flex-shrink: 0;
-  background: #ffffff;
-  border-radius: 32px 32px 0 0;
+  background: transparent;
+  border-radius: 0;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-sheet-header__top {
@@ -669,6 +691,10 @@
   align-items: center;
   gap: 12px;
   width: 100%;
+  padding: 18px 18px 16px;
+  box-sizing: border-box;
+  background: var(--zone-panel-primary);
+  border-radius: 20px 20px 0 0;
 }
 
 .zone-info-sheet-header__title-row {
@@ -687,13 +713,14 @@
 .zone-info-brand-icon {
   width: 40px;
   height: 40px;
-  border-radius: 10px;
-  background: #000000;
+  border-radius: 50%;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #ffffff;
+  color: var(--zone-panel-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .zone-info-brand-icon svg {
@@ -701,24 +728,24 @@
   height: 22px;
 }
 
-/* 모바일 시트: 제목 행 안 — 살짝 작게 */
+/* 모바일 시트: 원형 화이트 배지 안 플라스크 아이콘(블루) */
 .zone-info-overlay--mobile-sheet .zone-info-sheet-header__title-row .zone-info-brand-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-sheet-header__title-row .zone-info-brand-icon svg {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-sheet-header .zone-info-title {
   margin: 0;
-  font-size: 1.375rem;
+  font-size: 1.125rem;
   font-weight: 800;
-  color: #000000;
-  letter-spacing: -0.03em;
+  color: #ffffff;
+  letter-spacing: -0.02em;
   line-height: 1.25;
   font-family: var(--font-sans);
   flex: 1 1 auto;
@@ -732,9 +759,9 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: #f0f0f0;
-  color: #000000;
-  font-size: 22px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 26px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -744,57 +771,101 @@
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-sheet-header .zone-info-close:hover {
-  background: #e5e5e5;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* 데스크톱(좌측 패널): 래퍼는 레이아웃에 참여하지 않음 */
+.zone-info-tabs-wrap--pass-through {
+  display: contents;
+}
+
+/* 모바일 시트: 탭 상단 블루 여백 + 탭 메뉴 영역 (겹침 탭 레퍼런스) */
+.zone-info-overlay--mobile-sheet .zone-info-tabs-wrap {
+  align-self: stretch;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: var(--zone-panel-primary);
+  padding: 30px 0 0;
+  margin: 0;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-tabs {
+  --zone-tab-radius: 25px;
+  /* --zone-tab-overlap: 14px; */
   display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  align-items: flex-end;
   align-self: stretch;
+  gap: 0;
   width: 100%;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  list-style: none;
   background: transparent;
   border: none;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-tab {
+  position: relative;
+  display: flex;
   flex: 1 1 0;
   min-width: 0;
   margin: 0;
-  padding: 9px 11px;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  padding: 16px 8px;
+  justify-content: center;
+  align-items: center;
+  font-size: 1rem;
+  font-weight: 700;
   font-family: var(--font-sans);
   text-align: center;
   border: none;
-  border-radius: 999px;
   cursor: pointer;
-  background: #e8e8e8;
-  color: #6b7280;
+  border-radius: var(--zone-tab-radius) var(--zone-tab-radius) 0 0;
   transition:
-    background 0.15s ease,
-    color 0.15s ease;
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.zone-info-overlay--mobile-sheet .zone-info-tab:hover {
-  color: #374151;
-  background: #dedede;
-}
-
+/* 활성 탭: 위로 올림 + 본문과 맞닿음 */
 .zone-info-overlay--mobile-sheet .zone-info-tab--active {
-  background: #000000;
-  color: #ffffff;
+  z-index: 2;
+  background-color: #ffffff;
+  color: #0f2c6b;
+  margin-bottom: -1px;
+  padding-bottom: 17px;
+}
+
+/* 오른쪽 탭만 비활성: 왼쪽 활성 탭 아래로 겹침 */
+.zone-info-overlay--mobile-sheet .zone-info-tab:nth-child(2):not(.zone-info-tab--active) {
+  z-index: 1;
+  background-color: #f2f2f2;
+  color: #7b8596;
+  margin-left: calc(-1 * var(--zone-tab-overlap));
+  box-shadow: inset 15px 0 15px -15px rgba(0, 0, 0, 0.15);
+}
+
+/* 왼쪽 탭만 비활성: 오른쪽 활성 탭 아래로 겹침 */
+.zone-info-overlay--mobile-sheet .zone-info-tab:nth-child(1):not(.zone-info-tab--active) {
+  z-index: 1;
+  background-color: #f2f2f2;
+  color: #7b8596;
+  margin-right: calc(-1 * var(--zone-tab-overlap));
+  box-shadow: inset -15px 0 15px -15px rgba(0, 0, 0, 0.15);
+}
+
+.zone-info-overlay--mobile-sheet .zone-info-tab:not(.zone-info-tab--active):hover {
+  background-color: #ebebeb;
+  color: #6a7383;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-tab--active:hover {
-  background: #1a1a1a;
-  color: #ffffff;
+  background-color: #ffffff;
+  color: #0c2458;
 }
 
-/* 본문: 블러 + 연한 오버레이(배경 텍스처는 ::before 아래 레이어) */
+/* 본문: 화이트 콘텐츠 영역 — 하단 라운드만 클립 */
 .zone-info-overlay--mobile-sheet .zone-info-sheet-body {
   position: relative;
   display: flex;
@@ -806,23 +877,13 @@
   width: 100%;
   padding: 0;
   box-sizing: border-box;
-  background-color: #d8dee8;
-  background-image: url('/zone-info-sheet-header-bg.svg');
-  background-size: cover;
-  background-position: 50% 50%;
-  border-radius: 0 0 32px 32px;
+  background: #ffffff;
+  border-radius: 0 0 20px 20px;
+  overflow: hidden;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-sheet-body::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: rgba(255, 255, 255, 0.52);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-sheet-body .zone-info-content {
@@ -834,10 +895,11 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 28px 20px 24px;
+  padding: 22px 20px 24px;
   margin: 0;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
+  background: #ffffff;
 }
 
 .zone-info-overlay--mobile-sheet .zone-info-sheet-body .zone-info-content--company-stack {
@@ -893,33 +955,34 @@
 .zone-info-overlay--mobile-sheet .zone-rich-block:not(.zone-rich-block--importance) .zone-rich-label {
   display: inline-block;
   margin: 0 0 10px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 999px;
-  background: #000000;
+  background: var(--zone-panel-primary);
   color: #ffffff;
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   text-transform: none;
 }
 
 .zone-info-overlay--mobile-sheet .zone-rich-block:not(.zone-rich-block--importance) .zone-rich-text {
   margin: 0;
-  padding: 16px;
-  background: #ffffff;
-  border-radius: 16px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
   font-size: 0.875rem;
-  line-height: 1.55;
-  color: #1f2937;
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+  line-height: 1.6;
+  color: #6c757d;
+  box-shadow: none;
 }
 
 .zone-info-overlay--mobile-sheet .zone-rich-block--importance {
-  margin-top: 4px;
-  padding: 0 0 0 14px;
+  margin-top: 6px;
+  padding: 0 0 0 12px;
   border-radius: 0;
   background: transparent;
-  border-left: 3px solid #d1d5db;
+  border: none;
+  border-left: 3px solid #adb5bd;
 }
 
 .zone-info-overlay--mobile-sheet .zone-rich-block--importance .zone-rich-label {
@@ -927,8 +990,8 @@
   margin: 0 0 8px;
   padding: 0;
   background: transparent;
-  color: #000000;
-  font-size: 0.9375rem;
+  color: #111827;
+  font-size: 0.875rem;
   font-weight: 800;
 }
 
@@ -938,8 +1001,8 @@
   background: transparent;
   box-shadow: none;
   font-size: 0.875rem;
-  line-height: 1.55;
-  color: #374151;
+  line-height: 1.6;
+  color: #212529;
 }
 
 .zone-info-overlay--mobile-sheet .zone-intro-plain {
@@ -984,7 +1047,7 @@
   width: 44px;
   height: 44px;
   font-size: 17px;
-  background: #000000;
+  background: var(--zone-panel-primary);
   color: #ffffff;
 }
 

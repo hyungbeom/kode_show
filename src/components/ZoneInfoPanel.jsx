@@ -286,25 +286,29 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
               </div>
             )}
 
-            <div className="zone-info-tabs" role="tablist" aria-label="구역 정보">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'intro'}
-                className={`zone-info-tab ${activeTab === 'intro' ? 'zone-info-tab--active' : ''}`}
-                onClick={() => setActiveTab('intro')}
-              >
-                소개
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'companies'}
-                className={`zone-info-tab ${activeTab === 'companies' ? 'zone-info-tab--active' : ''}`}
-                onClick={() => setActiveTab('companies')}
-              >
-                업체 리스트
-              </button>
+            <div
+              className={isMobileSheet ? 'zone-info-tabs-wrap' : 'zone-info-tabs-wrap zone-info-tabs-wrap--pass-through'}
+            >
+              <div className="zone-info-tabs" role="tablist" aria-label="구역 정보">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'intro'}
+                  className={`zone-info-tab ${activeTab === 'intro' ? 'zone-info-tab--active' : ''}`}
+                  onClick={() => setActiveTab('intro')}
+                >
+                  소개
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'companies'}
+                  className={`zone-info-tab ${activeTab === 'companies' ? 'zone-info-tab--active' : ''}`}
+                  onClick={() => setActiveTab('companies')}
+                >
+                  업체 리스트
+                </button>
+              </div>
             </div>
           </div>
 
@@ -329,7 +333,7 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
                         <p className="zone-rich-section__subtitle">{section.titleEn}</p>
                         <p className="zone-rich-intro">{section.intro}</p>
                         <div className="zone-rich-block">
-                          <span className="zone-rich-label">주요 내용</span>
+                          <span className="zone-rich-label">주요내용</span>
                           <p className="zone-rich-text">{section.mainPoints}</p>
                         </div>
                         <div className="zone-rich-block zone-rich-block--importance">
