@@ -1,7 +1,11 @@
 import { useRef, useEffect, memo } from 'react'
 import { useThree, useFrame } from '@react-three/fiber'
 import { useMapStore } from '../store/useMapStore'
-import { getNavigateResetCamera } from '../config/mapNavigateReset'
+import {
+  getNavigateResetCamera,
+  isNavigateModeWorldSpinActive,
+  NAVIGATE_MODE_WORLD_YAW_RAD_PER_S,
+} from '../config/mapNavigateReset'
 import {
   getZoneCameraFramingForWidth,
   getZoneCameraMobileAbsolutePose,
@@ -451,8 +455,39 @@ function CameraController({ controlsRef }) {
     // GSAP로 카메라 이동 중에는 궤도 보간 비활성 (리셋·초기 진입과 충돌 방지)
     if (orbitSuspendedRef.current) return
 
+    const controls = controlsRef.current
+    const store = useMapStore.getState()
+
+    /** Navigate idle: GLB는 고정, Orbit 타깃 축(Y) 기준으로 카메라만 공전 → 예전 루트 회전과 동일 체감 */
+    if (
+      store.mapNavigateWorldDecorSpinActive &&
+      isNavigateModeWorldSpinActive({
+        followPhysicsBox: store.followPhysicsBox,
+        cameraTarget: store.cameraTarget,
+        selectedZone: store.selectedZone,
+        isFullscreenCanvas: store.isFullscreenCanvas,
+      }) &&
+      !store.isFullMapRotating
+    ) {
+      const pivot = controls.target
+      const cam = state.camera
+      const relX = cam.position.x - pivot.x
+      const relY = cam.position.y - pivot.y
+      const relZ = cam.position.z - pivot.z
+      /** 월드 루트 +Y 회전과 같은 화면 체감이 되도록 공전 방향 반대 */
+      const dTheta = -delta * NAVIGATE_MODE_WORLD_YAW_RAD_PER_S
+      const cos = Math.cos(dTheta)
+      const sin = Math.sin(dTheta)
+      const nx = relX * cos + relZ * sin
+      const nz = -relX * sin + relZ * cos
+      cam.position.set(pivot.x + nx, pivot.y + relY, pivot.z + nz)
+      cam.updateProjectionMatrix()
+      controls.update()
+      return
+    }
+
     // useEffect 동기화(ref) 대신 매 프레임 스토어를 읽음 — 드래그/휠 직후에도 궤도가 한 박자 더 먹지 않음
-    if (!useMapStore.getState().isFullMapRotating) {
+    if (!store.isFullMapRotating) {
       return
     }
     
@@ -461,8 +496,6 @@ function CameraController({ controlsRef }) {
       return
     }
     
-    const controls = controlsRef.current
-
     const BOOST_DECAY = 1.8
     speedBoostRef.current *= Math.exp(-BOOST_DECAY * delta)
 

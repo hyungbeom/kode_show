@@ -8,15 +8,12 @@ world.glb 맵 모델
 - 구역별 LandHover: *_Land 합 히트, 말풍선은 CH_* / Earth / Institution_Builidng 등 마커 노드 위
 - Carbon_Land+CH_Leaf_Body — 말풍선은 CH_Leaf_Body·CARBON NATURAL
 - NeonScreen — world.glb의 cube001 앵커 + screen.glb 지오 + /neon.png (WorldModel에서 마운트 필요)
-- Navigate GSAP 완료 후(`mapNavigateWorldDecorSpinActive`) + idle일 때 루트 group이 Y로 저속 회전
+- Navigate idle 시 맵 회전 체감은 WorldModel이 아니라 CameraController에서 타깃 주위 카메라 궤도로 처리
 - Water_all — `WaterAllWaves` 버텍스 파동(geometry clone)
+- Clould_A/B/C — `GlbCloudRigs`: 스케일×3, 타입별 원본+복제 각각 포지션·보빙
 */
 
-import React, { useMemo, memo, useLayoutEffect, useRef, useEffect } from 'react'
-import {
-  isNavigateModeWorldSpinActive,
-  NAVIGATE_MODE_WORLD_YAW_RAD_PER_S,
-} from '../config/mapNavigateReset'
+import React, { useMemo, memo, useLayoutEffect, useRef, useEffect, useState } from 'react'
 import * as THREE from 'three'
 import { useFrame, useGraph, useThree } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
@@ -37,9 +34,9 @@ import {
 } from '../utils/constants'
 
 /** Mill_Wing는 GLB 키가 \\u0008Mill_Wing 일 수 있으므로 루프에서 resolveSceneNode 사용 */
-const SPIN_Y_GEARS = ['Gear_A', 'Gear_B', 'Gear_C', 'Gear_D', 'Gear_E', 'Gear_F', 'Gear_G', 'Mill_Wing']
-const SPIN_Y_FANS = ['Air_Fan_A_propeller', 'Air_Fan_B_propeller']
-const WING_SPIN_Z_NODES = ['Wing', 'Wing001', 'Wing002']
+// const SPIN_Y_GEARS = ['Gear_A', 'Gear_B', 'Gear_C', 'Gear_D', 'Gear_E', 'Gear_F', 'Gear_G', 'Mill_Wing']
+// const SPIN_Y_FANS = ['Air_Fan_A_propeller', 'Air_Fan_B_propeller']
+// const WING_SPIN_Z_NODES = ['Wing', 'Wing001', 'Wing002']
 const ROTATION_SPEED = 2 // rad/s
 const FAN_ROTATION_MULTIPLIER = 2 // 프로펠러는 톱니 대비 이 배속
 /** 외국관 Earth 지구본 Y축 회전 */
@@ -48,6 +45,136 @@ const EARTH_ROTATION_SPEED = 1.1 // rad/s
 /** SakuraWind: 자동 추정 축에 대한 월드 Yaw / 수평 Pitch 보정 (맵·팬 배치에 맞춤) */
 const SAKURA_WIND_DIR_YAW_DEG = 44.5
 const SAKURA_WIND_DIR_PITCH_DEG = -13.5
+
+const GLB_CLOUD_SCALE = 2
+
+/** 타입별 GLB 노드 이름 (Blender Clould_* / Cloud_* 별칭) */
+const GLB_CLOUD_BLUEPRINTS = {
+  A: { nodeNames: ['Clould_A', 'Cloud_A'] },
+  B: { nodeNames: ['Clould_B', 'Cloud_B'] },
+  C: { nodeNames: ['Clould_C', 'Cloud_C'] },
+}
+
+/**
+ * 인스턴스마다 원본(`duplicate: false`) 또는 `master.clone(true)` (`duplicate: true`).
+ * position / rotation(라디안) / bob — 맵에 맞게 조정 가능.
+ */
+const GLB_CLOUD_INSTANCES = [
+  {
+    id: 'A',
+    duplicate: false,
+    position: [-102, -200, -38],
+    rotation: [0, 1.22, 0],
+    bob: { amplitude: 2.8, speed: 0.28, phase: 0 },
+  },
+  {
+    id: 'A',
+    duplicate: true,
+    position: [-168, -180, 148],
+    rotation: [0, 0, 0],
+    bob: { amplitude: 3.0, speed: 0.26, phase: 1.15 },
+  },
+ 
+  {
+    id: 'B',
+    duplicate: true,
+    position: [-12, -180, 18],
+    rotation: [0, 0.38, 0],
+    bob: { amplitude: 2.7, speed: 0.27, phase: 2.95 },
+  },
+  {
+    id: 'C',
+    duplicate: false,
+    position: [-326, -205, 258],
+    rotation: [0.06, 0.12, -0.04],
+    bob: { amplitude: 2.4, speed: 0.31, phase: 4.35 },
+  },
+
+]
+
+/**
+ * 리그 그룹에 Object3D를 붙이고 position·rotation·Y 보빙만 적용 (로컬 변환은 마스터/클론 생성 시 처리).
+ */
+function GlbCloudRig({ object3D, spec }) {
+  const groupRef = useRef(/** @type {THREE.Group | null} */ (null))
+
+  useLayoutEffect(() => {
+    const g = groupRef.current
+    if (!g || !object3D) return
+    g.add(object3D)
+    return () => {
+      if (g.children.includes(object3D)) g.remove(object3D)
+    }
+  }, [object3D])
+
+  const [px, py, pz] = spec.position
+  const [rx, ry, rz] = spec.rotation
+  const { amplitude, speed, phase } = spec.bob
+
+  useFrame(({ clock }) => {
+    const g = groupRef.current
+    if (!g || !object3D) return
+    const dy = Math.sin(clock.elapsedTime * speed + phase) * amplitude
+    g.position.set(px, py + dy, pz)
+    g.rotation.set(rx, ry, rz)
+  })
+
+  if (!object3D) return null
+  return <group ref={groupRef} />
+}
+
+function GlbCloudRigs({ nodes }) {
+  const [cloudEntries, setCloudEntries] = useState(/** @type {{ object3D: THREE.Object3D; spec: (typeof GLB_CLOUD_INSTANCES)[number] }[]} */ ([]))
+
+  useLayoutEffect(() => {
+    /** @type {Record<string, THREE.Object3D | null | undefined>} */
+    const masterById = {}
+
+    const list = []
+    for (const inst of GLB_CLOUD_INSTANCES) {
+      const bp = GLB_CLOUD_BLUEPRINTS[inst.id]
+      if (!bp) continue
+
+      let master = masterById[inst.id]
+      if (master === undefined) {
+        master = null
+        for (const name of bp.nodeNames) {
+          const n = resolveSceneNode(nodes, name)
+          if (n) {
+            master = n
+            break
+          }
+        }
+        if (master) {
+          master.removeFromParent()
+          master.position.set(0, 0, 0)
+          master.rotation.set(0, 0, 0)
+          master.scale.set(GLB_CLOUD_SCALE, GLB_CLOUD_SCALE, GLB_CLOUD_SCALE)
+        }
+        masterById[inst.id] = master
+      }
+
+      if (!master) continue
+
+      const obj = inst.duplicate ? master.clone(true) : master
+      list.push({ object3D: obj, spec: inst })
+    }
+
+    setCloudEntries(list)
+  }, [nodes])
+
+  return (
+    <>
+      {cloudEntries.map(({ object3D, spec }, i) => (
+        <GlbCloudRig
+          key={`${spec.id}-${spec.duplicate ? 'dup' : 'src'}-${i}`}
+          object3D={object3D}
+          spec={spec}
+        />
+      ))}
+    </>
+  )
+}
 
 /** Zone 포커스용 GLB 노드 (기관 건은 오타/철자 별칭 처리) */
 const GLB_FOCUS_NODES = ['CH_Water', 'CH_Air', 'CH_Microscope', 'CH_Leaf_Body', 'Earth']
@@ -194,7 +321,6 @@ export const WorldModel = memo(function WorldModel(props) {
   const waterAllMesh = useMemo(() => getWaterAllMeshFromNodes(nodes, clonedScene), [nodes, clonedScene])
   const setGlbFocusPositions = useMapStore((s) => s.setGlbFocusPositions)
   const setWorldGlbBoundsCenter = useMapStore((s) => s.setWorldGlbBoundsCenter)
-  const worldYawRootRef = useRef(/** @type {THREE.Group | null} */ (null))
 
   useLayoutEffect(() => {
     const box = new THREE.Box3()
@@ -231,45 +357,11 @@ export const WorldModel = memo(function WorldModel(props) {
     return () => cancelAnimationFrame(id)
   }, [clonedScene, nodes, setGlbFocusPositions, setWorldGlbBoundsCenter])
 
-  useFrame((_, delta) => {
-    const st = useMapStore.getState()
-    const navigateSpin =
-      st.mapNavigateWorldDecorSpinActive &&
-      isNavigateModeWorldSpinActive({
-        followPhysicsBox: st.followPhysicsBox,
-        cameraTarget: st.cameraTarget,
-        selectedZone: st.selectedZone,
-        isFullscreenCanvas: st.isFullscreenCanvas,
-      })
-
-    if (navigateSpin && worldYawRootRef.current) {
-      worldYawRootRef.current.rotation.y += delta * NAVIGATE_MODE_WORLD_YAW_RAD_PER_S
-    }
-
-    /* 말풍선·구역 클릭으로 줌인 중이거나 패널 포커스일 때는 맵 장식 회전도 멈춤 */
-    if (!navigateSpin) return
-
-    const angleGear = delta * ROTATION_SPEED
-    const angleFan = angleGear * FAN_ROTATION_MULTIPLIER
-    SPIN_Y_GEARS.forEach((name) => {
-      const node = resolveSceneNode(nodes, name)
-      if (node) node.rotateY(angleGear)
-    })
-    SPIN_Y_FANS.forEach((name) => {
-      const node = nodes[name]
-      if (node) node.rotateY(angleFan)
-    })
-    WING_SPIN_Z_NODES.forEach((name) => {
-      const node = resolveSceneNode(nodes, name)
-      if (node) node.rotateZ(angleGear)
-    })
-    const earth = resolveSceneNode(nodes, 'Earth')
-    if (earth) earth.rotateY(delta * EARTH_ROTATION_SPEED)
-  })
   return (
     <>
-      <group ref={worldYawRootRef}>
+      <group>
         <primitive object={clonedScene} {...props} />
+        <GlbCloudRigs nodes={nodes} />
       </group>
       {waterAllMesh ? <WaterAllWaves mesh={waterAllMesh} /> : null}
       <NeonScreen nodes={nodes} />

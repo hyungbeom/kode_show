@@ -66,15 +66,15 @@ function MapPhysicsSceneContent() {
       <BackgroundTransparency />
       <CameraSystem />
 
-      <Environment preset="sunset">
-        <Lightformer form="rect" intensity={1} color="white" scale={[10, 5]} target={[0, 0, 0]} />
+      <Environment preset="sunset" environmentIntensity={0.72}>
+        <Lightformer form="rect" intensity={0.72} color="white" scale={[10, 5]} target={[0, 0, 0]} />
       </Environment>
 
-      <ambientLight intensity={0.3} />
+      <ambientLight intensity={0.22} />
 
       <directionalLight
         position={[80, 60, 80]}
-        intensity={2.5}
+        intensity={1.95}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -86,11 +86,11 @@ function MapPhysicsSceneContent() {
         shadow-bias={-0.0005}
       />
 
-      <directionalLight position={[-60, 50, -60]} intensity={0.6} color="#FFE5B4" />
+      <directionalLight position={[-60, 50, -60]} intensity={0.48} color="#FFE5B4" />
 
       <pointLight
         position={[30, 50, 30]}
-        intensity={1.5}
+        intensity={1.2}
         color="#FFE5B4"
         distance={150}
         decay={1.5}
@@ -98,14 +98,14 @@ function MapPhysicsSceneContent() {
       />
       <pointLight
         position={[-30, 50, -30]}
-        intensity={1.2}
+        intensity={0.95}
         color="#B8E6FF"
         distance={150}
         decay={1.5}
       />
       <pointLight
         position={[0, 60, 0]}
-        intensity={1.8}
+        intensity={1.4}
         color="#FFFFFF"
         distance={200}
         decay={1.5}
@@ -116,7 +116,7 @@ function MapPhysicsSceneContent() {
         position={[0, 120, 0]}
         angle={0.4}
         penumbra={0.3}
-        intensity={2.0}
+        intensity={1.55}
         castShadow
         color="#FFFFFF"
         distance={200}

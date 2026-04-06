@@ -3,23 +3,17 @@
   width: 100vw;
   height: 100vh;
   min-height: 100dvh;
-  background: #e8f4fc;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
+  background: #ffffff;
   position: relative;
   overflow: hidden;
 }
 
-/** 첫 랜딩: 전체 뷰포트 덮는 극장 커튼 — 아래 z-index 맵 위에 올림 */
 .loading-screen--curtain {
   position: fixed;
   inset: 0;
   z-index: 100000;
   width: 100%;
   max-width: 100vw;
-  box-shadow: 0 12px 48px rgba(15, 23, 42, 0.12);
   will-change: transform;
 }
 
@@ -27,195 +21,121 @@
   opacity: 1;
 }
 
-.loading-canvas-wrap {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.loading-canvas {
-  display: block;
+.loading-screen__inner {
   width: 100%;
   height: 100%;
-}
-
-.loading-content {
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-}
-
-.loading-content--overlay {
-  position: relative;
-  z-index: 1;
-  padding-bottom: clamp(100px, 18vh, 160px);
-  pointer-events: none;
-}
-
-.loading-content--overlay .loading-enter {
-  pointer-events: auto;
-}
-
-.loading-subtitle {
-  font-size: clamp(0.75rem, 2vw, 18px);
-  font-weight: 700;
-  color: #0369a1;
-  letter-spacing: 0.14em;
-  font-family: var(--font-sans);
-  margin: 0;
-  text-transform: uppercase;
-  text-align: center;
-  max-width: 92vw;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6);
-}
-
-.loading-subtitle--landing {
-  color: #e91e8c;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.75);
-}
-
-/* 첫 진입 ENTER — 얇은 검정 링 + 마젠타 라벨 (모바일 랜딩 레퍼런스) */
-.loading-enter {
-  position: relative;
-  width: clamp(150px, 42vw, 220px);
-  height: clamp(150px, 42vw, 220px);
-  margin-top: 8px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.06));
-  transition: transform 0.25s ease, filter 0.25s ease;
-}
-
-.loading-enter:hover {
-  transform: scale(1.04);
-}
-
-.loading-enter:active {
-  transform: scale(0.98);
-}
-
-.loading-enter__ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 2px solid #121212;
+  padding: clamp(1.5rem, 5vw, 3rem);
   box-sizing: border-box;
 }
 
-.loading-enter__label {
-  position: relative;
-  z-index: 1;
-  font-size: clamp(15px, 3.8vw, 20px);
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  font-family: var(--font-sans);
-  text-transform: uppercase;
-  color: #e91e8c;
-  padding-left: 0.2em;
-}
-
-/* 맵 에셋 프리로드 중 — ENTER 대기 */
-.loading-map-prep {
+/* ---- `/logo.svg` (흰 fill) → 배경색 + mask 로 브랜드 블루 ---- */
+.loading-screen__brand {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  margin-top: 8px;
-  min-height: clamp(150px, 42vw, 220px);
   justify-content: center;
-  pointer-events: none;
+  margin-bottom: clamp(3.5rem, 14vh, 6rem);
+  width: 100%;
 }
 
-.loading-map-prep__spinner {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 3px solid rgba(2, 132, 199, 0.2);
-  border-top-color: #0284c7;
-  animation: loading-map-prep-spin 0.75s linear infinite;
+.loading-screen__logo-mark {
+  width: min(280px, 88vw);
+  aspect-ratio: 240 / 52;
+  max-height: 20vh;
+  background-color: #004785;
+  -webkit-mask-image: url('/logo.svg');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-image: url('/logo.svg');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-mode: luminance;
 }
 
-.loading-map-prep__label {
-  font-size: clamp(12px, 2.5vw, 14px);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: #0369a1;
-  font-family: var(--font-sans);
+/* ---- 하단 상태 ---- */
+.loading-screen__loading {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+  letter-spacing: 0.28em;
   text-transform: uppercase;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-@keyframes loading-map-prep-spin {
-  to {
-    transform: rotate(360deg);
+.loading-screen__loading-text {
+  font-weight: 700;
+  color: #cccccc;
+}
+
+.loading-screen__loading-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  height: 1em;
+}
+
+.loading-screen__loading-dot {
+  width: 0.42em;
+  height: 0.42em;
+  min-width: 5px;
+  min-height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: loading-screen-dot-wave 0.95s ease-in-out infinite;
+}
+
+.loading-screen__loading-dot--1 {
+  background: #004785;
+  animation-delay: 0s;
+}
+
+.loading-screen__loading-dot--2 {
+  background: #1e6ba8;
+  animation-delay: 0.16s;
+}
+
+.loading-screen__loading-dot--3 {
+  background: #7eb8e8;
+  animation-delay: 0.32s;
+}
+
+@keyframes loading-screen-dot-wave {
+  0%,
+  100% {
+    transform: translateY(0.22em);
+  }
+  50% {
+    transform: translateY(-0.38em);
   }
 }
 
-.loading-circle {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  margin-top: 8px;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08));
+.loading-screen__enter {
+  margin: 0;
+  padding: 0.65em 2.25em;
+  border: 1px solid #004785;
+  background: transparent;
+  color: #004785;
+  font-size: clamp(0.75rem, 2vw, 0.8125rem);
+  font-weight: 600;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.loading-circle-svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
+.loading-screen__enter:hover {
+  background: #004785;
+  color: #ffffff;
 }
 
-.loading-circle-bg {
-  stroke: #0284c7;
-  opacity: 0.22;
-}
-
-.loading-circle-progress {
-  stroke: #0369a1;
-  transition: stroke-dashoffset 0.08s linear;
-}
-
-.loading-map-prep--finishing {
-  min-height: clamp(150px, 42vw, 220px);
-}
-
-.loading-percentage {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 24px;
-  font-weight: 700;
-  color: #0369a1;
-  font-family: var(--font-sans);
-}
-
-.loading-cookie {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  font-size: 12px;
-  color: #555;
-  text-align: center;
-  max-width: 600px;
-  padding: 0 20px;
-  font-family: var(--font-sans);
-  pointer-events: auto;
-}
-
-.cookie-link {
-  color: #e91e8c;
-  text-decoration: none;
-}
-
-.cookie-link:hover {
-  text-decoration: underline;
+.loading-screen__enter:active {
+  transform: scale(0.98);
 }

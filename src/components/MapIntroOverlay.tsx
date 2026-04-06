@@ -17,20 +17,21 @@ function MapIntroOverlayInner({ exiting, onExplore }: MapIntroOverlayProps) {
       <div className={veilClass} aria-hidden />
       <div className={shellClass} lang="en" aria-label="Welcome to ENVEX 2026">
         <header className="map-intro-top">
-          <img src="/logo.svg" className="map-intro-logo" width={160} height={48} alt="ENVEX" />
+          <img src="/logo.svg" className="map-intro-logo" width={240} height={52} alt="ENVEX" />
           <SoundControl variant="intro" />
         </header>
         <div className="map-intro-main">
           <h1 className="map-intro-headline">
             <span className="map-intro-headline-line">International</span>
             <span className="map-intro-headline-line">Exhibition</span>
-            <span className="map-intro-headline-line">on Environmental</span>
+
+            <span className="map-intro-headline-line" style={{paddingTop : 12}}>on Environmental</span>
             <span className="map-intro-headline-line">Technology &amp;</span>
-            <span className="map-intro-headline-line">Green Energy</span>
+            <span className="map-intro-headline-line" style={{paddingTop : 12}}>Green Energy</span>
           </h1>
           <p className="map-intro-body">
-            We invite you to <span className="map-intro-body__accent">2026 ENVEX</span> (International
-            Exhibition on Environmental Technology &amp; Green Energy) Korea&apos;s largest environmental
+            We invite you to <span className="map-intro-body__accent">2026 ENVEX</span> (International <br/>
+            Exhibition on Environmental Technology & <br/> Green Energy) Korea&apos;s largest <br/> environmental
             exhibition.
           </p>
         </div>

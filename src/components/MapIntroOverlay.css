@@ -5,8 +5,8 @@
   z-index: 1004;
   pointer-events: auto;
   touch-action: none;
-  /*-webkit-backdrop-filter: blur(2px);*/
-  /*backdrop-filter: blur(2px);*/
+  -webkit-backdrop-filter: blur(2.5px);
+  backdrop-filter: blur(2.5px);
   /*background: rgba(12, 24, 40, 0.18);*/
   opacity: 1;
   transition:
@@ -18,8 +18,8 @@
 
 .map-intro-blur-veil--exiting {
   opacity: 0;
-  -webkit-backdrop-filter: blur(0);
-  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(2);
+  backdrop-filter: blur(2);
   background: rgba(12, 24, 40, 0);
   pointer-events: none;
 }
@@ -114,10 +114,10 @@
 .map-intro-body {
   margin: 0;
   color: #1f1f1f;
-  font-size: clamp(0.8rem, 2.8vw, 0.95rem);
-  font-weight: 400;
+  font-size: clamp(0.7rem, 2.8vw, 0.95rem);
+  font-weight: 600;
   line-height: 1.5;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   max-width: 22rem;
   text-shadow: none;
 }
@@ -132,23 +132,24 @@
 .map-intro-bottom {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   flex-shrink: 0;
   pointer-events: auto;
-  padding-top: 0.5rem;
+  padding-top: 0;
+  padding-bottom: 60px;
 }
 
 .map-intro-cta {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.35rem;
-  padding: 0.85rem 1.35rem;
+  padding: 1rem 1.35rem;
   border: none;
   border-radius: 9999px;
   font-family: inherit;
   font-size: clamp(0.68rem, 2.4vw, 0.78rem);
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #ffffff;
