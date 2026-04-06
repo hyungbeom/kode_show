@@ -23,6 +23,8 @@ import './App.css'
 const RoomScene = lazy(() => import('./components/RoomScene'))
 
 const MAP_INTRO_EXIT_MS = 720
+/** 에셋 준비 후 진행률 100%까지 채우는 구간 — 끝나면 곧바로 맵 진입 */
+const LANDING_FINISH_MS = 2000
 
 type View = 'loading' | 'map' | 'room' | 'roomPrepare'
 
@@ -58,9 +60,13 @@ function App() {
   const [mapIntroExiting, setMapIntroExiting] = useState(false)
   const mapIntroExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mapIntroExitingRef = useRef(false)
+  const landingFinishRunIdRef = useRef(0)
+  const landingDidEnterRef = useRef(false)
 
   const isLandingPhase = currentView === 'loading'
   const [landingAssetsReady, setLandingAssetsReady] = useState(false)
+  /** null: 스피너 단계 | 0–100: 마무리 진행률(2초 구간에 포함) */
+  const [landingFinishProgress, setLandingFinishProgress] = useState<number | null>(null)
   const [roomEntryReady, setRoomEntryReady] = useState(false)
 
   const showMapLayer = currentView === 'map' || (isLandingPhase && landingAssetsReady)
@@ -222,6 +228,38 @@ function App() {
     runCurtainReveal(() => setCurrentView('map'))
   }, [setInitialEntry, runCurtainReveal])
 
+  useEffect(() => {
+    if (!isLandingPhase) {
+      setLandingFinishProgress(null)
+      landingDidEnterRef.current = false
+      return
+    }
+    if (!landingAssetsReady) {
+      setLandingFinishProgress(null)
+      return
+    }
+    const runId = ++landingFinishRunIdRef.current
+    setLandingFinishProgress(0)
+    const start = performance.now()
+    let raf = 0
+    const step = (now: number) => {
+      if (runId !== landingFinishRunIdRef.current) return
+      const t = Math.min(1, (now - start) / LANDING_FINISH_MS)
+      setLandingFinishProgress(Math.min(100, Math.round(t * 100)))
+      if (t < 1) {
+        raf = requestAnimationFrame(step)
+      } else if (!landingDidEnterRef.current) {
+        landingDidEnterRef.current = true
+        handleEnter()
+      }
+    }
+    raf = requestAnimationFrame(step)
+    return () => {
+      cancelAnimationFrame(raf)
+      landingFinishRunIdRef.current += 1
+    }
+  }, [isLandingPhase, landingAssetsReady, handleEnter])
+
   const handleRoomEnter = useCallback(() => {
     runCurtainReveal(() => setCurrentView('room'))
   }, [runCurtainReveal])
@@ -323,7 +361,8 @@ function App() {
 
       {isLandingPhase ? (
         <LoadingScreen
-          mapEntryReady={landingAssetsReady}
+          mapEntryReady={false}
+          landingProgressPercent={landingFinishProgress}
           onEnter={handleEnter}
           prepLabel="3D 맵 로딩 중…"
         />

@@ -121,12 +121,51 @@ function LoadingScene3D() {
   )
 }
 
+function LoadingProgressRing({ percent }) {
+  const r = 52
+  const c = 2 * Math.PI * r
+  const p = Math.min(100, Math.max(0, percent))
+  const offset = c * (1 - p / 100)
+  return (
+    <div
+      className="loading-circle"
+      role="progressbar"
+      aria-valuenow={Math.round(p)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <svg className="loading-circle-svg" viewBox="0 0 120 120" aria-hidden>
+        <circle className="loading-circle-bg" cx="60" cy="60" r={r} fill="none" strokeWidth="8" />
+        <circle
+          className="loading-circle-progress"
+          cx="60"
+          cy="60"
+          r={r}
+          fill="none"
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <span className="loading-percentage">{Math.round(p)}%</span>
+    </div>
+  )
+}
+
 /**
  * 로딩 화면 — ENVEX 3D 글래스 타포 + 그리드 / 접촉 그림자 (drei Text3D + MeshTransmissionMaterial)
- * - 부모가 mapEntryReady(에셋 준비)일 때 ENTER — 맵·룸 모두 커튼 뒤에서 씬 마운트 후 동일 UX
+ * - 룸: mapEntryReady 시 ENTER
+ * - 첫 랜딩: landingProgressPercent(0–100)로 마무리 구간 표시 후 부모가 자동 진입
  */
-export default function LoadingScreen({ onEnter, mapEntryReady = false, prepLabel }) {
+export default function LoadingScreen({
+  onEnter,
+  mapEntryReady = false,
+  prepLabel,
+  landingProgressPercent = null,
+}) {
   const prepText = prepLabel ?? '3D 맵 로딩 중…'
+  const showFinishingRing = landingProgressPercent != null
 
   return (
     <div className="loading-screen initial-loading loading-screen--curtain">
@@ -156,7 +195,12 @@ export default function LoadingScreen({ onEnter, mapEntryReady = false, prepLabe
           2026 ENVEX · Environmental Technology &amp; Green Energy
         </h2>
 
-        {mapEntryReady ? (
+        {showFinishingRing ? (
+          <div className="loading-map-prep loading-map-prep--finishing" role="status" aria-live="polite">
+            <LoadingProgressRing percent={landingProgressPercent} />
+            <span className="loading-map-prep__label">씬 연결 마무리 중</span>
+          </div>
+        ) : mapEntryReady ? (
           <button type="button" className="loading-enter" onClick={() => onEnter?.()}>
             <span className="loading-enter__ring" aria-hidden />
             <span className="loading-enter__label">ENTER</span>

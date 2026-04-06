@@ -172,11 +172,17 @@
 }
 
 .loading-circle-bg {
-  opacity: 0.2;
+  stroke: #0284c7;
+  opacity: 0.22;
 }
 
 .loading-circle-progress {
-  transition: stroke-dashoffset 0.1s ease;
+  stroke: #0369a1;
+  transition: stroke-dashoffset 0.08s linear;
+}
+
+.loading-map-prep--finishing {
+  min-height: clamp(150px, 42vw, 220px);
 }
 
 .loading-percentage {
