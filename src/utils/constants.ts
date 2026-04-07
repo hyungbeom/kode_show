@@ -5,9 +5,9 @@
 
 /**
  * false면 말풍선/랜드·마커 클릭 후 ZoneInfoPanel(구역 정보 시트)을 띄우지 않음.
- * 카메라 줌은 유지되며, 줌 완료 시 pending만 해제하고 마커를 다시 표시합니다.
+ * true면 줌 완료 시 `openPendingZone`으로 시트를 연다.
  */
-export const ZONE_INFO_PANEL_ENABLED = false
+export const ZONE_INFO_PANEL_ENABLED = true
 
 /** 맵 직교 카메라 기본 줌(논리값). 브라우저 UI 확대/축소 시 이 값 기준으로 화면 크기 보정 */
 export const MAP_ORTHO_DEFAULT_LOGICAL_ZOOM = 3.5

@@ -508,7 +508,6 @@ export const WorldModel = memo(function WorldModel(props) {
           speechBubblePlacement="center"
           speechBubbleYPad={0}
           speechBubbleHtmlPivot="top-right"
-          bubbleActivatesZone={false}
           hitBoxUnionScale={1}
           hitBoxMinAxis={0}
           characterNavPickable
