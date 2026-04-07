@@ -32,7 +32,7 @@ const MOVE_SMOOTH = 3.05
  * MapTerrain 로컬 기준 초당 최대 이동 거리(걷기 상한).
  * 여전히 빠르면 줄이고, 답답하면 키우기.
  */
-const MAX_NAV_SPEED_LOCAL = 7
+const MAX_NAV_SPEED_LOCAL = 20
 /** 카메라 위치가 캐릭터를 따라붙는 속도 (드래그 중은 더 낮춤) */
 const CAM_SMOOTH = 3.2
 const CAM_SMOOTH_DRAG = 1.85
