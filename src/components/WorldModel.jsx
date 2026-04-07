@@ -5,12 +5,16 @@ world.glb 맵 모델
 - Air_tower, Air_tower001 연기 파티클 (타워 AABB에 비례한 크기)
 - Air_Fan_A/B_propeller — SakuraWind (캡슐 바람결 + 원형 꽃잎)
 - Airplane — 맵 상공 궤도 애니메이션 (AirplaneFlight, 키 입력 없음)
-- 구역별 LandHover: *_Land 합 히트, 말풍선은 CH_* / Earth / Institution_Builidng 등 마커 노드 위
-- Carbon_Land+CH_Leaf_Body — 말풍선은 CH_Leaf_Body·CARBON NATURAL
+- Baloon/Balloon — `BalloonAmbient` + `BalloonDuplicateAmbient`×2 (`BALLOON_EXTRA_INSTANCES` 월드 오프셋)
+- Wings / Wing·Wing001·Wing002 — `WingsTowerOrbit` + `WingsDuplicateOrbit`(복제 1벌, XZ 오프셋 궤도)
+- 구역별 LandHover: *_Land 합 히트, 말풍선 앵커·모양은 구역별 (수질·대기·탄소·측정 등)
+- Carbon_Land+CH_Leaf_Body — 히트 합침, 말풍선은 Carbon_Land AABB 중심·우상단 피벗
 - NeonScreen — world.glb의 cube001 앵커 + screen.glb 지오 + /neon.png (WorldModel에서 마운트 필요)
+- Info_Tower_Screen — `InfoTowerScreenIdleSpin`: 월드 로컬 Y축 느린 연속 회전
 - Navigate idle 시 맵 회전 체감은 WorldModel이 아니라 CameraController에서 타깃 주위 카메라 궤도로 처리
 - Water_all — `WaterAllWaves` 버텍스 파동(geometry clone)
 - Clould_A/B/C — `GlbCloudRigs`: 스케일×3, 타입별 원본+복제 각각 포지션·보빙
+- CH_Microscope.glb — `CHMicroscopeModel` 고정 배치, 측정분석 말풍선은 `Measurement_Land` AABB 중심
 */
 
 import React, { useMemo, memo, useLayoutEffect, useRef, useEffect, useState } from 'react'
@@ -20,9 +24,20 @@ import { useGLTF } from '@react-three/drei'
 import { useMapStore } from '../store/useMapStore'
 import { SakuraWind } from './SakuraWind'
 import { AirplaneFlight } from './AirplaneFlight'
+import {
+  BalloonAmbient,
+  BalloonDuplicateAmbient,
+  BALLOON_EXTRA_INSTANCES,
+} from './BalloonAmbient'
+import {
+  WingsTowerOrbit,
+  WingsDuplicateOrbit,
+  resolveWingsTowerOrbitTargets,
+} from './WingsTowerOrbit'
 import { LandHover } from './LandHover'
 import { NeonScreen } from './NeonScreen'
 import { WaterAllWaves, getWaterAllMeshFromNodes } from './WaterAllWaves'
+import { CHMicroscopeModel } from './CHMicroscopeModel'
 import { resolveSceneNode } from '../utils/gltfNodeUtils'
 import {
   ZONE_ID_AIR,
@@ -57,7 +72,7 @@ const GLB_CLOUD_BLUEPRINTS = {
 
 /**
  * 인스턴스마다 원본(`duplicate: false`) 또는 `master.clone(true)` (`duplicate: true`).
- * position / rotation(라디안) / bob — 맵에 맞게 조정 가능.
+ * position / rotation(라디안) / bob(상하) / drift(수평 원: radius·speed rad/s·phase) — 맵에 맞게 조정 가능.
  */
 const GLB_CLOUD_INSTANCES = [
   {
@@ -65,35 +80,39 @@ const GLB_CLOUD_INSTANCES = [
     duplicate: false,
     position: [-102, -200, -38],
     rotation: [0, 1.22, 0],
-    bob: { amplitude: 2.8, speed: 0.28, phase: 0 },
+    bob: { amplitude: 2.8, speed: 0.36, phase: 0 },
+    /** 수평 원 궤도: radius(월드·맵 그룹 로컬), speed(rad/s), phase */
+    drift: { radius: 42, speed: 0.076, phase: 0.35 },
   },
   {
     id: 'A',
     duplicate: true,
     position: [-168, -180, 148],
     rotation: [0, 0, 0],
-    bob: { amplitude: 3.0, speed: 0.26, phase: 1.15 },
+    bob: { amplitude: 3.0, speed: 0.34, phase: 1.15 },
+    drift: { radius: 48, speed: 0.064, phase: 2.05 },
   },
- 
   {
     id: 'B',
     duplicate: true,
-    position: [-12, -180, 18],
+    position: [0, -270, 18],
     rotation: [0, 0.38, 0],
-    bob: { amplitude: 2.7, speed: 0.27, phase: 2.95 },
+    bob: { amplitude: 2.7, speed: 0.35, phase: 2.95 },
+    drift: { radius: 36, speed: 0.088, phase: 0.9 },
   },
   {
     id: 'C',
     duplicate: false,
-    position: [-326, -205, 258],
+    position: [-366, -255, 258],
     rotation: [0.06, 0.12, -0.04],
-    bob: { amplitude: 2.4, speed: 0.31, phase: 4.35 },
+    bob: { amplitude: 2.4, speed: 0.4, phase: 4.35 },
+    drift: { radius: 44, speed: 0.072, phase: 3.4 },
   },
-
 ]
 
 /**
- * 리그 그룹에 Object3D를 붙이고 position·rotation·Y 보빙만 적용 (로컬 변환은 마스터/클론 생성 시 처리).
+ * 리그 그룹에 Object3D를 붙이고 position·rotation·Y 보빙 + drift(앵커 주위 수평 원 궤도) 적용.
+ * 맵 좌표 스케일이 커서 radius는 수십 단위(월드 그룹 로컬)여야 화면에서 보입니다.
  */
 function GlbCloudRig({ object3D, spec }) {
   const groupRef = useRef(/** @type {THREE.Group | null} */ (null))
@@ -114,8 +133,22 @@ function GlbCloudRig({ object3D, spec }) {
   useFrame(({ clock }) => {
     const g = groupRef.current
     if (!g || !object3D) return
-    const dy = Math.sin(clock.elapsedTime * speed + phase) * amplitude
-    g.position.set(px, py + dy, pz)
+    const t = clock.elapsedTime
+    const dy = Math.sin(t * speed + phase) * amplitude
+    const d =
+      spec.drift ??
+      ({
+        radius: Math.max(amplitude * 12, 28),
+        speed: 0.078,
+        phase: phase + 0.6,
+      })
+    const r = d.radius ?? d.amp ?? 32
+    const ds = d.speed ?? 0.078
+    const dp = d.phase ?? 0
+    const ang = t * ds + dp
+    const dx = Math.cos(ang) * r
+    const dz = Math.sin(ang) * r
+    g.position.set(px + dx, py + dy, pz + dz)
     g.rotation.set(rx, ry, rz)
   })
 
@@ -177,7 +210,7 @@ function GlbCloudRigs({ nodes }) {
 }
 
 /** Zone 포커스용 GLB 노드 (기관 건은 오타/철자 별칭 처리) */
-const GLB_FOCUS_NODES = ['CH_Water', 'CH_Air', 'CH_Microscope', 'CH_Leaf_Body', 'Earth']
+const GLB_FOCUS_NODES = ['CH_Water', 'CH_Air', 'CH_Leaf_Body', 'Earth', 'Measurement_Land']
 const INSTITUTION_GLB_ALIASES = ['Institution_Builidng', 'Institution_Building']
 
 const SMOKE_SPAWN_INTERVAL = 0.5 // 초
@@ -303,6 +336,18 @@ function AirTowerSmoke({ nodes }) {
   return null
 }
 
+/** Info_Tower_Screen — 타워 스크린 메시 그룹을 세로축으로 천천히 계속 회전 (로컬 Y, rad/s) */
+/** 음수면 시계 방향(위에서 볼 때) 등 이전과 반대로 회전 */
+const INFO_TOWER_SCREEN_YAW_RAD_PER_S = -0.3
+
+function InfoTowerScreenIdleSpin({ object3D }) {
+  useFrame((_, delta) => {
+    if (!object3D) return
+    object3D.rotation.y += delta * INFO_TOWER_SCREEN_YAW_RAD_PER_S
+  })
+  return null
+}
+
 export const WorldModel = memo(function WorldModel(props) {
   const { scene } = useGLTF('/models/world.glb')
 
@@ -319,6 +364,15 @@ export const WorldModel = memo(function WorldModel(props) {
 
   const { nodes } = useGraph(clonedScene)
   const waterAllMesh = useMemo(() => getWaterAllMeshFromNodes(nodes, clonedScene), [nodes, clonedScene])
+  const balloonNode = useMemo(
+    () => resolveSceneNode(nodes, 'Baloon') ?? resolveSceneNode(nodes, 'Balloon'),
+    [nodes],
+  )
+  const wingsTowerOrbit = useMemo(() => resolveWingsTowerOrbitTargets(nodes), [nodes])
+  const infoTowerScreenNode = useMemo(
+    () => resolveSceneNode(nodes, 'Info_Tower_Screen'),
+    [nodes],
+  )
   const setGlbFocusPositions = useMapStore((s) => s.setGlbFocusPositions)
   const setWorldGlbBoundsCenter = useMapStore((s) => s.setWorldGlbBoundsCenter)
 
@@ -361,10 +415,14 @@ export const WorldModel = memo(function WorldModel(props) {
     <>
       <group>
         <primitive object={clonedScene} {...props} />
+        <CHMicroscopeModel />
         <GlbCloudRigs nodes={nodes} />
       </group>
       {waterAllMesh ? <WaterAllWaves mesh={waterAllMesh} /> : null}
       <NeonScreen nodes={nodes} />
+      {infoTowerScreenNode ? (
+        <InfoTowerScreenIdleSpin object3D={infoTowerScreenNode} />
+      ) : null}
       <SakuraWind
         fan={nodes.Air_Fan_A_propeller}
         clonedScene={clonedScene}
@@ -383,10 +441,38 @@ export const WorldModel = memo(function WorldModel(props) {
       />
       <AirTowerSmoke nodes={nodes} />
       {nodes.Airplane ? <AirplaneFlight airplane={nodes.Airplane} /> : null}
+      {balloonNode ? <BalloonAmbient balloon={balloonNode} /> : null}
+      {balloonNode
+        ? BALLOON_EXTRA_INSTANCES.map((spec, i) => (
+            <BalloonDuplicateAmbient
+              key={`balloon-dup-${i}`}
+              template={balloonNode}
+              worldOffset={spec.worldOffset}
+              timePhase={spec.timePhase}
+            />
+          ))
+        : null}
+      {wingsTowerOrbit.anchor && wingsTowerOrbit.wings.length > 0 ? (
+        <WingsTowerOrbit
+          anchor={wingsTowerOrbit.anchor}
+          wings={wingsTowerOrbit.wings}
+          clonedScene={clonedScene}
+        />
+      ) : null}
+      {wingsTowerOrbit.anchor && wingsTowerOrbit.wingTemplateForClone ? (
+        <WingsDuplicateOrbit
+          wingTemplate={wingsTowerOrbit.wingTemplateForClone}
+          anchor={wingsTowerOrbit.anchor}
+          clonedScene={clonedScene}
+        />
+      ) : null}
       {nodes.Water_Quality_Land || nodes.CH_Water ? (
         <LandHover
           lands={[nodes.Water_Quality_Land, nodes.CH_Water].filter(Boolean)}
-          speechAnchor={nodes.CH_Water || nodes.Water_Quality_Land}
+          speechAnchor={nodes.Water_Quality_Land || nodes.CH_Water}
+          speechBubblePlacement="center"
+          speechBubbleYPad={0}
+          speechBubbleHtmlPivot="top-left"
           clonedScene={clonedScene}
           label="WATER"
           zoneId={ZONE_ID_WATER}
@@ -396,27 +482,39 @@ export const WorldModel = memo(function WorldModel(props) {
       {nodes.Carbon_Land || nodes.CH_Leaf_Body ? (
         <LandHover
           lands={[nodes.Carbon_Land, nodes.CH_Leaf_Body].filter(Boolean)}
-          speechAnchor={nodes.CH_Leaf_Body || nodes.Carbon_Land}
+          speechAnchor={nodes.Carbon_Land || nodes.CH_Leaf_Body}
+          speechBubblePlacement="center"
+          speechBubbleYPad={0}
+          speechBubbleHtmlPivot="top-right"
           clonedScene={clonedScene}
           label="CARBON NATURAL"
           zoneId={ZONE_ID_CARBON}
           glbNode="CH_Leaf_Body"
         />
       ) : null}
-      {nodes.Measurement_Land || nodes.CH_Microscope ? (
+      {nodes.Measurement_Land ? (
         <LandHover
-          lands={[nodes.Measurement_Land, nodes.CH_Microscope].filter(Boolean)}
-          speechAnchor={nodes.CH_Microscope || nodes.Measurement_Land}
+          lands={[nodes.Measurement_Land].filter(Boolean)}
+          speechAnchor={nodes.Measurement_Land}
+          speechBubblePlacement="center"
+          speechBubbleYPad={0}
+          speechBubbleHtmlPivot="top-right"
+          bubbleActivatesZone={false}
+          hitBoxUnionScale={1}
+          hitBoxMinAxis={0}
           clonedScene={clonedScene}
           label={'Measurement\n& Analysis'}
           zoneId={ZONE_ID_LAB}
-          glbNode="CH_Microscope"
+          glbNode="Measurement_Land"
         />
       ) : null}
       {nodes.Foreign_Land || nodes.Earth ? (
         <LandHover
           lands={[nodes.Foreign_Land, nodes.Earth].filter(Boolean)}
-          speechAnchor={nodes.Earth || nodes.Foreign_Land}
+          speechAnchor={nodes.Foreign_Land || nodes.Earth}
+          speechBubblePlacement="center"
+          speechBubbleYPad={0}
+          speechBubbleHtmlPivot="top-right"
           clonedScene={clonedScene}
           label="OVERSEAS"
           zoneId={ZONE_ID_EARTH}
@@ -426,7 +524,10 @@ export const WorldModel = memo(function WorldModel(props) {
       {nodes.Air_Land || nodes.CH_Air ? (
         <LandHover
           lands={[nodes.Air_Land, nodes.CH_Air].filter(Boolean)}
-          speechAnchor={nodes.CH_Air || nodes.Air_Land}
+          speechAnchor={nodes.Air_Land || nodes.CH_Air}
+          speechBubblePlacement="center"
+          speechBubbleYPad={0}
+          speechBubbleHtmlPivot="bottom-left"
           clonedScene={clonedScene}
           label="AIR"
           zoneId={ZONE_ID_AIR}
@@ -440,10 +541,17 @@ export const WorldModel = memo(function WorldModel(props) {
             nodes.Institution_Builidng || nodes.Institution_Building,
           ].filter(Boolean)}
           speechAnchor={
-            nodes.Institution_Builidng || nodes.Institution_Building || nodes.Institution_Land
+            nodes.Institution_Land ||
+            nodes.Institution_Builidng ||
+            nodes.Institution_Building
           }
+          speechBubblePlacement="center"
+          speechBubbleYPad={0}
+          speechBubbleHtmlPivot="bottom-right"
+          hitBoxPreciseAabb
+          hitBoxExpandWorld={2.5}
           clonedScene={clonedScene}
-          label="Associations & Organizations"
+          label={"ASSOCITATION \n ORGANIZATIONS"}
           zoneId={ZONE_ID_INST}
           glbNode="Institution_Builidng"
         />

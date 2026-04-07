@@ -5,6 +5,7 @@ import {
   getMapInitialOrthoZoomForWidth,
 } from '../utils/mapCameraLayout'
 import { readLayoutBrowserWidthPx } from '../utils/mapViewport'
+import { ZONE_INFO_PANEL_ENABLED } from '../utils/constants'
 
 /**
  * KODE Clubs 지도 상태 관리 스토어
@@ -258,17 +259,24 @@ export const useMapStore = create<MapStore>((set, get) => ({
   // 줌인 완료 후 Zone 모달 열기
   openPendingZone: () => {
     set((state) => {
-      if (state.pendingZone) {
+      if (!state.pendingZone) return {}
+      if (!ZONE_INFO_PANEL_ENABLED) {
         return {
-          selectedZone: state.pendingZone,
-          selectedZonePosition: state.pendingZonePosition,
           pendingZone: null,
           pendingZonePosition: null,
-          // 마커 클릭인 경우 전체 화면 모드 없이, Zone 박스 클릭인 경우 전체 화면 모드 활성화
-          isFullscreenCanvas: !state.isMarkerClick,  // 마커 클릭이 아니면 전체 화면 모드
+          markersVisible: true,
+          selectedArea: null,
+          isMarkerClick: false,
         }
       }
-      return {}
+      return {
+        selectedZone: state.pendingZone,
+        selectedZonePosition: state.pendingZonePosition,
+        pendingZone: null,
+        pendingZonePosition: null,
+        // 마커 클릭인 경우 전체 화면 모드 없이, Zone 박스 클릭인 경우 전체 화면 모드 활성화
+        isFullscreenCanvas: !state.isMarkerClick,  // 마커 클릭이 아니면 전체 화면 모드
+      }
     })
   },
   clearSelectedZone: () => {

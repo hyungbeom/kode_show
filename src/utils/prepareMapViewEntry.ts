@@ -15,7 +15,12 @@ import { useMapStore } from '../store/useMapStore'
 import { getMapInitialOrthoZoomForWidth, resolveMapCameraLayoutForViewport } from './mapCameraLayout'
 import { readLayoutBrowserWidthPx } from './mapViewport'
 
-const GLB_URLS = ['/models/world.glb', '/models/amongus.glb', '/models/screen.glb'] as const
+const GLB_URLS = [
+  '/models/world.glb',
+  '/models/CH_Microscope.glb',
+  '/models/amongus.glb',
+  '/models/screen.glb',
+] as const
 const NEON_URL = '/neon.png'
 const WORLD_GLB_URL = GLB_URLS[0]
 

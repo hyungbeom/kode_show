@@ -5,6 +5,7 @@ import NavigationUI from './NavigationUI'
 import { NavigateMyPage } from './NavigateMyPage'
 import { MapIntroOverlay } from './MapIntroOverlay'
 import { MapTopToolbar } from './MapTopToolbar'
+import { ZONE_INFO_PANEL_ENABLED } from '../utils/constants'
 
 const MapScene = lazy(() => import('./MapScene'))
 const ZoneInfoPanel = lazy(() => import('./ZoneInfoPanel'))
@@ -56,7 +57,7 @@ function MapViewChromeInner({
       {mapReady ? (
         <NavigateMyPage navigateModeActive={selectedZone == null && !mapNotificationOpen} />
       ) : null}
-      {mapReady && selectedZone ? (
+      {mapReady && selectedZone && ZONE_INFO_PANEL_ENABLED ? (
         <Suspense fallback={null}>
           <ZoneInfoPanel zoneId={selectedZone} onClose={onClearZone} />
         </Suspense>

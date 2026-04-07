@@ -26,6 +26,12 @@ const _worldCorners = [
 /** true: 랜드(투명 히트 박스) 클릭 시 해당 관으로 카메라 이동 */
 const MAP_LAND_MESH_CLICK_NAVIGATES_ZONE = true
 
+/** 히트 AABB가 실제 메시보다 과하게 커지지 않게 — 기본 최소 변 길이(월드) */
+const DEFAULT_HIT_BOX_MIN_AXIS = 0.5
+/** 타깃 합 AABB 대비 히트 박스 스케일 (1 = 여백 없음) */
+const DEFAULT_HIT_BOX_UNION_SCALE = 1.02
+const HIT_BOX_AXIS_EPS = 1e-6
+
 /** 월드축 정렬 AABB 8꼭짓점 → parent 로컬에서 다시 AABB (히트 박스 position/scale 정합) */
 function worldAabbToParentLocal(mesh, worldMin, worldMax, centerOut, sizeOut) {
   const parent = mesh.parent
@@ -58,8 +64,31 @@ function worldAabbToParentLocal(mesh, worldMin, worldMax, centerOut, sizeOut) {
  * *_Land 등 메시 위 호버: 커서 pointer, 말풍선 dark
  * - land: 단일 히트·말풍선 앵커
  * - lands + speechAnchor: 합 AABB 히트, 말풍선은 speechAnchor (예: CH_Leaf_Body)
+ * - speechAnchorRef: 말풍선만 이 ref의 Object3D 추적 (히트·구역 포커스는 speechAnchor 유지)
+ * - speechBubblePlacement / speechBubbleYPad / speechBubbleHtmlPivot: NodeSpeechBubble 배치
+ * - bubbleActivatesZone: false면 Html 말풍선 탭으로 구역 이동 안 함(포인터는 캔버스로 통과) — 랜드 메시만 클릭
+ * - hitBoxUnionScale / hitBoxMinAxis: 투명 히트 박스 크기(기본은 약간 확대·최소 두께); 좁은 랜드는 0에 가깝게 줄이면 AABB에 가깝게 맞춤
+ * - hitBoxPreciseAabb: true면 Box3.setFromObject(…, true)로 꼭짓점 기준 AABB(랜드·건물 합이 화면과 더 잘 맞을 때)
+ * - hitBoxExpandWorld: 합 AABB를 월드 단위로 등방 확장 — 다른 구역 히트와 레이 거리 경쟁에서 불리할 때 소량만
  */
-export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneId, glbNode }) {
+export function LandHover({
+  land,
+  lands,
+  speechAnchor,
+  speechAnchorRef,
+  speechBubblePlacement,
+  speechBubbleYPad,
+  speechBubbleHtmlPivot,
+  bubbleActivatesZone = true,
+  hitBoxUnionScale = DEFAULT_HIT_BOX_UNION_SCALE,
+  hitBoxMinAxis = DEFAULT_HIT_BOX_MIN_AXIS,
+  hitBoxPreciseAabb = false,
+  hitBoxExpandWorld = 0,
+  clonedScene,
+  label,
+  zoneId,
+  glbNode,
+}) {
   const [hovered, setHovered] = useState(false)
   const hitRef = useRef(null)
   const selectArea = useMapStore((s) => s.selectArea)
@@ -131,7 +160,7 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
 
     let hasBox = false
     for (const t of targets) {
-      _boxWorld.setFromObject(t)
+      _boxWorld.setFromObject(t, hitBoxPreciseAabb)
       if (_boxWorld.isEmpty()) continue
       if (!hasBox) {
         _unionWorld.copy(_boxWorld)
@@ -142,6 +171,10 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
     }
     if (!hasBox || _unionWorld.isEmpty()) return
 
+    if (hitBoxExpandWorld > 0) {
+      _unionWorld.expandByScalar(hitBoxExpandWorld)
+    }
+
     if (
       !worldAabbToParentLocal(mesh, _unionWorld.min, _unionWorld.max, _centerLocal, _sizeLocal)
     ) {
@@ -149,10 +182,12 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
     }
 
     mesh.position.copy(_centerLocal)
+    const minAxis = hitBoxMinAxis > 0 ? hitBoxMinAxis : HIT_BOX_AXIS_EPS
+    const u = hitBoxUnionScale
     mesh.scale.set(
-      Math.max(_sizeLocal.x * 1.02, 0.5),
-      Math.max(_sizeLocal.y * 1.02, 0.5),
-      Math.max(_sizeLocal.z * 1.02, 0.5),
+      Math.max(_sizeLocal.x * u, minAxis),
+      Math.max(_sizeLocal.y * u, minAxis),
+      Math.max(_sizeLocal.z * u, minAxis),
     )
   })
 
@@ -206,11 +241,14 @@ export function LandHover({ land, lands, speechAnchor, clonedScene, label, zoneI
       {mapHeroCopyDismissed ? (
         <NodeSpeechBubble
           anchor={bubbleAnchor}
+          anchorRef={speechAnchorRef}
           clonedScene={clonedScene}
           label={label}
-          yPad={18}
+          yPad={speechBubbleYPad ?? 18}
+          bubblePlacement={speechBubblePlacement ?? 'top'}
+          bubbleHtmlPivot={speechBubbleHtmlPivot ?? 'center'}
           variant={hovered ? 'dark' : 'light'}
-          onBubbleActivate={activateZone}
+          onBubbleActivate={bubbleActivatesZone ? activateZone : undefined}
         />
       ) : null}
     </>

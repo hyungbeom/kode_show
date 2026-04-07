@@ -6,37 +6,94 @@
   user-select: none;
 }
 
+/* Html center + 아래 피벗: 우상단이 3D 앵커(박스 중심)에 오도록 */
+.node-speech-bubble--pivot-top-right {
+  display: block;
+}
+
+.node-speech-bubble__pivot-top-right {
+  display: inline-block;
+  transform: translate(-50%, 50%);
+}
+
+/* 좌상단이 3D 앵커(박스 중심)에 오도록 */
+.node-speech-bubble--pivot-top-left {
+  display: block;
+}
+
+.node-speech-bubble__pivot-top-left {
+  display: inline-block;
+  transform: translate(50%, 50%);
+}
+
+/* 좌하단이 3D 앵커(박스 중심)에 오도록 */
+.node-speech-bubble--pivot-bottom-left {
+  display: block;
+}
+
+.node-speech-bubble__pivot-bottom-left {
+  display: inline-block;
+  transform: translate(50%, -50%);
+}
+
+/* 우하단이 3D 앵커(박스 중심)에 오도록 */
+.node-speech-bubble--pivot-bottom-right {
+  display: block;
+}
+
+.node-speech-bubble__pivot-bottom-right {
+  display: inline-block;
+  transform: translate(-50%, -50%);
+}
+
 .node-speech-bubble--interactive {
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  /* 터치 타깃 확대 (말풍선 꼬리·가장자리 탭) */
-  padding: 12px 16px 20px;
-  margin: -12px -16px -20px;
+  padding: 10px 12px;
+  margin: -10px -12px;
 }
 
+/* 캡슐형 + 우상단 직각(리프/포인터 느낌), 그림자 없음 */
 .node-speech-bubble__body {
   position: relative;
   display: inline-flex;
-  padding: 12px 20px;
+  min-width: 7.5rem;
+  max-width: 12rem;
+  padding: 1rem 1.35rem 1.05rem;
   justify-content: center;
   align-items: center;
   gap: 10px;
   background: #ffffff;
-  border-radius: 9999px;
-  box-shadow: 0 4px 14px rgba(26, 39, 68, 0.12);
+  border: none;
+  /* TL · TR · BR · BL */
+  border-radius: 2.25rem 0 2.25rem 2.25rem;
+  box-shadow: none;
+}
+
+/* 기본 .node-speech-bubble__body 보다 특이도 높게 — 라이트에서도 직각 변형 유지 */
+.node-speech-bubble__body.node-speech-bubble__body--sharp-tl {
+  border-radius: 0 2.25rem 2.25rem 2.25rem;
+}
+
+.node-speech-bubble__body.node-speech-bubble__body--sharp-bl {
+  border-radius: 2.25rem 2.25rem 2.25rem 0;
+}
+
+.node-speech-bubble__body.node-speech-bubble__body--sharp-br {
+  border-radius: 2.25rem 2.25rem 0 2.25rem;
 }
 
 .node-speech-bubble__text {
   margin: 0;
-  color: #000;
+  color: #000000;
   text-align: center;
-  font-family: Pretendard, var(--font-sans), sans-serif;
-  font-size: 14px;
+  font-family: Pretendard, var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-size: 0.8125rem;
   font-style: normal;
   font-weight: 800;
-  line-height: 120%;
-  letter-spacing: -0.12px;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
 }
 
 .node-speech-bubble__badge {
@@ -59,29 +116,14 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 
-.node-speech-bubble__tail {
-  width: 0;
-  height: 0;
-  border-left: 11px solid transparent;
-  border-right: 11px solid transparent;
-  border-top: 13px solid #ffffff;
-  margin-top: -2px;
-  filter: drop-shadow(0 3px 4px rgba(26, 39, 68, 0.08));
-}
-
-/* 호버/강조 — 네이비 말풍선 + 흰 글씨 + 빨간 배지 */
+/* 호버/강조 — 배경·글자만 (border-radius는 비호버와 동일 실루엣 유지: sharp-tl / sharp-bl / sharp-br / 기본은 위 본문 규칙) */
 .node-speech-bubble--dark .node-speech-bubble__body {
   background: #1a2744;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  box-shadow: none;
 }
 
 .node-speech-bubble--dark .node-speech-bubble__text {
   color: #ffffff;
-}
-
-.node-speech-bubble--dark .node-speech-bubble__tail {
-  border-top-color: #1a2744;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
 }
 
 .node-speech-bubble--dark .node-speech-bubble__badge {
