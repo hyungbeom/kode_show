@@ -189,9 +189,8 @@ export const MODEL_PATHS = {
     BASE_PATH: '/models/',
     SHOW_ROOM: '/models/show_room2.glb',
   },
-  // 플레이어 모델
+  // 플레이어 모델 (맵 캐릭터 비주얼 — `public/models/amongus.glb`)
   PLAYER: {
     AMONG_US: '/models/amongus.glb',
-    CAR: '/models/car.glb',
   },
 } as const

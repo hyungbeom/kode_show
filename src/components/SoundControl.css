@@ -36,8 +36,8 @@
 
 .sound-control--topbar {
   position: static;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   background: rgba(30, 58, 68, 0.92);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
 }

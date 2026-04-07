@@ -4,6 +4,60 @@ import { useMapStore } from '../store/useMapStore'
 import { searchExhibitors, type ExhibitorSearchHit } from '../utils/mapExhibitorSearch'
 import './MapTopToolbar.css'
 
+/** 캐릭터 3인칭 시점(Player lerp) ↔ 직교 맵 시점 */
+function CharacterViewModeButton() {
+  const followPhysicsBox = useMapStore((s) => s.followPhysicsBox)
+  const setFollowPhysicsBox = useMapStore((s) => s.setFollowPhysicsBox)
+
+  return (
+    <button
+      type="button"
+      className="sound-control sound-control--topbar"
+      aria-pressed={followPhysicsBox}
+      aria-label={followPhysicsBox ? '맵 시점으로 전환' : '캐릭터 시점으로 전환'}
+      title={followPhysicsBox ? '맵 보기' : '캐릭터 시점'}
+      onClick={() => setFollowPhysicsBox(!followPhysicsBox)}
+    >
+      {followPhysicsBox ? (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <rect
+            x="3.5"
+            y="5.5"
+            width="17"
+            height="13"
+            rx="2"
+            stroke="currentColor"
+            strokeWidth="1.75"
+          />
+          <path
+            d="M7 9h10M7 12.5h6"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      ) : (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="12" cy="7" r="3" stroke="currentColor" strokeWidth="1.75" />
+          <path
+            d="M6.5 19.5C6.5 15.5 8.8 13 12 13C15.2 13 17.5 15.5 17.5 19.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+          />
+          <path
+            d="M19 8L21 10M21 10L19 12M21 10H17"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )}
+    </button>
+  )
+}
+
 function MapSearchIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -32,6 +86,7 @@ function MapTopToolbarInner() {
   const glbFocusPositions = useMapStore((s) => s.glbFocusPositions)
   const selectArea = useMapStore((s) => s.selectArea)
   const setZonePanelSearchDeepLink = useMapStore((s) => s.setZonePanelSearchDeepLink)
+  const followPhysicsBox = useMapStore((s) => s.followPhysicsBox)
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedQuery(query), SEARCH_DEBOUNCE_MS)
@@ -53,6 +108,7 @@ function MapTopToolbarInner() {
 
   const pickHit = useCallback(
     (hit: ExhibitorSearchHit) => {
+      if (followPhysicsBox) return
       const pos = glbFocusPositions[hit.glbNode]
       if (!pos) return
       setZonePanelSearchDeepLink({ focusCompanyId: hit.company.id })
@@ -62,7 +118,7 @@ function MapTopToolbarInner() {
       setListOpen(false)
       inputRef.current?.blur()
     },
-    [glbFocusPositions, selectArea, setZonePanelSearchDeepLink],
+    [followPhysicsBox, glbFocusPositions, selectArea, setZonePanelSearchDeepLink],
   )
 
   const showSuggestions = listOpen && query.trim().length > 0
@@ -140,6 +196,9 @@ function MapTopToolbarInner() {
             )}
           </div>
         ) : null}
+      </div>
+      <div className="map-top-toolbar__right">
+        <CharacterViewModeButton />
       </div>
     </div>
   )

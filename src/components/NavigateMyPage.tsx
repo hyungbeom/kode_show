@@ -295,73 +295,79 @@ export function NavigateMyPage({ navigateModeActive }: NavigateMyPageProps) {
 
   return (
     <>
-      <button
-        type="button"
-        className="navigate-mypage__fab"
-        onClick={() => setOpen(true)}
-        aria-label="마이페이지 열기"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <UserIcon />
-      </button>
+      <div className="navigate-mypage__fab-host">
+        <button
+          type="button"
+          className="navigate-mypage__fab"
+          onClick={() => setOpen(true)}
+          aria-label="마이페이지 열기"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+        >
+          <UserIcon />
+        </button>
+      </div>
       {modal}
+      {createPortal(
+        <>
+          <ExhibitionFloorMapModal
+            isOpen={mapFocus != null}
+            onClose={() => setMapFocus(null)}
+            focusNaturalX={mapFocus?.nx}
+            focusNaturalY={mapFocus?.ny}
+            elevated
+          />
 
-      <ExhibitionFloorMapModal
-        isOpen={mapFocus != null}
-        onClose={() => setMapFocus(null)}
-        focusNaturalX={mapFocus?.nx}
-        focusNaturalY={mapFocus?.ny}
-        elevated
-      />
-
-      <Modal
-        isOpen={seminarModalOpen}
-        onClose={() => setSeminarModalOpen(false)}
-        className="navigate-mypage-seminar__dialog"
-        overlayClassName="navigate-mypage-seminar__overlay"
-      >
-        <div className="navigate-mypage-seminar">
-          <div className="navigate-mypage-seminar__head">
-            <h2 className="navigate-mypage-seminar__title">세미나 일정표</h2>
-            <button
-              type="button"
-              className="navigate-mypage-seminar__close"
-              onClick={() => setSeminarModalOpen(false)}
-              aria-label="닫기"
-            >
-              ×
-            </button>
-          </div>
-          <div className="navigate-mypage-seminar__table-wrap">
-            <table className="navigate-mypage-seminar__table">
-              <thead>
-                <tr>
-                  <th scope="col">일자</th>
-                  <th scope="col">시간</th>
-                  <th scope="col">장소</th>
-                  <th scope="col">세션</th>
-                  <th scope="col">비고</th>
-                </tr>
-              </thead>
-              <tbody>
-                {SEMINAR_SCHEDULE.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.day}</td>
-                    <td>{r.time}</td>
-                    <td>{r.room}</td>
-                    <td>{r.title}</td>
-                    <td>{r.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button type="button" className="navigate-mypage-seminar__btn" onClick={() => setSeminarModalOpen(false)}>
-            닫기
-          </button>
-        </div>
-      </Modal>
+          <Modal
+            isOpen={seminarModalOpen}
+            onClose={() => setSeminarModalOpen(false)}
+            className="navigate-mypage-seminar__dialog"
+            overlayClassName="navigate-mypage-seminar__overlay"
+          >
+            <div className="navigate-mypage-seminar">
+              <div className="navigate-mypage-seminar__head">
+                <h2 className="navigate-mypage-seminar__title">세미나 일정표</h2>
+                <button
+                  type="button"
+                  className="navigate-mypage-seminar__close"
+                  onClick={() => setSeminarModalOpen(false)}
+                  aria-label="닫기"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="navigate-mypage-seminar__table-wrap">
+                <table className="navigate-mypage-seminar__table">
+                  <thead>
+                    <tr>
+                      <th scope="col">일자</th>
+                      <th scope="col">시간</th>
+                      <th scope="col">장소</th>
+                      <th scope="col">세션</th>
+                      <th scope="col">비고</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SEMINAR_SCHEDULE.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.day}</td>
+                        <td>{r.time}</td>
+                        <td>{r.room}</td>
+                        <td>{r.title}</td>
+                        <td>{r.note}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <button type="button" className="navigate-mypage-seminar__btn" onClick={() => setSeminarModalOpen(false)}>
+                닫기
+              </button>
+            </div>
+          </Modal>
+        </>,
+        document.body,
+      )}
     </>
   )
 }

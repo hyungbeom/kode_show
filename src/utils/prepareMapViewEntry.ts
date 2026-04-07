@@ -14,11 +14,14 @@ import { GLTFLoader } from 'three-stdlib'
 import { useMapStore } from '../store/useMapStore'
 import { getMapInitialOrthoZoomForWidth, resolveMapCameraLayoutForViewport } from './mapCameraLayout'
 import { readLayoutBrowserWidthPx } from './mapViewport'
+import { MODEL_PATHS } from './constants'
 
 const GLB_URLS = [
   '/models/world.glb',
   '/models/CH_Microscope.glb',
-  '/models/amongus.glb',
+  '/models/CH_Air.glb',
+  '/models/CH_Water.glb',
+  MODEL_PATHS.PLAYER.AMONG_US,
   '/models/screen.glb',
 ] as const
 const NEON_URL = '/neon.png'

@@ -8,6 +8,23 @@
   display: none;
 }
 
+.navigation-ui__mobile-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.navigation-ui__megaphone-anchor {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
 .navigation-ui__desktop {
   display: block;
   pointer-events: auto;
@@ -38,7 +55,7 @@
   user-select: none;
 }
 
-/* 데스크톱·태블릿 넓은 화면: 하단 NAVIGATE만 (기존과 동일) */
+/* 데스크톱·태블릿: NAVIGATE 가운데, 알림은 좌하단 고정 */
 @media (min-width: 769px) {
   .navigation-ui {
     bottom: env(safe-area-inset-bottom, 0px);
@@ -51,12 +68,44 @@
     pointer-events: auto;
   }
 
+  .navigation-ui__mobile-actions {
+    justify-content: center;
+    width: auto;
+    margin-bottom: 0;
+    padding: 0;
+  }
+
+  .navigation-ui__megaphone-anchor {
+    position: fixed;
+    left: max(16px, env(safe-area-inset-left, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    z-index: 2100;
+    width: auto;
+    height: auto;
+    flex: none;
+  }
+
   .navigation-ui__ticker {
     display: none !important;
   }
+
+  /* 고정 FAB는 플렉스 밖으로만 나가고, 호스트는 레이아웃·히트에 끼어들지 않음 */
+  .navigation-ui__mobile-actions .navigate-mypage__fab-host {
+    width: 0;
+    min-width: 0;
+    max-width: none;
+    flex: 0 0 0;
+    margin: 0;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .navigation-ui__mobile-actions .navigate-mypage__fab {
+    pointer-events: auto;
+  }
 }
 
-/* 모바일: 하단에 NAVIGATE 버튼, 그 바로 위(2px)에 전광판 */
+/* 모바일: 전광판 아래 [알림 48 | NAVIGATE(크게) | 마이페이지 48] 한 줄 */
 @media (max-width: 768px) {
   .navigation-ui {
     left: 0;
@@ -144,25 +193,91 @@
     align-self: center;
   }
 
-  .navigation-ui__desktop {
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    /* 좌측은 MapMegaphone이 탭되도록 — 실제 SVG만 히트 */
-    pointer-events: none;
+  .navigation-ui__mobile-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
     margin-top: 0;
     margin-bottom: max(16px, env(safe-area-inset-bottom, 0px));
-    width: 100%;
+    padding: 0 max(8px, env(safe-area-inset-left)) 0 max(8px, env(safe-area-inset-right));
+    gap: 6px;
+    pointer-events: none;
+    position: relative;
+    z-index: 1;
+  }
+
+  .navigation-ui__megaphone-anchor {
+    position: static;
+    flex: 0 0 48px;
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+  }
+
+  .navigation-ui__desktop {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    margin: 0;
+    position: relative;
+    z-index: 0;
+  }
+
+  .navigation-ui__desktop.navigation-ui__desktop--hidden {
+    display: flex !important;
   }
 
   .navigation-ui__desktop .navigate-text {
     margin-bottom: 0;
+    padding: 0 4px;
     pointer-events: auto;
   }
 
   .navigation-ui__desktop .navigate-text__img {
-    max-height: 64px;
-    max-width: min(200px, 70vw);
+    max-height: 80px;
+    max-width: min(280px, 88vw);
+    width: auto;
+  }
+
+  .navigation-ui__mobile-actions .navigate-mypage__fab-host {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 0 0 48px;
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    min-height: 48px;
+    margin: 0;
+    margin-left: auto;
+    pointer-events: auto;
+    position: relative;
+    z-index: 3;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .navigation-ui__mobile-actions .navigate-mypage__fab {
+    position: static;
+    right: auto;
+    bottom: auto;
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    margin: 0;
+    pointer-events: auto;
+    touch-action: manipulation;
+    z-index: 1;
+  }
+
+  .navigation-ui__mobile-actions .navigate-mypage__fab svg {
+    width: 24px;
+    height: 24px;
   }
 }
 

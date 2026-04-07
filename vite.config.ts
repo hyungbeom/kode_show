@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    include: ['rapier', '@react-three/rapier', 'ecctrl'],
+    include: ['rapier', '@react-three/rapier'],
     exclude: [],
   },
   build: {

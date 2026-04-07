@@ -1,10 +1,11 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, memo, lazy } from 'react'
-import { Cloud, Clouds, Environment, Lightformer } from '@react-three/drei'
+import { Cloud, Clouds, Environment, Lightformer, PerspectiveCamera } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 import { suspend } from 'suspend-react'
 import MapModel from './MapModel'
 import CameraSystem from './CameraSystem'
+import { RapierDebugOverlay } from './RapierDebugOverlay'
 import { useMapStore } from '../store/useMapStore'
 import { readLayoutBrowserWidthPx } from '../utils/mapViewport'
 import {
@@ -15,7 +16,6 @@ import {
   maintainTransparentSceneBackground,
   syncTransparentWebGLCanvas,
 } from '../utils/syncTransparentWebGLCanvas'
-
 /** 개발 전용 r3f-perf — 프로덕션 빌드에서는 청크 미포함 */
 const ENABLE_MAP_R3F_PERF = import.meta.env.DEV === true && import.meta.env.PROD !== true
 
@@ -40,6 +40,24 @@ function RapierCompatPrewarm() {
 const MAP_BACKDROP_GRADIENT = 'var(--map-app-backdrop)'
 
 /**
+ * Rapier 콜라이더 와이어 — 기본 켬. 배포 시 끄려면 `.env` 에 `VITE_RAPIER_DEBUG=0`
+ * (예전엔 `Physics debug={import.meta.env.DEV}` 만 켜져 있어 preview 빌드에선 안 보였음)
+ */
+const RAPIER_DEBUG_VISIBLE = import.meta.env.VITE_RAPIER_DEBUG !== '0'
+
+/**
+ * 맵 모드는 CameraSystem OrthographicCamera 가 makeDefault.
+ * 캐릭터 모드에서 직교 카메라만 언마운트되면 기본 카메라가 한 프레임 비거나 엇갈릴 수 있어
+ * 캐릭터 모드에서 Player 가 Perspective 를 lerp 하므로, 그때만 makeDefault 로 켠다.
+ */
+function CharacterPerspectiveCamera() {
+  const followPhysicsBox = useMapStore((s) => s.followPhysicsBox)
+  return (
+    <PerspectiveCamera makeDefault={followPhysicsBox} fov={80} near={1} far={500000} />
+  )
+}
+
+/**
  * 배경 투명 유지 — 컴포넌트는 모듈 스코프에 두어 매 렌더마다 타입이 바뀌지 않게 함
  */
 const BackgroundTransparency = memo(function BackgroundTransparency() {
@@ -58,12 +76,32 @@ const BackgroundTransparency = memo(function BackgroundTransparency() {
 })
 
 /**
+ * 캐릭터 모드에서 WebGL 캔버스에 브라우저 스크롤/제스처가 끼어들지 않게 함
+ */
+function MapCharacterModeCanvasTouch() {
+  const followPhysicsBox = useMapStore((s) => s.followPhysicsBox)
+  const gl = useThree((s) => s.gl)
+
+  useEffect(() => {
+    const el = gl.domElement
+    el.style.touchAction = followPhysicsBox ? 'none' : 'auto'
+    return () => {
+      el.style.touchAction = 'auto'
+    }
+  }, [followPhysicsBox, gl])
+
+  return null
+}
+
+/**
  * Physics 내부 씬 — MapScene 바깥에 정의해 리마운트 비용 감소
  */
 function MapPhysicsSceneContent() {
   return (
     <>
       <BackgroundTransparency />
+      <MapCharacterModeCanvasTouch />
+      <CharacterPerspectiveCamera />
       <CameraSystem />
 
       <Environment preset="sunset" environmentIntensity={0.72}>
@@ -126,6 +164,8 @@ function MapPhysicsSceneContent() {
       <Suspense fallback={null}>
         <MapModel />
       </Suspense>
+
+      {/*{RAPIER_DEBUG_VISIBLE ? <RapierDebugOverlay /> : null}*/}
     </>
   )
 }

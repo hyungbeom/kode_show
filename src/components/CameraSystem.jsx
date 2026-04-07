@@ -68,6 +68,7 @@ const CameraSystem = memo(() => {
   const prevFollowPhysicsBoxRef = useRef(followPhysicsBox)
   const isInitialMountRef = useRef(true)
   const transitionDuration = 1.5
+  const transitionToMapRafRef = useRef(0)
   
   // 초기 마운트 완료 표시 및 전환 완료 상태 설정
   useEffect(() => {
@@ -80,8 +81,20 @@ const CameraSystem = memo(() => {
   
   // followPhysicsBox 변경 시 전환 타겟 설정
   useEffect(() => {
-    // 추적 모드일 때는 전환 애니메이션 실행하지 않음
+    // 캐릭터 시점: 맵용 1.5s 전환·예약 rAF를 끊지 않으면 Player 카메라 lerp 가 직교 pose로 덮임
     if (followPhysicsBox) {
+      if (transitionToMapRafRef.current) {
+        cancelAnimationFrame(transitionToMapRafRef.current)
+        transitionToMapRafRef.current = 0
+      }
+      isTransitioningRef.current = false
+      transitionProgressRef.current = 0
+      transitionStartRef.current = null
+      transitionTargetRef.current = null
+      transitionLookAtRef.current = null
+      transitionStartLookAtRef.current = null
+      prevFollowPhysicsBoxRef.current = true
+      setCameraTransitionComplete(true)
       return
     }
     
@@ -100,6 +113,9 @@ const CameraSystem = memo(() => {
     
     // 다음 프레임에서 현재 카메라 위치를 정확히 캡처
     const captureFrame = () => {
+      transitionToMapRafRef.current = 0
+      if (useMapStore.getState().followPhysicsBox) return
+
       const startPosition = new THREE.Vector3(
         camera.position.x,
         camera.position.y,
@@ -122,8 +138,13 @@ const CameraSystem = memo(() => {
       prevFollowPhysicsBoxRef.current = followPhysicsBox
     }
     
-    // 다음 프레임에서 캡처
-    requestAnimationFrame(captureFrame)
+    transitionToMapRafRef.current = requestAnimationFrame(captureFrame)
+    return () => {
+      if (transitionToMapRafRef.current) {
+        cancelAnimationFrame(transitionToMapRafRef.current)
+        transitionToMapRafRef.current = 0
+      }
+    }
   }, [
     followPhysicsBox,
     camera,
@@ -133,10 +154,11 @@ const CameraSystem = memo(() => {
   ])
   
   // useFrame에서 부드러운 카메라 전환 처리 및 회전 애니메이션
-  // 추적 모드일 때는 전환 애니메이션만 처리하고, 완료 후에는 ecctrl가 제어
+  // 추적 모드일 때는 전환 애니메이션만 처리하고, 완료 후에는 Player 가 Perspective 카메라 lerp 제어
   useFrame((state, delta) => {
-    // 추적 모드이고 전환이 완료된 경우에는 ecctrl가 카메라를 제어하므로 여기서는 건드리지 않음
-    if (followPhysicsBox && !isTransitioningRef.current) {
+    // 캐릭터 시점에서는 맵 전환 보간을 절대 돌리지 않음 (isTransitioningRef가 true로 남은 경우 1.5s 뒤 카메라 튐)
+    if (followPhysicsBox) {
+      isTransitioningRef.current = false
       return
     }
     
@@ -201,7 +223,7 @@ const CameraSystem = memo(() => {
     }
   })
   
-  // 추적 모드일 때는 아무것도 렌더링하지 않음 (ecctrl가 카메라 제어)
+  // 추적 모드일 때는 아무것도 렌더링하지 않음 (Player 가 카메라 제어)
   // 모든 hooks 호출 후에 조건부 return
   if (followPhysicsBox) {
     return null

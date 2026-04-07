@@ -101,7 +101,17 @@ interface MapStore {
   setPhysicsBoxPath: (path: [number, number, number][]) => void
   followPhysicsBox: boolean  // 카메라가 상자를 따라다니는 모드
   setFollowPhysicsBox: (value: boolean) => void
-  
+
+  /**
+   * 캐릭터 시점 클릭 이동 최종 목표(맵/물리 월드 좌표).
+   * 목표는 스토어에 두고 Player 가 매 프레임 lerp 목표로 반영·도착 시 해제.
+   */
+  characterNavGoal: { x: number; y: number; z: number } | null
+  setCharacterNavGoal: (p: { x: number; y: number; z: number } | null) => void
+  /** 랜드 네비 드래그 중 — 손을 뗄 때까지 발밑 목표로 도착 판정을 하지 않음(목표 깜빡임 방지) */
+  characterNavPointerActive: boolean
+  setCharacterNavPointerActive: (active: boolean) => void
+
   // 카메라 전환 완료 상태 (Player의 카메라 팔로우 시작 시점 제어)
   cameraTransitionComplete: boolean
   setCameraTransitionComplete: (complete: boolean) => void
@@ -162,6 +172,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
   
   // 구역 선택 함수 (줌 완료 후 openPendingZone으로 패널 열림 — setSelectedZone과 동일하게 pendingZone 설정)
   selectArea: (areaId: string, position: [number, number, number]) => {
+    if (get().followPhysicsBox) return
     set({
       selectedArea: areaId,
       cameraTarget: position,
@@ -183,6 +194,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
   
   // 카메라 타겟만 설정 (애니메이션용)
   setCameraTarget: (position: [number, number, number] | null) => {
+    if (position !== null && get().followPhysicsBox) return
     set({
       cameraTarget: position,
       ...(position !== null ? { mapNavigateWorldDecorSpinActive: false } : {}),
@@ -240,6 +252,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
     })
   },
   setSelectedZone: (zoneId: string, position: [number, number, number], fromMarker = false) => {
+    if (get().followPhysicsBox) return
     // Zone 클릭 시 줌인 상태 확인 후 처리
     set((state) => {
       // 마커 클릭인 경우도 줌인 후 모달 표시 (전체 화면 모드 없이)
@@ -258,6 +271,7 @@ export const useMapStore = create<MapStore>((set, get) => ({
   
   // 줌인 완료 후 Zone 모달 열기
   openPendingZone: () => {
+    if (get().followPhysicsBox) return
     set((state) => {
       if (!state.pendingZone) return {}
       if (!ZONE_INFO_PANEL_ENABLED) {
@@ -311,6 +325,15 @@ export const useMapStore = create<MapStore>((set, get) => ({
   // 작은 상자 위치 추적 및 카메라 추적 모드
   physicsBoxPosition: [0, 0, 0],
   setPhysicsBoxPosition: (position: [number, number, number]) => {
+    const prev = get().physicsBoxPosition
+    const eps = 1e-3
+    if (
+      Math.abs(prev[0] - position[0]) < eps &&
+      Math.abs(prev[1] - position[1]) < eps &&
+      Math.abs(prev[2] - position[2]) < eps
+    ) {
+      return
+    }
     set({ physicsBoxPosition: position })
   },
   physicsBoxTargetPosition: null,  // 작은 상자가 이동할 목표 위치
@@ -325,10 +348,31 @@ export const useMapStore = create<MapStore>((set, get) => ({
   setFollowPhysicsBox: (value: boolean) => {
     set({
       followPhysicsBox: value,
-      ...(value ? { mapNavigateWorldDecorSpinActive: false } : {}),
+      ...(value
+        ? {
+            mapNavigateWorldDecorSpinActive: false,
+            cameraTarget: null,
+            pendingZone: null,
+            pendingZonePosition: null,
+            selectedArea: null,
+            selectedZone: null,
+            selectedZonePosition: null,
+            isMarkerClick: false,
+            isFullscreenCanvas: false,
+          }
+        : { characterNavGoal: null, characterNavPointerActive: false }),
     })
   },
-  
+
+  characterNavGoal: null,
+  setCharacterNavGoal: (p) => {
+    set({ characterNavGoal: p })
+  },
+  characterNavPointerActive: false,
+  setCharacterNavPointerActive: (active) => {
+    set({ characterNavPointerActive: active })
+  },
+
   // 카메라 전환 완료 상태 (Player의 카메라 팔로우 시작 시점 제어)
   cameraTransitionComplete: true,
   setCameraTransitionComplete: (complete: boolean) => {
@@ -374,6 +418,8 @@ export const useMapStore = create<MapStore>((set, get) => ({
       isFullMapRotating: false,
       mapNavigateWorldDecorSpinActive: false,
       followPhysicsBox: false,
+      characterNavGoal: null,
+      characterNavPointerActive: false,
       selectedCompanyId: null,
       selectedCompanyName: null,
       physicsBoxTargetPosition: null,

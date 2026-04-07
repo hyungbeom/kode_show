@@ -14,7 +14,8 @@ world.glb 맵 모델
 - Navigate idle 시 맵 회전 체감은 WorldModel이 아니라 CameraController에서 타깃 주위 카메라 궤도로 처리
 - Water_all — `WaterAllWaves` 버텍스 파동(geometry clone)
 - Clould_A/B/C — `GlbCloudRigs`: 스케일×3, 타입별 원본+복제 각각 포지션·보빙
-- CH_Microscope.glb — `CHMicroscopeModel` 고정 배치, 측정분석 말풍선은 `Measurement_Land` AABB 중심
+- CH_Microscope.glb — `CHMicroscopeModel` 고정 배치, 측정분석 말풍선은 `Measurement_Land` AABB 중심 (`MeasurementLandPhysics` 고정 trimesh — 플레이어 발판)
+- CH_Air.glb / CH_Water.glb — `CHAirModel`·`CHWaterModel`, world.glb 의 CH_Air·CH_Water 노드 위치에 동기화 + GLB 애니 전부 재생
 */
 
 import React, { useMemo, memo, useLayoutEffect, useRef, useEffect, useState } from 'react'
@@ -38,6 +39,9 @@ import { LandHover } from './LandHover'
 import { NeonScreen } from './NeonScreen'
 import { WaterAllWaves, getWaterAllMeshFromNodes } from './WaterAllWaves'
 import { CHMicroscopeModel } from './CHMicroscopeModel'
+import { CHAirModel } from './CHAirModel'
+import { CHWaterModel } from './CHWaterModel'
+import { MeasurementLandPhysics } from './MeasurementLandPhysics'
 import { resolveSceneNode } from '../utils/gltfNodeUtils'
 import {
   ZONE_ID_AIR,
@@ -415,7 +419,12 @@ export const WorldModel = memo(function WorldModel(props) {
     <>
       <group>
         <primitive object={clonedScene} {...props} />
+        {nodes.Measurement_Land ? (
+          <MeasurementLandPhysics landNode={nodes.Measurement_Land} />
+        ) : null}
         <CHMicroscopeModel />
+        <CHAirModel anchor={nodes.CH_Air} />
+        <CHWaterModel anchor={nodes.CH_Water} />
         <GlbCloudRigs nodes={nodes} />
       </group>
       {waterAllMesh ? <WaterAllWaves mesh={waterAllMesh} /> : null}
@@ -502,6 +511,7 @@ export const WorldModel = memo(function WorldModel(props) {
           bubbleActivatesZone={false}
           hitBoxUnionScale={1}
           hitBoxMinAxis={0}
+          characterNavPickable
           clonedScene={clonedScene}
           label={'Measurement\n& Analysis'}
           zoneId={ZONE_ID_LAB}

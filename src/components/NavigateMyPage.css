@@ -1,10 +1,18 @@
+/* display:contents 는 모바일 Safari 등에서 터치 히트가 깨짐 → 실제 플렉스 박스 유지 */
+.navigate-mypage__fab-host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .navigate-mypage__fab {
   position: fixed;
   z-index: 2010;
   right: max(16px, env(safe-area-inset-right, 0px));
   bottom: max(24px, env(safe-area-inset-bottom, 0px) + 8px);
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -12,6 +20,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   color: #0f172a;
   background: rgba(255, 255, 255, 0.96);
   box-shadow:
@@ -35,15 +46,8 @@
 }
 
 .navigate-mypage__fab svg {
-  width: 26px;
-  height: 26px;
-}
-
-/* 모바일: 하단 NAVIGATE·전광판 위로 */
-@media (max-width: 768px) {
-  .navigate-mypage__fab {
-    bottom: max(112px, calc(env(safe-area-inset-bottom, 0px) + 96px));
-  }
+  width: 24px;
+  height: 24px;
 }
 
 .navigate-mypage__backdrop {

@@ -11,8 +11,8 @@ public/models/
 │   ├── logo.glb
 │   └── ...
 ├── show_room2.glb     # 룸 씬 모델
-├── amongus.glb        # 플레이어 모델
-└── car.glb            # 차량 모델
+├── (상위 `/models/amongus.glb`) # 맵 플레이어 모델
+└── amongus.glb        # Among Us 스타일 플레이어
 ```
 
 ## 사용 방법

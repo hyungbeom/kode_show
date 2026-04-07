@@ -42,20 +42,18 @@ function MapViewChromeInner({
       )}
 
       {mapReady ? (
-        <>
-          <MapMegaphoneNotification onOpen={() => setMapNotificationOpen(true)} />
-          <MapNotificationModal
-            open={mapNotificationOpen}
-            onClose={() => setMapNotificationOpen(false)}
-            count={MAP_NOTIFICATION_BADGE_COUNT}
-          />
-        </>
+        <MapNotificationModal
+          open={mapNotificationOpen}
+          onClose={() => setMapNotificationOpen(false)}
+          count={MAP_NOTIFICATION_BADGE_COUNT}
+        />
       ) : null}
       {mapReady ? (
-        <NavigationUI mapNotificationModalOpen={mapNotificationOpen} />
-      ) : null}
-      {mapReady ? (
-        <NavigateMyPage navigateModeActive={selectedZone == null && !mapNotificationOpen} />
+        <NavigationUI
+          mapNotificationModalOpen={mapNotificationOpen}
+          mobileLeadingSlot={<MapMegaphoneNotification onOpen={() => setMapNotificationOpen(true)} />}
+          mobileFab={<NavigateMyPage navigateModeActive={selectedZone == null && !mapNotificationOpen} />}
+        />
       ) : null}
       {mapReady && selectedZone && ZONE_INFO_PANEL_ENABLED ? (
         <Suspense fallback={null}>

@@ -21,8 +21,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: #4a4d52;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
@@ -34,8 +34,8 @@
 }
 
 .map-megaphone-notification__icon {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   display: block;
   margin-left: -1px;
 }
@@ -64,13 +64,19 @@
 }
 
 /*
- * 모바일: navigation-ui__desktop 행(최대 64px)과 세로 중앙 맞춤, 좌측 고정.
- * desktop 하단 여백 = max(16px, safe-bottom), 52px 아이콘 중심 = 여백 + 32px → bottom = 여백 + 6px.
+ * 모바일 단독 배치(레거시): 하단 행 밖에 있을 때만 — NavigationUI 행 안이면 static 처리
  */
 @media (max-width: 768px) {
   .map-megaphone-notification {
     left: max(16px, env(safe-area-inset-left, 0px));
     bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + 6px);
     z-index: 2100;
+  }
+
+  .navigation-ui__megaphone-anchor .map-megaphone-notification {
+    position: static;
+    left: auto;
+    bottom: auto;
+    z-index: auto;
   }
 }

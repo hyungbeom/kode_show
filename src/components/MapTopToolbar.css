@@ -20,7 +20,15 @@
 
 .map-top-toolbar__search-wrap {
   position: relative;
-  width: min(280px, calc(100vw - 120px));
+  width: min(280px, calc(100vw - 200px));
+}
+
+.map-top-toolbar__right {
+  display: flex;
+  padding: 10px;
+  align-items: center;
+  gap: 7.778px;
+  flex-shrink: 0;
 }
 
 .map-top-toolbar__search {

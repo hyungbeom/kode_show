@@ -19,10 +19,12 @@ function MapMarker({
   const setSelectedZone = useMapStore((state) => state.setSelectedZone)
   const markersVisible = useMapStore((state) => state.markersVisible)
   const mapHeroCopyDismissed = useMapStore((state) => state.mapHeroCopyDismissed)
+  const followPhysicsBox = useMapStore((state) => state.followPhysicsBox)
   const markerRef = useRef(null)
   const isInitialMount = useRef(true)
   
   const handleClick = () => {
+    if (followPhysicsBox) return
     // 마커 클릭 시 Zone 설명 모달 표시 (줌인 없이 바로 표시)
     // areaId가 'zone-1', 'zone-2' 형식이므로 그대로 사용
     setSelectedZone(areaId, buildingPosition || position, true)  // fromMarker = true
@@ -82,8 +84,8 @@ function MapMarker({
       position={position}
       center
       transform={false}  // OrthographicCamera에서 거리 기반 크기 조정 비활성화
-      style={{ 
-        pointerEvents: 'auto',
+      style={{
+        pointerEvents: followPhysicsBox ? 'none' : 'auto',
         transform: 'scale(1)',  // CSS로 직접 크기 제어
         opacity: 1,  // 초기 상태는 보이도록 설정
       }}

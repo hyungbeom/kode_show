@@ -1,9 +1,10 @@
-import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
+import { useRef, useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { useCursor } from '@react-three/drei'
 import * as THREE from 'three'
 import { useMapStore } from '../store/useMapStore'
 import { NodeSpeechBubble } from './NodeSpeechBubble'
+import { CHARACTER_NAV_PICK_USERDATA_KEY } from './CharacterNavRaycastMode'
 
 const _unionWorld = new THREE.Box3()
 const _boxWorld = new THREE.Box3()
@@ -70,6 +71,7 @@ function worldAabbToParentLocal(mesh, worldMin, worldMax, centerOut, sizeOut) {
  * - hitBoxUnionScale / hitBoxMinAxis: 투명 히트 박스 크기(기본은 약간 확대·최소 두께); 좁은 랜드는 0에 가깝게 줄이면 AABB에 가깝게 맞춤
  * - hitBoxPreciseAabb: true면 Box3.setFromObject(…, true)로 꼭짓점 기준 AABB(랜드·건물 합이 화면과 더 잘 맞을 때)
  * - hitBoxExpandWorld: 합 AABB를 월드 단위로 등방 확장 — 다른 구역 히트와 레이 거리 경쟁에서 불리할 때 소량만
+ * - characterNavPickable: 캐릭터 시점(followPhysicsBox)에서만 의미 있음. true일 때만 `CharacterNavRaycastMode` 레이 화이트리스트에 올라가 클릭 이동 가능(기본 false — Measurement_Land 등 필요한 랜드만 true)
  */
 export function LandHover({
   land,
@@ -84,6 +86,7 @@ export function LandHover({
   hitBoxMinAxis = DEFAULT_HIT_BOX_MIN_AXIS,
   hitBoxPreciseAabb = false,
   hitBoxExpandWorld = 0,
+  characterNavPickable = false,
   clonedScene,
   label,
   zoneId,
@@ -91,9 +94,13 @@ export function LandHover({
 }) {
   const [hovered, setHovered] = useState(false)
   const hitRef = useRef(null)
+  const characterNavDragRef = useRef(false)
   const selectArea = useMapStore((s) => s.selectArea)
   const glbFocusPositions = useMapStore((s) => s.glbFocusPositions)
   const mapHeroCopyDismissed = useMapStore((s) => s.mapHeroCopyDismissed)
+  const followPhysicsBox = useMapStore((s) => s.followPhysicsBox)
+  const setCharacterNavGoal = useMapStore((s) => s.setCharacterNavGoal)
+  const setCharacterNavPointerActive = useMapStore((s) => s.setCharacterNavPointerActive)
 
   const targets = useMemo(() => {
     if (lands?.length) return lands.filter(Boolean)
@@ -104,7 +111,7 @@ export function LandHover({
   const bubbleAnchor = speechAnchor ?? land ?? targets[0] ?? null
 
   const activateZone = useCallback(() => {
-    if (!zoneId) return
+    if (followPhysicsBox || !zoneId) return
     let pos = glbNode ? glbFocusPositions[glbNode] : null
     if (!pos && bubbleAnchor) {
       if (clonedScene) clonedScene.updateMatrixWorld(true)
@@ -119,7 +126,7 @@ export function LandHover({
       pos = [c.x, c.y, c.z]
     }
     if (pos) selectArea(zoneId, pos)
-  }, [zoneId, glbNode, glbFocusPositions, selectArea, bubbleAnchor, clonedScene])
+  }, [followPhysicsBox, zoneId, glbNode, glbFocusPositions, selectArea, bubbleAnchor, clonedScene])
 
   const handleHitPointerDown = useCallback((e) => {
     e.stopPropagation()
@@ -140,15 +147,83 @@ export function LandHover({
     setHovered(false)
   }, [])
 
-  const handleZoneClick = useCallback(
+  /** 맵 시점: 구역 줌 / 캐릭터 시점: characterNavPickable 인 랜드만 클릭·드래그 이동 */
+  const handleLandClick = useCallback(
     (e) => {
       e.stopPropagation()
-      activateZone()
+      if (followPhysicsBox) {
+        if (!characterNavPickable) return
+        const p = e.point
+        setCharacterNavGoal({ x: p.x, y: p.y, z: p.z })
+        return
+      }
+      if (MAP_LAND_MESH_CLICK_NAVIGATES_ZONE) activateZone()
     },
-    [activateZone],
+    [followPhysicsBox, characterNavPickable, activateZone, setCharacterNavGoal],
   )
 
-  useCursor(hovered, 'pointer', 'auto')
+  /** 캐릭터 시점: 누른 채 드래그하면 목표를 실시간 갱신 (클릭 한 번만이 아니라) */
+  const handleCharacterNavPointerDown = useCallback(
+    (e) => {
+      if (!followPhysicsBox || !characterNavPickable) return
+      e.stopPropagation()
+      characterNavDragRef.current = true
+      setCharacterNavPointerActive(true)
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        /* noop */
+      }
+      const p = e.point
+      setCharacterNavGoal({ x: p.x, y: p.y, z: p.z })
+    },
+    [
+      followPhysicsBox,
+      characterNavPickable,
+      setCharacterNavGoal,
+      setCharacterNavPointerActive,
+    ],
+  )
+
+  const handleCharacterNavPointerMove = useCallback(
+    (e) => {
+      if (!characterNavDragRef.current || !followPhysicsBox || !characterNavPickable) return
+      e.stopPropagation()
+      const p = e.point
+      setCharacterNavGoal({ x: p.x, y: p.y, z: p.z })
+    },
+    [followPhysicsBox, characterNavPickable, setCharacterNavGoal],
+  )
+
+  const endCharacterNavDrag = useCallback(
+    (e) => {
+      if (!characterNavPickable) return
+      characterNavDragRef.current = false
+      setCharacterNavPointerActive(false)
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {
+        /* noop */
+      }
+    },
+    [characterNavPickable, setCharacterNavPointerActive],
+  )
+
+  useEffect(() => {
+    if (followPhysicsBox) setHovered(false)
+  }, [followPhysicsBox])
+
+  useLayoutEffect(() => {
+    const m = hitRef.current
+    if (!m) return
+    if (characterNavPickable) {
+      m.userData[CHARACTER_NAV_PICK_USERDATA_KEY] = true
+    } else {
+      delete m.userData[CHARACTER_NAV_PICK_USERDATA_KEY]
+    }
+  }, [targets.length, bubbleAnchor, characterNavPickable])
+
+  useCursor(!followPhysicsBox && hovered, 'pointer', 'auto')
 
   useFrame(() => {
     const mesh = hitRef.current
@@ -218,27 +293,62 @@ export function LandHover({
       <mesh
         ref={hitRef}
         visible={mapHeroCopyDismissed}
-        onPointerDown={handleHitPointerDown}
-        onPointerUp={handleHitPointerUp}
-        onPointerCancel={handleHitPointerCancel}
-        onPointerLeave={(e) => {
-          e.stopPropagation()
-          setHovered(false)
-        }}
-        onClick={MAP_LAND_MESH_CLICK_NAVIGATES_ZONE ? handleZoneClick : undefined}
-        onPointerOver={(e) => {
-          e.stopPropagation()
-          setHovered(true)
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation()
-          setHovered(false)
-        }}
+        onPointerDown={
+          followPhysicsBox && characterNavPickable
+            ? handleCharacterNavPointerDown
+            : followPhysicsBox
+              ? undefined
+              : handleHitPointerDown
+        }
+        onPointerMove={
+          followPhysicsBox && characterNavPickable ? handleCharacterNavPointerMove : undefined
+        }
+        onPointerUp={
+          followPhysicsBox && characterNavPickable
+            ? endCharacterNavDrag
+            : followPhysicsBox
+              ? undefined
+              : handleHitPointerUp
+        }
+        onPointerCancel={
+          followPhysicsBox && characterNavPickable
+            ? endCharacterNavDrag
+            : followPhysicsBox
+              ? undefined
+              : handleHitPointerCancel
+        }
+        onPointerLeave={
+          followPhysicsBox
+            ? undefined
+            : (e) => {
+                e.stopPropagation()
+                setHovered(false)
+              }
+        }
+        onClick={
+          followPhysicsBox || MAP_LAND_MESH_CLICK_NAVIGATES_ZONE ? handleLandClick : undefined
+        }
+        onPointerOver={
+          followPhysicsBox
+            ? undefined
+            : (e) => {
+                e.stopPropagation()
+                setHovered(true)
+              }
+        }
+        onPointerOut={
+          followPhysicsBox
+            ? undefined
+            : (e) => {
+                e.stopPropagation()
+                setHovered(false)
+              }
+        }
       >
         <boxGeometry args={[1, 1, 1]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      {mapHeroCopyDismissed ? (
+      {mapHeroCopyDismissed && !followPhysicsBox ? (
         <NodeSpeechBubble
           anchor={bubbleAnchor}
           anchorRef={speechAnchorRef}
