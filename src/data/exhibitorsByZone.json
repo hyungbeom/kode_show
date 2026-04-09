@@ -165,7 +165,8 @@
         "현미경",
         "스펙트럼"
       ],
-      "has3dRoom": true
+      "has3dRoom": true,
+      "visitExternalUrl": "https://camera-webgi.vercel.app/"
     },
     {
       "id": 23,
