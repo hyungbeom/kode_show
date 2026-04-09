@@ -510,14 +510,12 @@ export function ZoneCompanyCardStack({ companies, onOpenCompany, stackKey = '', 
                       <div className="zone-carousel-card__split">
                         <p className="zone-carousel-card__desc zone-carousel-card__desc--lead">{descLead}</p>
                         <div
-                          className={`zone-carousel-card__figure${showGlb ? ' zone-carousel-card__figure--glb' : ''}${isCenter && (showGlb || hasCompanyLogo(company.imageUrl)) ? ' zone-carousel-card__figure--glb-viewer' : ''}`}
+                          className={`zone-carousel-card__figure${showGlb ? ' zone-carousel-card__figure--glb' : ''}${isCenter && showGlb ? ' zone-carousel-card__figure--glb-viewer' : ''}`}
                           onPointerDown={(e) => {
-                            if (isCenter && (showGlb || hasCompanyLogo(company.imageUrl)))
-                              e.stopPropagation()
+                            if (isCenter && showGlb) e.stopPropagation()
                           }}
                           onTouchStart={(e) => {
-                            if (isCenter && (showGlb || hasCompanyLogo(company.imageUrl)))
-                              e.stopPropagation()
+                            if (isCenter && showGlb) e.stopPropagation()
                           }}
                         >
                           {showGlb ? (

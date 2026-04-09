@@ -258,7 +258,7 @@
   background: linear-gradient(145deg, #f8fafc 0%, #eef1f5 100%);
 }
 
-/* 가운데 카드 GLB: 캐러셀 스와이프(useDrag)로 이벤트가 전파되지 않도록 JS에서 stopPropagation + 터치 기본 패닝 차단 */
+/* 가운데 카드 GLB 썸네일만: OrbitControls와 겹치지 않게 touch-action + figure에서 stopPropagation */
 .zone-carousel-card__figure--glb-viewer {
   touch-action: none;
 }
