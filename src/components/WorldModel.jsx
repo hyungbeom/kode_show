@@ -1,16 +1,14 @@
 /*
 world.glb 맵 모델
 - 씬 전체를 primitive로 로드해 Blender 원점/위치/변환 유지
-- Gear_A ~ Gear_G, Mill_Wing — rotateY / Air_Fan_A·B_propeller — rotateY 2배속 / Wing, Wing001, Wing002 — rotateZ / Earth — rotateY (지구본)
+- world.glb 애니메이션 클립 전부 재생(`useAnimations`); 날개·스크린 등은 GLB 키프레임 우선(기존 궤도·수동 회전 제거)
 - Air_tower, Air_tower001 연기 파티클 (타워 AABB에 비례한 크기)
-- Air_Fan_A/B_propeller — SakuraWind (캡슐 바람결 + 원형 꽃잎)
+- Air_Fan_A/B_propeller — SakuraWind (캡슐 바람결 + 원형 꽃잎; 송풍은 팬 회전과 분리)
 - Airplane — 맵 상공 궤도 애니메이션 (AirplaneFlight, 키 입력 없음)
 - Baloon/Balloon — `BalloonAmbient` + `BalloonDuplicateAmbient`×2 (`BALLOON_EXTRA_INSTANCES` 월드 오프셋)
-- Wings / Wing·Wing001·Wing002 — `WingsTowerOrbit` + `WingsDuplicateOrbit`(복제 1벌, XZ 오프셋 궤도)
 - 구역별 LandHover: *_Land 합 히트, 말풍선 앵커·모양은 구역별 (수질·대기·탄소·측정 등)
 - Carbon_Land+CH_Leaf_Body — 히트 합침, 말풍선은 Carbon_Land AABB 중심·우상단 피벗
 - NeonScreen — world.glb의 cube001 앵커 + screen.glb 지오 + /neon.png (WorldModel에서 마운트 필요)
-- Info_Tower_Screen — `InfoTowerScreenIdleSpin`: 월드 로컬 Y축 느린 연속 회전
 - Navigate idle 시 맵 회전 체감은 WorldModel이 아니라 CameraController에서 타깃 주위 카메라 궤도로 처리
 - Water_all — `WaterAllWaves` 버텍스 파동(geometry clone)
 - Clould_A/B/C — `GlbCloudRigs`: 스케일×3, 타입별 원본+복제 각각 포지션·보빙
@@ -21,7 +19,7 @@ world.glb 맵 모델
 import React, { useMemo, memo, useLayoutEffect, useRef, useEffect, useState } from 'react'
 import * as THREE from 'three'
 import { useFrame, useGraph, useThree } from '@react-three/fiber'
-import { useGLTF } from '@react-three/drei'
+import { useGLTF, useAnimations } from '@react-three/drei'
 import { useMapStore } from '../store/useMapStore'
 import { SakuraWind } from './SakuraWind'
 import { AirplaneFlight } from './AirplaneFlight'
@@ -30,11 +28,6 @@ import {
   BalloonDuplicateAmbient,
   BALLOON_EXTRA_INSTANCES,
 } from './BalloonAmbient'
-import {
-  WingsTowerOrbit,
-  WingsDuplicateOrbit,
-  resolveWingsTowerOrbitTargets,
-} from './WingsTowerOrbit'
 import { LandHover } from './LandHover'
 import { NeonScreen } from './NeonScreen'
 import { WaterAllWaves, getWaterAllMeshFromNodes } from './WaterAllWaves'
@@ -56,10 +49,6 @@ import {
 // const SPIN_Y_GEARS = ['Gear_A', 'Gear_B', 'Gear_C', 'Gear_D', 'Gear_E', 'Gear_F', 'Gear_G', 'Mill_Wing']
 // const SPIN_Y_FANS = ['Air_Fan_A_propeller', 'Air_Fan_B_propeller']
 // const WING_SPIN_Z_NODES = ['Wing', 'Wing001', 'Wing002']
-const ROTATION_SPEED = 2 // rad/s
-const FAN_ROTATION_MULTIPLIER = 2 // 프로펠러는 톱니 대비 이 배속
-/** 외국관 Earth 지구본 Y축 회전 */
-const EARTH_ROTATION_SPEED = 1.1 // rad/s
 
 /** SakuraWind: 자동 추정 축에 대한 월드 Yaw / 수평 Pitch 보정 (맵·팬 배치에 맞춤) */
 const SAKURA_WIND_DIR_YAW_DEG = 44.5
@@ -340,20 +329,10 @@ function AirTowerSmoke({ nodes }) {
   return null
 }
 
-/** Info_Tower_Screen — 타워 스크린 메시 그룹을 세로축으로 천천히 계속 회전 (로컬 Y, rad/s) */
-/** 음수면 시계 방향(위에서 볼 때) 등 이전과 반대로 회전 */
-const INFO_TOWER_SCREEN_YAW_RAD_PER_S = -0.3
-
-function InfoTowerScreenIdleSpin({ object3D }) {
-  useFrame((_, delta) => {
-    if (!object3D) return
-    object3D.rotation.y += delta * INFO_TOWER_SCREEN_YAW_RAD_PER_S
-  })
-  return null
-}
-
 export const WorldModel = memo(function WorldModel(props) {
-  const { scene } = useGLTF('/models/world.glb')
+  const worldAnimRootRef = useRef(/** @type {THREE.Group | null} */ (null))
+  const { scene, animations } = useGLTF('/models/world.glb')
+  const { actions: worldGltfActions } = useAnimations(animations, worldAnimRootRef)
 
   const clonedScene = useMemo(() => {
     const clone = scene.clone(true)
@@ -370,11 +349,6 @@ export const WorldModel = memo(function WorldModel(props) {
   const waterAllMesh = useMemo(() => getWaterAllMeshFromNodes(nodes, clonedScene), [nodes, clonedScene])
   const balloonNode = useMemo(
     () => resolveSceneNode(nodes, 'Baloon') ?? resolveSceneNode(nodes, 'Balloon'),
-    [nodes],
-  )
-  const wingsTowerOrbit = useMemo(() => resolveWingsTowerOrbitTargets(nodes), [nodes])
-  const infoTowerScreenNode = useMemo(
-    () => resolveSceneNode(nodes, 'Info_Tower_Screen'),
     [nodes],
   )
   const setGlbFocusPositions = useMapStore((s) => s.setGlbFocusPositions)
@@ -415,10 +389,24 @@ export const WorldModel = memo(function WorldModel(props) {
     return () => cancelAnimationFrame(id)
   }, [clonedScene, nodes, setGlbFocusPositions, setWorldGlbBoundsCenter])
 
+  useEffect(() => {
+    if (!worldGltfActions) return
+    for (const key of Object.keys(worldGltfActions)) {
+      worldGltfActions[key]?.reset()?.play()
+    }
+    return () => {
+      for (const key of Object.keys(worldGltfActions)) {
+        worldGltfActions[key]?.stop()
+      }
+    }
+  }, [worldGltfActions])
+
   return (
     <>
       <group>
-        <primitive object={clonedScene} {...props} />
+        <group ref={worldAnimRootRef}>
+          <primitive object={clonedScene} {...props} />
+        </group>
         {nodes.Measurement_Land ? (
           <MeasurementLandPhysics landNode={nodes.Measurement_Land} />
         ) : null}
@@ -429,9 +417,6 @@ export const WorldModel = memo(function WorldModel(props) {
       </group>
       {waterAllMesh ? <WaterAllWaves mesh={waterAllMesh} /> : null}
       <NeonScreen nodes={nodes} />
-      {infoTowerScreenNode ? (
-        <InfoTowerScreenIdleSpin object3D={infoTowerScreenNode} />
-      ) : null}
       <SakuraWind
         fan={nodes.Air_Fan_A_propeller}
         clonedScene={clonedScene}
@@ -461,20 +446,6 @@ export const WorldModel = memo(function WorldModel(props) {
             />
           ))
         : null}
-      {wingsTowerOrbit.anchor && wingsTowerOrbit.wings.length > 0 ? (
-        <WingsTowerOrbit
-          anchor={wingsTowerOrbit.anchor}
-          wings={wingsTowerOrbit.wings}
-          clonedScene={clonedScene}
-        />
-      ) : null}
-      {wingsTowerOrbit.anchor && wingsTowerOrbit.wingTemplateForClone ? (
-        <WingsDuplicateOrbit
-          wingTemplate={wingsTowerOrbit.wingTemplateForClone}
-          anchor={wingsTowerOrbit.anchor}
-          clonedScene={clonedScene}
-        />
-      ) : null}
       {nodes.Water_Quality_Land || nodes.CH_Water ? (
         <LandHover
           lands={[nodes.Water_Quality_Land, nodes.CH_Water].filter(Boolean)}
