@@ -37,7 +37,20 @@ export type ZoneExhibitor = {
    * (미지정 시 공통 기본 URL 사용)
    */
   envexOnlineUrl?: string
+  /**
+   * 카드 우측 썸네일 GLB (`public` 기준 절대 경로, 예: `/product/product1.glb`).
+   * 있으면 가운데 카드에서 WebGL 프리뷰, 양옆 카드·GLB 없을 때는 `imageUrl` 사용.
+   */
+  glbUrl?: string
+  /**
+   * 해당 업체 제품별 GLB 목록(순서대로). 있으면 전체화면 뷰어에서 좌우 화살표로만 이 목록을 순회.
+   * 없으면 `glbUrl` 하나만 있는 것으로 간주.
+   */
+  productGlbUrls?: string[]
+  /** `productGlbUrls`와 동일 순서의 제품명(전체화면 뷰어 상단). 없으면 「제품 1」 형태로 표시 */
+  productGlbTitles?: string[]
   description: string
+  /** 2D 포스터·이미지 전용 카드, 또는 GLB 카드의 옆면 썸네일 */
   imageUrl: string
 }
 
@@ -49,6 +62,44 @@ export function getCompaniesForZone(zoneId: string | null | undefined): ZoneExhi
   if (!zoneId) return []
   const list = exhibitorsByZone[zoneId]
   return Array.isArray(list) ? list : []
+}
+
+/** 카드·모달 공통 — 업체의 제품 GLB URL 목록 (중복 제거, `productGlbUrls` 우선, 없으면 `glbUrl` 단일) */
+export function getCompanyProductGlbUrls(company: ZoneExhibitor | null | undefined): string[] {
+  if (!company) return []
+  const list = company.productGlbUrls
+  if (Array.isArray(list) && list.length > 0) {
+    const out: string[] = []
+    const seen = new Set<string>()
+    for (const u of list) {
+      const t = typeof u === 'string' ? u.trim() : ''
+      if (t.length > 0 && !seen.has(t)) {
+        seen.add(t)
+        out.push(t)
+      }
+    }
+    if (out.length > 0) return out
+  }
+  const single = company.glbUrl
+  if (typeof single === 'string' && single.trim().length > 0) {
+    return [single.trim()]
+  }
+  return []
+}
+
+/** `getCompanyProductGlbUrls`와 동일 인덱스의 제품 표시명 */
+export function getCompanyProductGlbTitles(company: ZoneExhibitor | null | undefined): string[] {
+  const urls = getCompanyProductGlbUrls(company)
+  if (urls.length === 0) return []
+  const titles = company?.productGlbTitles
+  if (!Array.isArray(titles) || titles.length === 0) {
+    return urls.map((_, i) => `제품 ${i + 1}`)
+  }
+  return urls.map((_, i) => {
+    const raw = titles[i]
+    const t = typeof raw === 'string' ? raw.trim() : ''
+    return t.length > 0 ? t : `제품 ${i + 1}`
+  })
 }
 
 /** 전 구역에서 업체 id로 단일 레코드 조회 */
