@@ -38,6 +38,11 @@ export type ZoneExhibitor = {
    */
   envexOnlineUrl?: string
   /**
+   * 구역 카드 「방문하기」 전용 — 지정 시 새 탭으로 이 URL만 열고 /room/ 으로 가지 않음
+   * (has3dRoom 여부와 무관)
+   */
+  visitExternalUrl?: string
+  /**
    * 카드 우측 썸네일 GLB (`public` 기준 절대 경로, 예: `/product/product1.glb`).
    * 있으면 가운데 카드에서 WebGL 프리뷰, 양옆 카드·GLB 없을 때는 `imageUrl` 사용.
    */

@@ -141,7 +141,8 @@
         "R&D",
         "ISO17025"
       ],
-      "has3dRoom": true
+      "has3dRoom": true,
+      "visitExternalUrl": "https://abir.holdings/"
     },
     {
       "id": 22,
@@ -247,7 +248,8 @@
         "해외",
         "진출"
       ],
-      "has3dRoom": true
+      "has3dRoom": true,
+      "visitExternalUrl": "https://contra.com/project-rate-hiring-calculator/"
     },
     {
       "id": 42,

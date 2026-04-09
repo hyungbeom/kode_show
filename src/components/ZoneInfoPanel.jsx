@@ -144,9 +144,15 @@ const ZoneInfoPanel = memo(function ZoneInfoPanel({ zoneId, onClose }) {
     onClose()
   }
 
-  /** 업체 카드/행 클릭 — 3D 룸 있음: /room/{id}, 없음: ENVEX 온라인 전시관 */
+  /** 「방문하기」 — visitExternalUrl 있으면 현재 창에서 이동, 3D 룸 있으면 /room/{id}, 없으면 ENVEX */
   const navigateToCompanyRoom = useCallback(
     (company) => {
+      const visitOut = company.visitExternalUrl?.trim()
+      if (visitOut) {
+        handleClose()
+        window.location.assign(visitOut)
+        return
+      }
       if (company.has3dRoom) {
         setSelectedCompany(company.id, company.name)
         handleClose()
