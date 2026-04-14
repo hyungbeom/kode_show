@@ -1,6 +1,9 @@
 import { PerformanceMonitor, AdaptiveDpr } from '@react-three/drei'
 import { useThree } from '@react-three/fiber'
 
+/** 모바일에서 DPR이 과도하게 내려가면 모델이 뭉개지거나 드물게 소실되어 하한을 둠 */
+const ADAPTIVE_DPR_FACTOR_MIN = 0.6
+
 /**
  * drei PerformanceMonitor의 `factor`를 R3F 스토어 `performance.current`에 반영해야
  * {@link AdaptiveDpr}가 실제로 DPR을 낮춥니다(둘이 기본으로는 연결되어 있지 않음).
@@ -11,12 +14,13 @@ export function R3fAdaptivePerformance() {
     <PerformanceMonitor
       factor={1}
       onChange={(api) => {
+        const nextFactor = Math.max(ADAPTIVE_DPR_FACTOR_MIN, api.factor)
         set((state) => ({
-          performance: { ...state.performance, current: api.factor },
+          performance: { ...state.performance, current: nextFactor },
         }))
       }}
     >
-      <AdaptiveDpr pixelated />
+      <AdaptiveDpr />
     </PerformanceMonitor>
   )
 }

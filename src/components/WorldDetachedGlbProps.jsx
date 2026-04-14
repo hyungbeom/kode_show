@@ -19,6 +19,7 @@ const CLOUD_URL_BY_ID = {
 }
 
 const GLB_CLOUD_SCALE = 2
+const CLOUD_Y_EXTRA = 24
 
 /**
  * world 경계 직전 측정값 — AABB 계산 전 한 프레임용
@@ -55,9 +56,9 @@ function computeDetachedPlacements(worldAabb) {
   const yAirplane = maxY + airplaneLift
   const yBalloon = maxY - 26
   const cloudSkyLift = THREE.MathUtils.clamp(sy * 0.34, 110, 255)
-  const yCloudHigh = maxY + cloudSkyLift
-  const yCloudMid = maxY + cloudSkyLift * 0.64
-  const yCloudLow = maxY + cloudSkyLift * 0.36
+  const yCloudHigh = maxY + cloudSkyLift + CLOUD_Y_EXTRA
+  const yCloudMid = maxY + cloudSkyLift * 0.64 + CLOUD_Y_EXTRA
+  const yCloudLow = maxY + cloudSkyLift * 0.36 + CLOUD_Y_EXTRA
 
   const airplane = {
     position: [clampX(cx), yAirplane, clampZ(cz)],
