@@ -5,6 +5,7 @@
 import React, { useRef, useEffect, useCallback, forwardRef } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
+import { DISABLE_GLTF_ANIMATIONS } from '../config/perfAnimationTest'
 
 const CH_MICROSCOPE_GLB_URL = '/models/CH_Microscope.glb'
 
@@ -33,6 +34,7 @@ export const CHMicroscopeModel = forwardRef(function CHMicroscopeModel(_, forwar
 
   useEffect(() => {
     if (!actions) return
+    if (DISABLE_GLTF_ANIMATIONS) return
     for (const key of Object.keys(actions)) {
       actions[key]?.reset()?.play()
     }

@@ -7,6 +7,7 @@ import { useGLTF, useAnimations } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
 import { useSyncGroupToWorldGlbAnchor } from '../hooks/useSyncGroupToWorldGlbAnchor'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
+import { DISABLE_GLTF_ANIMATIONS } from '../config/perfAnimationTest'
 
 const CH_LEAF_GLB_URL = '/models/CH_Leaf.glb'
 
@@ -40,6 +41,7 @@ export const CHLeafModel = forwardRef(function CHLeafModel({ anchor = null }, fo
 
   useEffect(() => {
     if (!actions) return
+    if (DISABLE_GLTF_ANIMATIONS) return
     for (const key of Object.keys(actions)) {
       actions[key]?.reset()?.play()
     }

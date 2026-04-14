@@ -2,6 +2,7 @@ import { useRef, useLayoutEffect, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { resolveSceneNode } from '../utils/gltfNodeUtils'
+import { DISABLE_PROCEDURAL_MAP_ANIMATIONS } from '../config/perfAnimationTest'
 
 const WAVE_TIME_A = 2.5
 const WAVE_TIME_B = 2.0
@@ -112,6 +113,7 @@ export function WaterAllWaves({ mesh }) {
   }, [mesh, workingGeometry])
 
   useFrame(({ clock }) => {
+    if (DISABLE_PROCEDURAL_MAP_ANIMATIONS) return
     const geo = workingGeoRef.current
     const initial = initialRef.current
     if (!geo?.attributes?.position || !initial) return

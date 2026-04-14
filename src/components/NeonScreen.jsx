@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { resolveSceneNode } from '../utils/gltfNodeUtils'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
+import { DISABLE_PROCEDURAL_MAP_ANIMATIONS } from '../config/perfAnimationTest'
 
 const SCREEN_GLTF_URL = '/models/screen.glb'
 const NEON_URL = '/neon.png'
@@ -55,6 +56,7 @@ export function NeonScreen({ nodes }) {
   }, [neonTexture])
 
   useFrame(() => {
+    if (DISABLE_PROCEDURAL_MAP_ANIMATIONS) return
     neonTexture.offset.x -= 0.005
   })
 
