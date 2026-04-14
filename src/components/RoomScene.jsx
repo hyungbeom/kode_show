@@ -755,7 +755,23 @@ const RoomSceneInner = memo(
       <ProductGlbViewerModal
         open={productGlbViewerOpen}
         glbUrl={productGlbUrl}
+        productTitle={
+          productDetail != null
+            ? PRODUCT_DETAIL_LIST[productDetail.index]?.title ?? null
+            : null
+        }
+        preloadGlbUrls={productGlbViewerOpen ? PRODUCT_GLB_URLS : null}
         onClose={closeProductGlbViewer}
+        {...(PRODUCT_DETAIL_LIST.length > 1
+          ? {
+              onPrevGlb: () => navigateProductDetailAdjacent(true),
+              onNextGlb: () => navigateProductDetailAdjacent(false),
+              canPrevGlb: productDetail != null && productDetail.index > 0,
+              canNextGlb:
+                productDetail != null &&
+                productDetail.index < PRODUCT_DETAIL_LIST.length - 1,
+            }
+          : {})}
       />
     </div>
   )

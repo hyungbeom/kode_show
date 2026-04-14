@@ -1,6 +1,6 @@
 import { Suspense, useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, useGLTF } from '@react-three/drei'
+import { OrbitControls, useGLTF, Grid } from '@react-three/drei'
 import * as THREE from 'three'
 import { normalizeProductGlbToUnit } from '../utils/productGlbNormalize'
 
@@ -39,6 +39,21 @@ export default function ProductFullscreenGlbCanvas({ glbUrl }) {
       <ambientLight intensity={0.58} />
       <directionalLight position={[6, 12, 8]} intensity={1.12} />
       <directionalLight position={[-5, 4, -6]} intensity={0.42} />
+      <Grid
+        renderOrder={-1}
+        position={[0, -0.88, 0]}
+        side={THREE.DoubleSide}
+        infiniteGrid
+        args={[120, 120]}
+        cellSize={0.38}
+        cellThickness={0.72}
+        cellColor="#9eb6d4"
+        sectionSize={1.9}
+        sectionThickness={1.05}
+        sectionColor="#c8daf2"
+        fadeDistance={48}
+        fadeStrength={0.55}
+      />
       <Suspense fallback={null}>
         <Model url={glbUrl} />
       </Suspense>

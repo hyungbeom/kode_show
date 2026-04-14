@@ -37,6 +37,16 @@
   -webkit-overflow-scrolling: touch;
   pointer-events: auto;
   background: transparent;
+  transform: translateY(0);
+}
+
+/* 닫힘: 전체 소개 레이어를 위로 밀어 올림 — 스크롤 임계 도달 후 */
+.room-entry-with-intro__intro-scroll--exiting {
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-100%);
+  will-change: transform;
+  transition: transform 0.52s cubic-bezier(0.25, 0.82, 0.24, 1);
 }
 
 .room-entry-with-intro__intro-sheet {
