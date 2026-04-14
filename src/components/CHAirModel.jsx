@@ -6,7 +6,6 @@ import React, { useRef, useEffect, useCallback, forwardRef } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { useSyncGroupToWorldGlbAnchor } from '../hooks/useSyncGroupToWorldGlbAnchor'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
-import { DISABLE_GLTF_ANIMATIONS } from '../config/perfAnimationTest'
 
 const CH_AIR_GLB_URL = '/models/CH_Air.glb'
 
@@ -37,7 +36,6 @@ export const CHAirModel = forwardRef(function CHAirModel({ anchor = null }, forw
 
   useEffect(() => {
     if (!actions) return
-    if (DISABLE_GLTF_ANIMATIONS) return
     for (const key of Object.keys(actions)) {
       actions[key]?.reset()?.play()
     }

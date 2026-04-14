@@ -39,10 +39,6 @@ import {
   ZONE_ID_WATER,
 } from '../utils/constants'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
-import {
-  DISABLE_GLTF_ANIMATIONS,
-  DISABLE_PROCEDURAL_MAP_ANIMATIONS,
-} from '../config/perfAnimationTest'
 
 /** Mill_Wing는 GLB 키가 \\u0008Mill_Wing 일 수 있으므로 루프에서 resolveSceneNode 사용 */
 // const SPIN_Y_GEARS = ['Gear_A', 'Gear_B', 'Gear_C', 'Gear_D', 'Gear_E', 'Gear_F', 'Gear_G', 'Mill_Wing']
@@ -103,7 +99,6 @@ function AirTowerSmoke({ nodes }) {
   }, [scene, sharedGeo, smokeMat])
 
   useFrame((_, delta) => {
-    if (DISABLE_PROCEDURAL_MAP_ANIMATIONS) return
     for (const towerName of SMOKE_TOWER_NODES) {
       const tower = nodes[towerName]
       if (!tower) continue
@@ -246,7 +241,6 @@ export const WorldModel = memo(function WorldModel(props) {
 
   useEffect(() => {
     if (!worldGltfActions) return
-    if (DISABLE_GLTF_ANIMATIONS) return
     for (const key of Object.keys(worldGltfActions)) {
       worldGltfActions[key]?.reset()?.play()
     }

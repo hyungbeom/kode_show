@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useEffect, memo } from 'react'
 import * as THREE from 'three'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
-import { DISABLE_GLTF_ANIMATIONS } from '../config/perfAnimationTest'
 
 /** `public/models/` — Vite는 public을 루트로 제공 ( `/models/foo.glb` ) */
 export const DETACHED_GLB = {
@@ -131,7 +130,6 @@ const DetachedAnimatedGlb = memo(function DetachedAnimatedGlb({
 
   useEffect(() => {
     if (!actions) return
-    if (DISABLE_GLTF_ANIMATIONS) return
     for (const key of Object.keys(actions)) {
       actions[key]?.reset()?.play()
     }

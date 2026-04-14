@@ -7,7 +7,6 @@ import { useGLTF, useAnimations } from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
 import { useSyncGroupToWorldGlbAnchor } from '../hooks/useSyncGroupToWorldGlbAnchor'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
-import { DISABLE_GLTF_ANIMATIONS } from '../config/perfAnimationTest'
 
 const CH_EARTH_GLB_URL = '/models/CH_Earth.glb'
 
@@ -41,7 +40,6 @@ export const CHEarthModel = forwardRef(function CHEarthModel({ anchor = null }, 
 
   useEffect(() => {
     if (!actions) return
-    if (DISABLE_GLTF_ANIMATIONS) return
     for (const key of Object.keys(actions)) {
       actions[key]?.reset()?.play()
     }
