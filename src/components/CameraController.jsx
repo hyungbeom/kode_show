@@ -13,6 +13,9 @@ import {
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 
+/** 맵 궤도 회전 useFrame — 매 프레임 lerp 타깃 (GC 방지) */
+const _orbitCameraTargetScratch = new THREE.Vector3()
+
 /**
  * GSAP을 사용한 카메라 시점 전환 컨트롤러
  * Zustand 스토어의 상태 변경을 감지하여 부드럽게 카메라를 제어합니다.
@@ -515,8 +518,8 @@ function CameraController({ controlsRef }) {
     const newZ = r * Math.sin(theta)
 
     const currentPos = state.camera.position
-    const targetPos = new THREE.Vector3(newX, y, newZ)
-    currentPos.lerp(targetPos, 1 - Math.exp(-3 * delta))
+    _orbitCameraTargetScratch.set(newX, y, newZ)
+    currentPos.lerp(_orbitCameraTargetScratch, 1 - Math.exp(-3 * delta))
 
     controls.target.set(0, 0, 0)
     controls.update()

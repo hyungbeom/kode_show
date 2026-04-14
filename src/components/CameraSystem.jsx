@@ -69,6 +69,9 @@ const CameraSystem = memo(() => {
   const isInitialMountRef = useRef(true)
   const transitionDuration = 1.5
   const transitionToMapRafRef = useRef(0)
+  /** 캐릭터→맵 전환 보간 시 clone() 대신 재사용 (useFrame GC 스파이크 방지) */
+  const transitionLerpPosRef = useRef(new THREE.Vector3())
+  const transitionLerpLookRef = useRef(new THREE.Vector3())
   
   // 초기 마운트 완료 표시 및 전환 완료 상태 설정
   useEffect(() => {
@@ -195,20 +198,18 @@ const CameraSystem = memo(() => {
           ? 2 * t * t 
           : 1 - Math.pow(-2 * t + 2, 2) / 2
         
-        // 위치 보간
-        const currentPos = transitionStartRef.current.clone().lerp(
-          transitionTargetRef.current,
-          easedT
-        )
-        state.camera.position.copy(currentPos)
-        
+        // 위치 보간 (clone 금지 — 재사용 벡터에 결과)
+        transitionLerpPosRef.current
+          .copy(transitionStartRef.current)
+          .lerp(transitionTargetRef.current, easedT)
+        state.camera.position.copy(transitionLerpPosRef.current)
+
         // lookAt 보간
         if (transitionLookAtRef.current && transitionStartLookAtRef.current) {
-          const lookAtPos = transitionStartLookAtRef.current.clone().lerp(
-            transitionLookAtRef.current,
-            easedT
-          )
-          state.camera.lookAt(lookAtPos)
+          transitionLerpLookRef.current
+            .copy(transitionStartLookAtRef.current)
+            .lerp(transitionLookAtRef.current, easedT)
+          state.camera.lookAt(transitionLerpLookRef.current)
         }
         
         // OrthographicCamera인 경우 zoom도 보간

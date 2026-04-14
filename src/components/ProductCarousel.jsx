@@ -32,6 +32,8 @@ const VISIBLE_SLOTS = 3
 const CAROUSEL_ITEM_SCALE_ACTIVE = 2.55
 const CAROUSEL_ITEM_SCALE_INACTIVE = 0.68
 
+const _carouselScaleLerpTarget = new THREE.Vector3()
+
 function CarouselProductMesh({ url, active, onPick, pickingEnabled }) {
   const { scene } = useGLTF(url, DRACO_DECODER_URL)
   const root = useRef(null)
@@ -42,7 +44,8 @@ function CarouselProductMesh({ url, active, onPick, pickingEnabled }) {
   useFrame((state, delta) => {
     if (!root.current) return
     const s = active ? CAROUSEL_ITEM_SCALE_ACTIVE : CAROUSEL_ITEM_SCALE_INACTIVE
-    root.current.scale.lerp(new THREE.Vector3(s, s, s), motionDisabled ? 1 : 0.1)
+    _carouselScaleLerpTarget.set(s, s, s)
+    root.current.scale.lerp(_carouselScaleLerpTarget, motionDisabled ? 1 : 0.1)
     if (motionDisabled) {
       root.current.rotation.y = root.current.rotation.x = active ? 1.5 : 4
       root.current.position.y = 0

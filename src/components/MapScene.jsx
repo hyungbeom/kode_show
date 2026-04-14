@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, memo, lazy } from 'react'
-import { Cloud, Clouds, Environment, Lightformer, PerspectiveCamera } from '@react-three/drei'
+import { Cloud, Clouds, Environment, PerspectiveCamera } from '@react-three/drei'
 import { Physics } from '@react-three/rapier'
 import { suspend } from 'suspend-react'
 import MapModel from './MapModel'
@@ -104,9 +104,7 @@ function MapPhysicsSceneContent() {
       <CharacterPerspectiveCamera />
       <CameraSystem />
 
-      <Environment preset="sunset" environmentIntensity={0.72}>
-        <Lightformer form="rect" intensity={0.72} color="white" scale={[10, 5]} target={[0, 0, 0]} />
-      </Environment>
+      <Environment preset="city" />
 
       <ambientLight intensity={0.22} />
 
