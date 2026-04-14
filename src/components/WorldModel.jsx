@@ -188,7 +188,7 @@ export const WorldModel = memo(function WorldModel(props) {
     clone.traverse((child) => {
       if (child.isMesh) {
         child.castShadow = true
-        child.receiveShadow = true
+        child.receiveShadow = false
       }
     })
     return clone

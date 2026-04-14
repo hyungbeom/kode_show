@@ -181,7 +181,6 @@ const ObjectViewer = memo(function ObjectViewer({ objectInfo, onClose }) {
               
               {/* 조명 */}
               <ambientLight intensity={0.6} />
-              <directionalLight position={[5, 8, 5]} intensity={0.8} />
               <pointLight position={[-5, 5, -5]} intensity={0.4} />
               
               {/* 객체 렌더링 */}

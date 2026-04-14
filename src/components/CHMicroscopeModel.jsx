@@ -51,14 +51,12 @@ export const CHMicroscopeModel = forwardRef(function CHMicroscopeModel(_, forwar
         <mesh
           name="CH_Microscope"
           castShadow
-          receiveShadow
           geometry={nodes.CH_Microscope.geometry}
           material={materials.A1}
         >
           <mesh
             name="Head"
             castShadow
-            receiveShadow
             geometry={nodes.Head.geometry}
             material={materials.A1}
             position={[0, 31.757, -7.332]}
@@ -66,7 +64,7 @@ export const CHMicroscopeModel = forwardRef(function CHMicroscopeModel(_, forwar
             <mesh
               name="Group_Lens_Body"
               castShadow
-              receiveShadow
+
               geometry={nodes.Group_Lens_Body.geometry}
               material={materials.A1}
               position={[-0.029, -8.957, 9.104]}
@@ -75,7 +73,7 @@ export const CHMicroscopeModel = forwardRef(function CHMicroscopeModel(_, forwar
               <mesh
                 name="Group_Lens"
                 castShadow
-                receiveShadow
+
                 geometry={nodes.Group_Lens.geometry}
                 material={materials.A1}
               />
@@ -83,7 +81,7 @@ export const CHMicroscopeModel = forwardRef(function CHMicroscopeModel(_, forwar
             <mesh
               name="Lens"
               castShadow
-              receiveShadow
+
               geometry={nodes.Lens.geometry}
               material={materials.A1}
               position={[-0.051, 4.772, 6.827]}

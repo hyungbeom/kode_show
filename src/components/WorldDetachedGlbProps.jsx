@@ -120,7 +120,7 @@ const DetachedAnimatedGlb = memo(function DetachedAnimatedGlb({
     c.traverse((o) => {
       if (o.isMesh) {
         o.castShadow = true
-        o.receiveShadow = true
+        o.receiveShadow = false
       }
     })
     return c

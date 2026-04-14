@@ -48,9 +48,7 @@ export default function ZoneCompanyCardGlbPreview({ url }) {
       }}
     >
       <ambientLight intensity={0.62} />
-      <directionalLight position={[5, 8, 6]} intensity={1.05} />
-      <directionalLight position={[-4, 3, -4]} intensity={0.38} />
-      <Suspense fallback={null}>
+       <Suspense fallback={null}>
         <CardGlbModel url={url} />
       </Suspense>
       <OrbitControls

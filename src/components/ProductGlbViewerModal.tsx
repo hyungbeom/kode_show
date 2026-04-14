@@ -186,9 +186,7 @@ export function ProductGlbViewerModal({
           <color attach="background" args={['#0b0f14']} />
           <hemisphereLight args={['#f0f6ff', '#4a5870', 0.42]} />
           <ambientLight intensity={0.32} />
-          <directionalLight position={[6, 10, 5]} intensity={1.15} castShadow />
-          <directionalLight position={[-4, 6, -3]} intensity={0.4} color="#b8c5ff" />
-          <Grid
+           <Grid
             renderOrder={-1}
             position={[0, -0.88, 0]}
             side={THREE.DoubleSide}

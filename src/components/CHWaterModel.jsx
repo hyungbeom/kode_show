@@ -52,7 +52,6 @@ export const CHWaterModel = forwardRef(function CHWaterModel({ anchor = null }, 
         <mesh
           name="CH_Water"
           castShadow
-          receiveShadow
           geometry={nodes.CH_Water.geometry}
           material={materials.A1}
           position={[0.227, -15.034, -0.154]}

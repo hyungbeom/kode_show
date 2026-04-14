@@ -110,22 +110,6 @@ function MapPhysicsSceneContent() {
 
       <ambientLight intensity={0.22} />
 
-      <directionalLight
-        position={[80, 60, 80]}
-        intensity={1.95}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={500}
-        shadow-camera-left={-150}
-        shadow-camera-right={150}
-        shadow-camera-top={150}
-        shadow-camera-bottom={-150}
-        shadow-bias={-0.0005}
-      />
-
-      <directionalLight position={[-60, 50, -60]} intensity={0.48} color="#FFE5B4" />
-
       <pointLight
         position={[30, 50, 30]}
         intensity={1.2}

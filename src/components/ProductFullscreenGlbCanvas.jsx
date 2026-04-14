@@ -38,9 +38,7 @@ export default function ProductFullscreenGlbCanvas({ glbUrl }) {
       }}
     >
       <ambientLight intensity={0.58} />
-      <directionalLight position={[6, 12, 8]} intensity={1.12} />
-      <directionalLight position={[-5, 4, -6]} intensity={0.42} />
-      <Grid
+       <Grid
         renderOrder={-1}
         position={[0, -0.88, 0]}
         side={THREE.DoubleSide}

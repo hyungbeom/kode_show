@@ -52,7 +52,6 @@ export const CHAirModel = forwardRef(function CHAirModel({ anchor = null }, forw
         <mesh
           name="CH_Air"
           castShadow
-          receiveShadow
           geometry={nodes.CH_Air.geometry}
           material={materials.A1}
         />

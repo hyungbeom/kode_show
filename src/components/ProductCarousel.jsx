@@ -575,7 +575,7 @@ function ProductDetailStage({
         scrollDarken={scrollDarken}
         portalHostRef={annotationPortalHostRef}
       />
-      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 0]} receiveShadow>
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.02, 0]} >
         <planeGeometry args={[40, 40]} />
         <meshStandardMaterial
           color={prefersDark ? '#0f172a' : '#e8eefc'}
