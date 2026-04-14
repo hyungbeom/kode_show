@@ -1,6 +1,7 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useEffect, memo, lazy } from 'react'
 import { Cloud, Clouds, Environment, PerspectiveCamera } from '@react-three/drei'
+import { R3fAdaptivePerformance } from './R3fEquipmentViewEnhancements'
 import { Physics } from '@react-three/rapier'
 import { suspend } from 'suspend-react'
 import MapModel from './MapModel'
@@ -99,6 +100,7 @@ function MapCharacterModeCanvasTouch() {
 function MapPhysicsSceneContent() {
   return (
     <>
+      <R3fAdaptivePerformance />
       <BackgroundTransparency />
       <MapCharacterModeCanvasTouch />
       <CharacterPerspectiveCamera />
@@ -114,7 +116,6 @@ function MapPhysicsSceneContent() {
         color="#FFE5B4"
         distance={150}
         decay={1.5}
-        castShadow
       />
       <pointLight
         position={[-30, 50, -30]}
@@ -129,7 +130,6 @@ function MapPhysicsSceneContent() {
         color="#FFFFFF"
         distance={200}
         decay={1.5}
-        castShadow
       />
 
       <spotLight
@@ -137,7 +137,6 @@ function MapPhysicsSceneContent() {
         angle={0.4}
         penumbra={0.3}
         intensity={1.55}
-        castShadow
         color="#FFFFFF"
         distance={200}
         decay={1.5}

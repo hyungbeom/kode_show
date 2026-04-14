@@ -119,7 +119,7 @@ const DetachedAnimatedGlb = memo(function DetachedAnimatedGlb({
     const c = scene.clone(true)
     c.traverse((o) => {
       if (o.isMesh) {
-        o.castShadow = true
+        o.castShadow = false
         o.receiveShadow = false
       }
     })

@@ -58,12 +58,14 @@ export const CHEarthModel = forwardRef(function CHEarthModel({ anchor = null }, 
             <primitive object={nodes.mixamorigHips} />
             <skinnedMesh
               name="CH_Earth_A"
+              castShadow
               geometry={nodes.CH_Earth_A.geometry}
               material={materials.A1}
               skeleton={nodes.CH_Earth_A.skeleton}
             />
             <skinnedMesh
               name="CH_Earth_body"
+              castShadow
               geometry={nodes.CH_Earth_body.geometry}
               material={materials.A1}
               skeleton={nodes.CH_Earth_body.skeleton}

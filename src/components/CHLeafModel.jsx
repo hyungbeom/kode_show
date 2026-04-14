@@ -58,24 +58,28 @@ export const CHLeafModel = forwardRef(function CHLeafModel({ anchor = null }, fo
             <primitive object={nodes.mixamorigHips} />
             <skinnedMesh
               name="L_hand"
+              castShadow
               geometry={nodes.L_hand.geometry}
               material={materials.A1}
               skeleton={nodes.L_hand.skeleton}
             />
             <skinnedMesh
               name="L_Leg"
+              castShadow
               geometry={nodes.L_Leg.geometry}
               material={materials.A1}
               skeleton={nodes.L_Leg.skeleton}
             />
             <skinnedMesh
               name="R_Hand001"
+              castShadow
               geometry={nodes.R_Hand001.geometry}
               material={materials.A1}
               skeleton={nodes.R_Hand001.skeleton}
             />
             <skinnedMesh
               name="R_leg"
+              castShadow
               geometry={nodes.R_leg.geometry}
               material={materials.A1}
               skeleton={nodes.R_leg.skeleton}

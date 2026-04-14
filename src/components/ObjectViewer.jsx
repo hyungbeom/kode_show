@@ -6,6 +6,7 @@ import { Box } from '@react-three/drei'
 import { gsap } from 'gsap'
 import * as THREE from 'three'
 import './ObjectViewer.css'
+import { R3fAdaptivePerformance } from './R3fEquipmentViewEnhancements'
 
 /**
  * 객체 뷰어 컴포넌트
@@ -150,6 +151,7 @@ const ObjectViewer = memo(function ObjectViewer({ objectInfo, onClose }) {
             gl={{ antialias: true, alpha: true }}
             dpr={[1, 1.5]}
           >
+            <R3fAdaptivePerformance />
             <Suspense fallback={null}>
               <PerspectiveCamera makeDefault position={[0, 2, 5]} fov={50} near={0.1} far={500000} />
               

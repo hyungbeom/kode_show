@@ -21,7 +21,7 @@ const Cloud = memo(function Cloud({ position, scale = 1 }) {
   
   // 하이 폴리 박스 생성 함수 (높은 세그먼트로 부드러운 표면)
   const HighPolyBox = ({ args, position: pos }) => (
-    <mesh position={pos} castShadow >
+    <mesh position={pos}>
       <boxGeometry args={[...args, 8, 8, 8]} />
       {whiteMaterial}
     </mesh>

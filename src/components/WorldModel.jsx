@@ -3,7 +3,6 @@ world.glb 맵 모델
 - 씬 전체를 primitive로 로드해 Blender 원점/위치/변환 유지
 - world.glb 애니메이션 클립 전부 재생(`useAnimations`); 날개·스크린 등은 GLB 키프레임 우선(기존 궤도·수동 회전 제거)
 - Air_tower, Air_tower001 연기 파티클 (타워 AABB에 비례한 크기)
-- Air_Fan_A/B_propeller — SakuraWind (캡슐 바람결 + 원형 꽃잎; 송풍은 팬 회전과 분리)
 - Airplane / Baloon / Clould_A·B·C — `WorldDetachedGlbProps`: `public/models/*.glb` + 클립 전부 재생
 - 구역별 LandHover: *_Land 합 히트, 말풍선 앵커·모양은 구역별 (수질·대기·탄소·측정 등)
 - Carbon_Land+CH_Leaf_Body — 히트 합침, 말풍선은 Carbon_Land AABB 중심·우상단 피벗
@@ -20,7 +19,6 @@ import * as THREE from 'three'
 import { useFrame, useGraph, useThree } from '@react-three/fiber'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { useMapStore } from '../store/useMapStore'
-import { SakuraWind } from './SakuraWind'
 import { LandHover } from './LandHover'
 import { WorldDetachedGlbProps } from './WorldDetachedGlbProps'
 import { NeonScreen } from './NeonScreen'
@@ -46,10 +44,6 @@ import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 // const SPIN_Y_GEARS = ['Gear_A', 'Gear_B', 'Gear_C', 'Gear_D', 'Gear_E', 'Gear_F', 'Gear_G', 'Mill_Wing']
 // const SPIN_Y_FANS = ['Air_Fan_A_propeller', 'Air_Fan_B_propeller']
 // const WING_SPIN_Z_NODES = ['Wing', 'Wing001', 'Wing002']
-
-/** SakuraWind: 자동 추정 축에 대한 월드 Yaw / 수평 Pitch 보정 (맵·팬 배치에 맞춤) */
-const SAKURA_WIND_DIR_YAW_DEG = 44.5
-const SAKURA_WIND_DIR_PITCH_DEG = -13.5
 
 /** Zone 포커스용 GLB 노드 (기관 건은 오타/철자 별칭 처리) */
 const GLB_FOCUS_NODES = ['CH_Water', 'CH_Air', 'CH_Leaf_Body', 'Earth', 'Measurement_Land']
@@ -187,7 +181,7 @@ export const WorldModel = memo(function WorldModel(props) {
     const clone = scene.clone(true)
     clone.traverse((child) => {
       if (child.isMesh) {
-        child.castShadow = true
+        child.castShadow = false
         child.receiveShadow = false
       }
     })
@@ -275,22 +269,6 @@ export const WorldModel = memo(function WorldModel(props) {
       </group>
       {waterAllMesh ? <WaterAllWaves mesh={waterAllMesh} /> : null}
       <NeonScreen nodes={nodes} />
-      <SakuraWind
-        fan={nodes.Air_Fan_A_propeller}
-        clonedScene={clonedScene}
-        windCount={22}
-        petalCount={56}
-        dirYawDeg={SAKURA_WIND_DIR_YAW_DEG}
-        dirPitchDeg={SAKURA_WIND_DIR_PITCH_DEG}
-      />
-      <SakuraWind
-        fan={nodes.Air_Fan_B_propeller}
-        clonedScene={clonedScene}
-        windCount={22}
-        petalCount={56}
-        dirYawDeg={SAKURA_WIND_DIR_YAW_DEG}
-        dirPitchDeg={SAKURA_WIND_DIR_PITCH_DEG}
-      />
       <AirTowerSmoke nodes={nodes} />
       {nodes.Water_Quality_Land || nodes.CH_Water ? (
         <LandHover

@@ -75,7 +75,7 @@ function PlayerCharacterModel() {
     const clone = scene.clone(true)
     clone.traverse((child) => {
       if (child.isMesh) {
-        child.castShadow = true
+        child.castShadow = false
         child.receiveShadow = false
       }
     })
@@ -262,7 +262,7 @@ const Player = memo(function Player({ scale = 5, groundLevel = 0 }) {
     >
       <Suspense
         fallback={
-          <mesh castShadow>
+          <mesh>
             <boxGeometry args={[2, 2, 2]} />
             <meshStandardMaterial color="#FF6B6B" />
           </mesh>

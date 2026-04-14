@@ -4,6 +4,7 @@ import { OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { normalizeProductGlbToUnit } from '../utils/productGlbNormalize'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
+import { R3fEquipmentViewEnhancements } from './R3fEquipmentViewEnhancements'
 
 /** 정육면체 대각선 방향 ≈35.26° — 원점을 향한 아이소메트릭 기본 시점 */
 const ISO_POLAR = Math.acos(1 / Math.sqrt(3))
@@ -16,7 +17,13 @@ const ISO_CAMERA_POS = [
 
 function CardGlbModel({ url }) {
   const { scene } = useGLTF(url, DRACO_DECODER_URL)
-  const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
+  const object = useMemo(() => {
+    const o = normalizeProductGlbToUnit(scene)
+    o.traverse((ch) => {
+      if (ch.isMesh) ch.castShadow = true
+    })
+    return o
+  }, [scene])
   return <primitive object={object} />
 }
 
@@ -28,6 +35,7 @@ export default function ZoneCompanyCardGlbPreview({ url }) {
   return (
     <Canvas
       className="zone-carousel-card__glb-canvas"
+      shadows
       style={{
         width: '100%',
         height: '100%',
@@ -47,7 +55,12 @@ export default function ZoneCompanyCardGlbPreview({ url }) {
         gl.toneMappingExposure = 1
       }}
     >
+      <R3fEquipmentViewEnhancements />
       <ambientLight intensity={0.62} />
+      <mesh rotation-x={-Math.PI / 2} position={[0, -0.89, 0]} receiveShadow>
+        <planeGeometry args={[16, 16]} />
+        <shadowMaterial transparent opacity={0.32} />
+      </mesh>
        <Suspense fallback={null}>
         <CardGlbModel url={url} />
       </Suspense>

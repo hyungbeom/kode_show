@@ -1,17 +1,12 @@
 import { Canvas } from '@react-three/fiber'
-import {
-  OrbitControls,
-  useGLTF,
-  ContactShadows,
-  PerspectiveCamera,
-  Grid,
-} from '@react-three/drei'
+import { OrbitControls, useGLTF, PerspectiveCamera, Grid } from '@react-three/drei'
 import { Suspense, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import * as THREE from 'three'
 import './ProductGlbViewerModal.css'
 import { normalizeProductGlbToUnit } from '../utils/productGlbNormalize'
 import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
+import { R3fEquipmentViewEnhancements } from './R3fEquipmentViewEnhancements'
 
 function uniqueGlbUrls(urls: readonly string[] | null | undefined): string[] {
   if (!urls?.length) return []
@@ -29,7 +24,13 @@ function uniqueGlbUrls(urls: readonly string[] | null | undefined): string[] {
 
 function ViewerModel({ url }: { url: string }) {
   const { scene } = useGLTF(url, DRACO_DECODER_URL)
-  const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
+  const object = useMemo(() => {
+    const o = normalizeProductGlbToUnit(scene)
+    o.traverse((ch) => {
+      if ((ch as THREE.Mesh).isMesh) (ch as THREE.Mesh).castShadow = true
+    })
+    return o
+  }, [scene])
   return <primitive object={object} />
 }
 
@@ -182,6 +183,7 @@ export function ProductGlbViewerModal({
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
           dpr={[1, 1.5]}
         >
+          <R3fEquipmentViewEnhancements />
           <PerspectiveCamera makeDefault position={[2.4, 1.35, 2.35]} fov={42} near={0.1} far={200} />
           <color attach="background" args={['#0b0f14']} />
           <hemisphereLight args={['#f0f6ff', '#4a5870', 0.42]} />
@@ -201,15 +203,10 @@ export function ProductGlbViewerModal({
             fadeDistance={48}
             fadeStrength={0.55}
           />
-          <ContactShadows
-            rotation-x={Math.PI / 2}
-            position={[0, -0.835, 0]}
-            opacity={0.35}
-            width={12}
-            height={12}
-            blur={2.2}
-            far={8}
-          />
+          <mesh rotation-x={-Math.PI / 2} position={[0, -0.89, 0]} receiveShadow>
+            <planeGeometry args={[24, 24]} />
+            <shadowMaterial transparent opacity={0.38} />
+          </mesh>
           <Suspense fallback={null}>
             <group position={[0, -0.02, 0]}>
               <ViewerModel url={glbUrl} />
