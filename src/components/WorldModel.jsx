@@ -12,6 +12,7 @@ world.glb 맵 모델
 - Water_all — `WaterAllWaves` 버텍스 파동(geometry clone)
 - CH_Microscope.glb — `CHMicroscopeModel` 고정 배치, 측정분석 말풍선은 `Measurement_Land` AABB 중심 (`MeasurementLandPhysics` 고정 trimesh — 플레이어 발판)
 - CH_Air.glb / CH_Water.glb — `CHAirModel`·`CHWaterModel`, world.glb 의 CH_Air·CH_Water 노드 위치에 동기화 + GLB 애니 전부 재생
+- CH_Leaf.glb / CH_Earth.glb — `CHLeafModel`·`CHEarthModel`, CH_Leaf_Body·Earth 앵커에 동기화 + 애니 재생
 */
 
 import React, { useMemo, memo, useLayoutEffect, useRef, useEffect } from 'react'
@@ -27,6 +28,8 @@ import { WaterAllWaves, getWaterAllMeshFromNodes } from './WaterAllWaves'
 import { CHMicroscopeModel } from './CHMicroscopeModel'
 import { CHAirModel } from './CHAirModel'
 import { CHWaterModel } from './CHWaterModel'
+import { CHLeafModel } from './CHLeafModel'
+import { CHEarthModel } from './CHEarthModel'
 import { MeasurementLandPhysics } from './MeasurementLandPhysics'
 import { resolveSceneNode } from '../utils/gltfNodeUtils'
 import {
@@ -265,6 +268,8 @@ export const WorldModel = memo(function WorldModel(props) {
         <CHMicroscopeModel />
         <CHAirModel anchor={nodes.CH_Air} />
         <CHWaterModel anchor={nodes.CH_Water} />
+        <CHLeafModel anchor={nodes.CH_Leaf_Body} />
+        <CHEarthModel anchor={nodes.Earth} />
         <WorldDetachedGlbProps worldAabb={worldGlbAabb} />
       </group>
       {waterAllMesh ? <WaterAllWaves mesh={waterAllMesh} /> : null}

@@ -21,6 +21,8 @@ const GLB_URLS = [
   '/models/CH_Microscope.glb',
   '/models/CH_Air.glb',
   '/models/CH_Water.glb',
+  '/models/CH_Leaf.glb',
+  '/models/CH_Earth.glb',
   MODEL_PATHS.PLAYER.AMONG_US,
   '/models/screen.glb',
 ] as const
