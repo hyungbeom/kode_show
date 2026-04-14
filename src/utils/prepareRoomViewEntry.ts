@@ -3,6 +3,7 @@
  */
 
 import { useGLTF } from '@react-three/drei'
+import { DRACO_DECODER_URL } from './dracoDecoder'
 import { peek } from 'suspend-react'
 import { GLTFLoader } from 'three-stdlib'
 import { PRODUCT_GLB_URLS } from '../data/productGlbUrls'
@@ -29,7 +30,7 @@ export async function prepareRoomViewEntry(): Promise<void> {
   await import('../components/RoomScene')
 
   for (const url of PRODUCT_GLB_URLS) {
-    useGLTF.preload(url)
+    useGLTF.preload(url, DRACO_DECODER_URL)
   }
 
   await Promise.all(PRODUCT_GLB_URLS.map((url) => waitForLoaderPeek([GLTFLoader, url])))

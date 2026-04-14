@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { useFrame, useThree } from '@react-three/fiber'
 import { ContactShadows, Html, useGLTF } from '@react-three/drei'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 import { Suspense, useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import { useUserPreferences } from '@react-three/a11y'
 import { gsap } from 'gsap'
@@ -32,7 +33,7 @@ const CAROUSEL_ITEM_SCALE_ACTIVE = 2.55
 const CAROUSEL_ITEM_SCALE_INACTIVE = 0.68
 
 function CarouselProductMesh({ url, active, onPick, pickingEnabled }) {
-  const { scene } = useGLTF(url)
+  const { scene } = useGLTF(url, DRACO_DECODER_URL)
   const root = useRef(null)
   const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
   const { a11yPrefersState } = useUserPreferences()
@@ -418,7 +419,7 @@ function ProductDetailStage({
   scrollDarken = 0,
   annotationPortalHostRef,
 }) {
-  const { scene } = useGLTF(url)
+  const { scene } = useGLTF(url, DRACO_DECODER_URL)
   const { camera, gl } = useThree()
   const root = useRef(null)
   const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
@@ -885,4 +886,4 @@ function LightToggleRing({ position }) {
   )
 }
 
-PRODUCT_GLB_URLS.forEach((u) => useGLTF.preload(u))
+PRODUCT_GLB_URLS.forEach((u) => useGLTF.preload(u, DRACO_DECODER_URL))

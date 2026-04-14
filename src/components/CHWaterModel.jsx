@@ -5,6 +5,7 @@
 import React, { useRef, useEffect, useCallback, forwardRef } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
 import { useSyncGroupToWorldGlbAnchor } from '../hooks/useSyncGroupToWorldGlbAnchor'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 const CH_WATER_GLB_URL = '/models/CH_Water.glb'
 
@@ -17,7 +18,7 @@ export const CH_WATER_MAP_PLACEMENT = {
 
 export const CHWaterModel = forwardRef(function CHWaterModel({ anchor = null }, forwardedRef) {
   const internalRef = useRef(/** @type {THREE.Group | null} */ (null))
-  const { nodes, materials, animations } = useGLTF(CH_WATER_GLB_URL)
+  const { nodes, materials, animations } = useGLTF(CH_WATER_GLB_URL, DRACO_DECODER_URL)
   const { actions } = useAnimations(animations, internalRef)
 
   const assignRef = useCallback(
@@ -64,4 +65,4 @@ export const CHWaterModel = forwardRef(function CHWaterModel({ anchor = null }, 
 
 CHWaterModel.displayName = 'CHWaterModel'
 
-useGLTF.preload(CH_WATER_GLB_URL)
+useGLTF.preload(CH_WATER_GLB_URL, DRACO_DECODER_URL)

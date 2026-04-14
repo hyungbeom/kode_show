@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useEffect, memo } from 'react'
 import * as THREE from 'three'
 import { useGLTF, useAnimations } from '@react-three/drei'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 /** `public/models/` — Vite는 public을 루트로 제공 ( `/models/foo.glb` ) */
 export const DETACHED_GLB = {
@@ -113,7 +114,7 @@ const DetachedAnimatedGlb = memo(function DetachedAnimatedGlb({
   scale = 1,
 }) {
   const rootRef = useRef(/** @type {THREE.Group | null} */ (null))
-  const { scene, animations } = useGLTF(url)
+  const { scene, animations } = useGLTF(url, DRACO_DECODER_URL)
   const cloned = useMemo(() => {
     const c = scene.clone(true)
     c.traverse((o) => {
@@ -196,5 +197,5 @@ export function WorldDetachedGlbProps({ worldAabb = null }) {
 }
 
 for (const u of Object.values(DETACHED_GLB)) {
-  useGLTF.preload(u)
+  useGLTF.preload(u, DRACO_DECODER_URL)
 }

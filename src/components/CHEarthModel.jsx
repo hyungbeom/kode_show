@@ -1,9 +1,12 @@
 /*
- * CH_Earth.glb — world.glb 의 Earth(해외/지구 구역) 노드 위치에 동기화, 애니 전부 재생
+ * CH_Earth.glb — gltfjsx-style skinned meshes; synced to world.glb Earth.
  */
-import React, { useRef, useEffect, useCallback, forwardRef, useLayoutEffect } from 'react'
+import React, { useRef, useEffect, useCallback, forwardRef, useMemo } from 'react'
+import { useGraph } from '@react-three/fiber'
 import { useGLTF, useAnimations } from '@react-three/drei'
+import { SkeletonUtils } from 'three-stdlib'
 import { useSyncGroupToWorldGlbAnchor } from '../hooks/useSyncGroupToWorldGlbAnchor'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 const CH_EARTH_GLB_URL = '/models/CH_Earth.glb'
 
@@ -16,9 +19,11 @@ export const CH_EARTH_MAP_PLACEMENT = {
 
 export const CHEarthModel = forwardRef(function CHEarthModel({ anchor = null }, forwardedRef) {
   const groupRef = useRef(/** @type {THREE.Group | null} */ (null))
-  const sceneRef = useRef(/** @type {THREE.Object3D | null} */ (null))
-  const { scene, animations } = useGLTF(CH_EARTH_GLB_URL)
-  const { actions } = useAnimations(animations, sceneRef)
+  const animRootRef = useRef(/** @type {THREE.Group | null} */ (null))
+  const { scene, animations } = useGLTF(CH_EARTH_GLB_URL, DRACO_DECODER_URL)
+  const clone = useMemo(() => SkeletonUtils.clone(scene), [scene])
+  const { nodes, materials } = useGraph(clone)
+  const { actions } = useAnimations(animations, animRootRef)
 
   const assignRef = useCallback(
     (node) => {
@@ -32,15 +37,6 @@ export const CHEarthModel = forwardRef(function CHEarthModel({ anchor = null }, 
   )
 
   useSyncGroupToWorldGlbAnchor(groupRef, anchor, CH_EARTH_MAP_PLACEMENT)
-
-  useLayoutEffect(() => {
-    scene.traverse((child) => {
-      if (child.isMesh) {
-        child.castShadow = true
-        child.receiveShadow = true
-      }
-    })
-  }, [scene])
 
   useEffect(() => {
     if (!actions) return
@@ -56,11 +52,29 @@ export const CHEarthModel = forwardRef(function CHEarthModel({ anchor = null }, 
 
   return (
     <group ref={assignRef} dispose={null}>
-      <primitive ref={sceneRef} object={scene} />
+      <group ref={animRootRef} dispose={null}>
+        <group name="Scene">
+          <group name="Armature" rotation={[Math.PI / 2, 0, 0]}>
+            <primitive object={nodes.mixamorigHips} />
+            <skinnedMesh
+              name="CH_Earth_A"
+              geometry={nodes.CH_Earth_A.geometry}
+              material={materials.A1}
+              skeleton={nodes.CH_Earth_A.skeleton}
+            />
+            <skinnedMesh
+              name="CH_Earth_body"
+              geometry={nodes.CH_Earth_body.geometry}
+              material={materials.A1}
+              skeleton={nodes.CH_Earth_body.skeleton}
+            />
+          </group>
+        </group>
+      </group>
     </group>
   )
 })
 
 CHEarthModel.displayName = 'CHEarthModel'
 
-useGLTF.preload(CH_EARTH_GLB_URL)
+useGLTF.preload(CH_EARTH_GLB_URL, DRACO_DECODER_URL)

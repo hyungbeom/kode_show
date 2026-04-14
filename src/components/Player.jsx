@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { useMapStore } from '../store/useMapStore'
 import { MODEL_PATHS } from '../utils/constants'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 import { AmongUsColliderDebug } from './AmongUsColliderDebug'
 
 const CHARACTER_GLB_URL = MODEL_PATHS.PLAYER.AMONG_US
@@ -67,7 +68,7 @@ function shortestAngleDelta(a, b) {
 }
 
 function PlayerCharacterModel() {
-  const { scene } = useGLTF(CHARACTER_GLB_URL)
+  const { scene } = useGLTF(CHARACTER_GLB_URL, DRACO_DECODER_URL)
   const s = CHARACTER_MODEL_SCALE
 
   const clonedScene = useMemo(() => {
@@ -84,7 +85,7 @@ function PlayerCharacterModel() {
   return <primitive object={clonedScene} scale={[s, s, s]} position={[0, 0, 0]} />
 }
 
-useGLTF.preload(CHARACTER_GLB_URL)
+useGLTF.preload(CHARACTER_GLB_URL, DRACO_DECODER_URL)
 
 /**
  * Ecctrl 없음 — 클릭/홀드 네비(`characterNavGoal`) + 위치·회전 lerp,

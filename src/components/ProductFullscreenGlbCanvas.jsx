@@ -3,9 +3,10 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls, useGLTF, Grid } from '@react-three/drei'
 import * as THREE from 'three'
 import { normalizeProductGlbToUnit } from '../utils/productGlbNormalize'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 function Model({ url }) {
-  const { scene } = useGLTF(url)
+  const { scene } = useGLTF(url, DRACO_DECODER_URL)
   const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
   return <primitive object={object} />
 }

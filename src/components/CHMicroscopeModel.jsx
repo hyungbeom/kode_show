@@ -4,6 +4,7 @@
  */
 import React, { useRef, useEffect, useCallback, forwardRef } from 'react'
 import { useGLTF, useAnimations } from '@react-three/drei'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 const CH_MICROSCOPE_GLB_URL = '/models/CH_Microscope.glb'
 
@@ -16,7 +17,7 @@ export const CH_MICROSCOPE_MAP_PLACEMENT = {
 
 export const CHMicroscopeModel = forwardRef(function CHMicroscopeModel(_, forwardedRef) {
   const internalRef = useRef(/** @type {THREE.Group | null} */ (null))
-  const { nodes, materials, animations } = useGLTF(CH_MICROSCOPE_GLB_URL)
+  const { nodes, materials, animations } = useGLTF(CH_MICROSCOPE_GLB_URL, DRACO_DECODER_URL)
   const { actions } = useAnimations(animations, internalRef)
 
   const assignRef = useCallback(
@@ -97,4 +98,4 @@ export const CHMicroscopeModel = forwardRef(function CHMicroscopeModel(_, forwar
 
 CHMicroscopeModel.displayName = 'CHMicroscopeModel'
 
-useGLTF.preload(CH_MICROSCOPE_GLB_URL)
+useGLTF.preload(CH_MICROSCOPE_GLB_URL, DRACO_DECODER_URL)

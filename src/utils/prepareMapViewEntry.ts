@@ -10,7 +10,8 @@ import { useGLTF, useTexture } from '@react-three/drei'
 import { peek } from 'suspend-react'
 import * as THREE from 'three'
 import { TextureLoader } from 'three'
-import { GLTFLoader } from 'three-stdlib'
+import { GLTFLoader, DRACOLoader } from 'three-stdlib'
+import { DRACO_DECODER_URL } from './dracoDecoder'
 import { useMapStore } from '../store/useMapStore'
 import { getMapInitialOrthoZoomForWidth, resolveMapCameraLayoutForViewport } from './mapCameraLayout'
 import { readLayoutBrowserWidthPx } from './mapViewport'
@@ -30,7 +31,10 @@ const NEON_URL = '/neon.png'
 const WORLD_GLB_URL = GLB_URLS[0]
 
 async function warmMapStoreLayoutFromWorldGlb(): Promise<void> {
+  const draco = new DRACOLoader()
+  draco.setDecoderPath(DRACO_DECODER_URL)
   const loader = new GLTFLoader()
+  loader.setDRACOLoader(draco)
   const gltf = await loader.loadAsync(WORLD_GLB_URL)
   const root = gltf.scene
   root.updateMatrixWorld(true)
@@ -81,7 +85,7 @@ export async function prepareMapViewEntry(): Promise<void> {
   await import('../components/MapScene')
 
   for (const url of GLB_URLS) {
-    useGLTF.preload(url)
+    useGLTF.preload(url, DRACO_DECODER_URL)
   }
   useTexture.preload(NEON_URL)
 

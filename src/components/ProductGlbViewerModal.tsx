@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom'
 import * as THREE from 'three'
 import './ProductGlbViewerModal.css'
 import { normalizeProductGlbToUnit } from '../utils/productGlbNormalize'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 function uniqueGlbUrls(urls: readonly string[] | null | undefined): string[] {
   if (!urls?.length) return []
@@ -27,7 +28,7 @@ function uniqueGlbUrls(urls: readonly string[] | null | undefined): string[] {
 }
 
 function ViewerModel({ url }: { url: string }) {
-  const { scene } = useGLTF(url)
+  const { scene } = useGLTF(url, DRACO_DECODER_URL)
   const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
   return <primitive object={object} />
 }
@@ -100,7 +101,7 @@ export function ProductGlbViewerModal({
       toLoad.add(u)
     }
     for (const u of toLoad) {
-      useGLTF.preload(u)
+      useGLTF.preload(u, DRACO_DECODER_URL)
     }
   }, [open, glbUrl, preloadKey, preloadGlbUrls])
 

@@ -3,6 +3,7 @@ import { useFrame, createPortal } from '@react-three/fiber'
 import { useLayoutEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { resolveSceneNode } from '../utils/gltfNodeUtils'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 const SCREEN_GLTF_URL = '/models/screen.glb'
 const NEON_URL = '/neon.png'
@@ -29,7 +30,7 @@ function resolveCube001(nodes) {
  * screen.glb 패널 + neon 을 cube001 에만 붙입니다.
  */
 export function NeonScreen({ nodes }) {
-  const { nodes: screenNodes } = useGLTF(SCREEN_GLTF_URL)
+  const { nodes: screenNodes } = useGLTF(SCREEN_GLTF_URL, DRACO_DECODER_URL)
   const neonTexture = useTexture(NEON_URL)
 
   const anchor = useMemo(() => resolveCube001(nodes), [nodes])
@@ -78,5 +79,5 @@ export function NeonScreen({ nodes }) {
   )
 }
 
-useGLTF.preload(SCREEN_GLTF_URL)
+useGLTF.preload(SCREEN_GLTF_URL, DRACO_DECODER_URL)
 useTexture.preload(NEON_URL)

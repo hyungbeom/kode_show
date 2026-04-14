@@ -40,6 +40,7 @@ import {
   ZONE_ID_LAB,
   ZONE_ID_WATER,
 } from '../utils/constants'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 /** Mill_Wing는 GLB 키가 \\u0008Mill_Wing 일 수 있으므로 루프에서 resolveSceneNode 사용 */
 // const SPIN_Y_GEARS = ['Gear_A', 'Gear_B', 'Gear_C', 'Gear_D', 'Gear_E', 'Gear_F', 'Gear_G', 'Mill_Wing']
@@ -179,7 +180,7 @@ function AirTowerSmoke({ nodes }) {
 
 export const WorldModel = memo(function WorldModel(props) {
   const worldAnimRootRef = useRef(/** @type {THREE.Group | null} */ (null))
-  const { scene, animations } = useGLTF('/models/world.glb')
+  const { scene, animations } = useGLTF('/models/world.glb', DRACO_DECODER_URL)
   const { actions: worldGltfActions } = useAnimations(animations, worldAnimRootRef)
 
   const clonedScene = useMemo(() => {
@@ -385,4 +386,4 @@ export const WorldModel = memo(function WorldModel(props) {
   )
 })
 
-useGLTF.preload('/models/world.glb')
+useGLTF.preload('/models/world.glb', DRACO_DECODER_URL)

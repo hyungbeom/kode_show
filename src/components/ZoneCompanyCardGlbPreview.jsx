@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
 import { normalizeProductGlbToUnit } from '../utils/productGlbNormalize'
+import { DRACO_DECODER_URL } from '../utils/dracoDecoder'
 
 /** 정육면체 대각선 방향 ≈35.26° — 원점을 향한 아이소메트릭 기본 시점 */
 const ISO_POLAR = Math.acos(1 / Math.sqrt(3))
@@ -14,7 +15,7 @@ const ISO_CAMERA_POS = [
 ]
 
 function CardGlbModel({ url }) {
-  const { scene } = useGLTF(url)
+  const { scene } = useGLTF(url, DRACO_DECODER_URL)
   const object = useMemo(() => normalizeProductGlbToUnit(scene), [scene])
   return <primitive object={object} />
 }
