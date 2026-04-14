@@ -40,7 +40,7 @@ export default function ZoneCompanyCardGlbPreview({ url }) {
         antialias: true,
         powerPreference: 'high-performance',
       }}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
       onCreated={({ gl }) => {
         gl.setClearColor(0x000000, 0)
         gl.toneMapping = THREE.ACESFilmicToneMapping

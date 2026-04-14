@@ -216,7 +216,7 @@ const MapScene = memo(function MapScene() {
           premultipliedAlpha: false,
           preserveDrawingBuffer: false,
         }}
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         onCreated={({ gl, scene }) => {
           syncTransparentWebGLCanvas(gl, scene)
         }}

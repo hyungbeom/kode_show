@@ -30,7 +30,7 @@ export default function ProductFullscreenGlbCanvas({ glbUrl }) {
         antialias: true,
         powerPreference: 'high-performance',
       }}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
       onCreated={({ gl }) => {
         gl.setClearColor(0x000000, 1)
         gl.toneMapping = THREE.ACESFilmicToneMapping

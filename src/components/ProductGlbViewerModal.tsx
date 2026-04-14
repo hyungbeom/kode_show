@@ -180,7 +180,7 @@ export function ProductGlbViewerModal({
           className="product-glb-viewer-modal__canvas"
           shadows
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-          dpr={[1, Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio : 2)]}
+          dpr={[1, 1.5]}
         >
           <PerspectiveCamera makeDefault position={[2.4, 1.35, 2.35]} fov={42} near={0.1} far={200} />
           <color attach="background" args={['#0b0f14']} />
